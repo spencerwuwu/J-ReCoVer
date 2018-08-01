@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project ReducerAnalysis">
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+    <!--define folder properties-->
+    <property name="dir.buildfile" value="."/>
+    <property name="dir.workspace" value="${dir.buildfile}/.."/>
+    <property name="dir.jarfile" value="${dir.buildfile}/"/>
+    <target name="create_run_jar">
+        <jar destfile="${dir.jarfile}/jsr.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value="statementResolver.Main"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="${dir.buildfile}/bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/com.google.common_1.0.0.201004262004.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/com.microsoft.z3.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/cup-11a.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/gson-2.2.4.jar.zip"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/guava-15.0-rc1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/guava-21.0.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/jasminclasses-2.5.0.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/jgrapht.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/jgrapht-core-1.0.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/lazabs.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/polyglotclasses-1.3.5.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/princess.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/rt.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/soot-2.5.0.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${dir.buildfile}/lib/sootclasses-trunk.jar"/>
+        </jar>
+    </target>
+</project>

@@ -70,7 +70,10 @@ public class StatementResolver {
 		runner.run(input, classPath);
 		op = option;
 		// Main analysis starts from here
-		performAnalysis();
+		if (op.silence_flag) {
+			performSilenceAnalysis();
+		}
+		else performAnalysis();
 	}
 
 	private void addDefaultInitializers(SootMethod constructor, SootClass containingClass) {
@@ -116,6 +119,33 @@ public class StatementResolver {
 
 	public SootClass getAssertionClass() {
 		return Scene.v().getSootClass(SootRunner.assertionClassName);
+	}
+
+	public void performSilenceAnalysis() {
+		List<SootClass> classes = new LinkedList<SootClass>(Scene.v().getClasses());
+		for (SootClass sc : classes) {
+			if (sc == getAssertionClass()) {
+				continue; // no need to process this guy.
+			}
+			if (sc.resolvingLevel() >= SootClass.SIGNATURES && sc.isApplicationClass()) {
+				for (SootMethod sm : sc.getMethods()) {
+					if (sm.isConcrete()) {
+						addDefaultInitializers(sm, sc);
+					}
+
+					Body body = sm.retrieveActiveBody();
+					try {
+						body.validate();
+					} catch (RuntimeException e) {
+						System.out.println("Unable to validate method body. Possible NullPointerException?");
+						throw e;	
+					}
+				}
+			}
+		}
+		for (JimpleBody body : this.get_colloctor_SceneBodies()) {
+			System.out.println(body.toString());
+		}
 	}
 
 	public void performAnalysis() {
@@ -225,7 +255,7 @@ public class StatementResolver {
 		} // end of main analysis
 		
 		if (op.cfg_flag) {
-			// TODO
+			// TODO: Not really doing this tbh
 			/*
 			BlockGraph blockGraph = new BriefBlockGraph(body);
 			System.out.println(blockGraph);
@@ -261,7 +291,7 @@ public class StatementResolver {
 		}
 	 }
 	
-	// TODO: match all cases.
+	// TODO: Far from matching all cases.
 	// 0 : null
 	// 1 : no unit return, eg: AssignStmt
 	// 2 : going to a unit target, eg: GotoStmt
@@ -328,23 +358,24 @@ public class StatementResolver {
 	protected StateUnitPair performAssignStmt(State st, Unit u) {
 		DefinitionStmt ds = (DefinitionStmt) u;
 		Value var = ds.getLeftOp();
+		// TODO: Should be able to handle more common cases
 		Value assignment = ds.getRightOp();
 		String ass_s = assignment.toString();
 		// Normal assignment
 		if (!ass_s.contains("Iterator")) {
-			String tmp = ass_s.replaceAll("\\(.*?\\)\\s+", ""); // removing quotes
-			ass_s = tmp;
+			// removing quotes, eg: (org.apache.hadoop.io.IntWritable) $r6 -> $r6
+			ass_s = ass_s.replaceAll("\\(.*?\\)\\s+", "");
+
+			// handle int get(), eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
 			if (ass_s.contains("int get")) {
-				//tmp = ass_s.replace("virtualinvoke\\s+", "");
-				tmp = ass_s.split("\\s+")[1];
-				tmp = tmp.split("\\.")[0];
-				ass_s = tmp;
+				ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
 			}
+
+			// replace rhs with LocalVars value
 			for (String re_var: LocalVars.keySet()) {
 				while (ass_s.contains(re_var)) {
 					System.out.println("replace "+re_var+": " + LocalVars.get(re_var));
-					tmp = ass_s.replace(re_var, LocalVars.get(re_var));
-					ass_s = tmp;
+					ass_s = ass_s.replace(re_var, LocalVars.get(re_var));
 				}
 			}
 			System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
@@ -466,6 +497,7 @@ public class StatementResolver {
 	}
 	
 	protected Boolean checkCondition(Value condition) {
+		// TODO: Currently only implements '=='
 		String[] parts = condition.toString().split(" ");
 		String left = parts[0];
 		if (LocalVars.containsKey(parts[0])) left = LocalVars.get(parts[0]);

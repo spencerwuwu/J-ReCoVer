@@ -8,6 +8,7 @@ public class Option {
 			+ "* Options:\n"
 			+ "    -h               help \n"
 			+ "    -c class_path    Set classpath (Optional for jar file) \n"
+			+ "    -s 			    Silence, only output Jimple \n"
 			+ "    -g               Generate control flow graph \n"
 			+ "* Example:\n"
 			+ "    Analysis jar file \n"
@@ -17,6 +18,7 @@ public class Option {
 	
 	public final static String Warning = "Invalid input, use -h for help";
 	public boolean cfg_flag;
+	public boolean silence_flag;
 	
 	public Option() {
 		cfg_flag = false;
@@ -25,6 +27,9 @@ public class Option {
 	public void parse(String input) {
 		if (input.equals("-g")) {
 			this.cfg_flag = true;
+		}
+		if (input.equals("-s")) {
+			this.silence_flag = true;
 		}
 	}
 	

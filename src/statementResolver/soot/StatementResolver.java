@@ -48,7 +48,9 @@ import java.util.Set;
 
 public class StatementResolver {
 
-	private Map<String, Boolean> input_list_used = new LinkedHashMap<String, Boolean>();
+	private Map<String, Boolean> InputListUsed = new LinkedHashMap<String, Boolean>();
+	private Map<String, String> LocalVars = new LinkedHashMap<String, String>();
+	private List<State> States = new ArrayList<State>();
 
 	private final List<String> resolvedClassNames;
 	Option op = new Option();
@@ -65,10 +67,8 @@ public class StatementResolver {
 
 	public void run(String input, String classPath, Option option) {
 		SootRunner runner = new SootRunner();
-		
 		runner.run(input, classPath);
 		op = option;
-		
 		// Main analysis starts from here
 		performAnalysis();
 	}
@@ -119,16 +119,11 @@ public class StatementResolver {
 	}
 
 	public void performAnalysis() {
-
 		List<SootClass> classes = new LinkedList<SootClass>(Scene.v().getClasses());
-		
 		for (SootClass sc : classes) {
-
 			if (sc == getAssertionClass()) {
 				continue; // no need to process this guy.
 			}
-
-			
 			if (sc.resolvingLevel() >= SootClass.SIGNATURES && sc.isApplicationClass()) {
 				for (SootMethod sm : sc.getMethods()) {
 					if (sm.isConcrete()) {
@@ -142,16 +137,9 @@ public class StatementResolver {
 						System.out.println("Unable to validate method body. Possible NullPointerException?");
 						throw e;	
 					}
-
 				}
 			}
-			
 		}
-		
-		// init values of analysis
-		Map<String, String> local_vars = new LinkedHashMap<String, String>();
-		Map<Unit, List<UnitSet>> label_list = new LinkedHashMap<Unit, List<UnitSet>>();
-		List<State> state_list = new ArrayList<State>();
 		
 		int current_no = 0;
 		int command_line_no = 1;
@@ -163,7 +151,6 @@ public class StatementResolver {
 			Iterator gIt = graph.iterator();
 			List<UnitBox> UnitBoxes = body.getUnitBoxes(true);
 			
-			// New
 			List<UnitSet> Units = new ArrayList<UnitSet>();
 			Map<Unit,Integer> UnitIndexs = new LinkedHashMap<Unit, Integer>();
 			for (UnitBox ub: UnitBoxes) {
@@ -176,66 +163,16 @@ public class StatementResolver {
 
 			// Storing variables
 			List<ValueBox> defBoxes = body.getDefBoxes();
-			for (ValueBox d: defBoxes) {
-				Value value = d.getValue();
-				String str = d.getValue().toString();
-				local_vars.put(value.toString(), "");
-				System.out.println("Variable " + str);
-			}
-			
-			// Insert input to be X0, X1, X2
-			for (int i = 0; i < 3; i++) {
-				String name = "X" + i;
-				input_list_used.put(name, false);
-				local_vars.put(name, name);
-				System.out.println("Variable " + name);
-			}
-			
-			
+			generateVars(defBoxes);
 			System.out.println("=======================================");	
 
-			// initialize for control flow
-			// Set up goto label points
-			List<UnitSet> no_label = new ArrayList<UnitSet>();
-			for (UnitBox ub: UnitBoxes) {
-				List<UnitSet> units = new ArrayList<UnitSet>();
-				label_list.put(ub.getUnit(), units);				
-			}
-			Unit currentkey = null;
-			boolean label_flag = false;
 			while (gIt.hasNext()) {
 				Unit u = (Unit)gIt.next();	
-				// New
 				Units.add(new UnitSet(u, command_line_no));
 				if (UnitIndexs.containsKey(u)) {
 					UnitIndexs.put(u, command_line_no-1);
 				}
-				
-				
-				List<UnitSet> units = label_list.get(u);
-				if (units == null) {
-					if (!label_flag) {
-					// doesn't enter label yet
-						no_label.add(new UnitSet(u, command_line_no));
-						System.out.println(command_line_no+" "+Color.ANSI_BLUE+u.toString()+Color.ANSI_RESET);
-						command_line_no++;
-					}
-					else {
-						units = label_list.get(currentkey);
-						units.add(new UnitSet(u, command_line_no));
-						label_list.put(currentkey, units);
-						System.out.println(command_line_no+" "+currentkey.toString()+" - "+ Color.ANSI_BLUE+u.toString()+Color.ANSI_RESET);
-						command_line_no++;
-					}
-				}
-				else {
-					currentkey = u;
-					units.add(new UnitSet(u, command_line_no));
-					label_list.put(u, units);
-					label_flag = true;
-					System.out.println(command_line_no+" "+u.toString()+" - "+Color.ANSI_BLUE+u.toString()+Color.ANSI_RESET);
-					command_line_no++;
-				}
+				command_line_no++;
 			}
 			System.out.println("=======================================");	
 			
@@ -247,17 +184,17 @@ public class StatementResolver {
 				UnitSet us = Units.get(iterator);
 				deter_unit_state = deterUnit(us.getUnit());
 				if (deter_unit_state == 1) {
-					State st = handleUnit(us.getUnit(), local_vars, current_no, us.getLine()).getState();
-					state_list.add(st);
+					State st = handleUnit(us.getUnit(), current_no, us.getLine()).getState();
+					States.add(st);
 					System.out.println( Color.ANSI_BLUE+"line '" +us.getUnit().toString()+"'"+ Color.ANSI_RESET);
 					current_no++;
 					st.printForm();
-					System.out.println("--");
+					System.out.println("------------------------------------");
 					iterator++;
 				}
 				else if (deter_unit_state == 2) {
-					StateUnitPair su = handleUnit(us.getUnit(), local_vars, current_no, us.getLine());
-					state_list.add(su.getState());
+					StateUnitPair su = handleUnit(us.getUnit(), current_no, us.getLine());
+					States.add(su.getState());
 					System.out.println(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'"
 							+ Color.ANSI_RESET);
 					current_no++;
@@ -284,124 +221,6 @@ public class StatementResolver {
 					iterator++;
 				}
 			}
-			/*
-			int deter_unit_state = 0;
-			for (UnitSet us : no_label) { // no label section
-				deter_unit_state = deterUnit(us.getUnit());
-				if (deter_unit_state == 1) {
-					State st = handleUnit(us.getUnit(), local_vars, current_no, us.getLine()).getState();
-					state_list.add(st);
-					System.out.println( Color.ANSI_BLUE+"line '" +us.getUnit().toString()+"'"+ Color.ANSI_RESET);
-					current_no++;
-					st.printForm();
-					System.out.println("--");
-				}
-				else if (deter_unit_state == 3) {
-					System.out.println(Color.ANSI_BLUE+"++++++++++++++++ Return +++++++++++++++++"+Color.ANSI_RESET);
-					break;
-				}
-				else if (deter_unit_state == 4) {
-					System.out.println("ggininder");
-					System.out.println(us.getUnit().toString());
-				}
-			}
-			
-			// looping over label sections
-			boolean unit_target_flag = false;
-			boolean break_flag = false;
-			Unit unit_target = null;
-			do {
-				if (!unit_target_flag) { // initially loop from the beginning
-					for (Unit u_index : label_list.keySet()) {
-						List<UnitSet> unit_list = label_list.get(u_index);
-						for (UnitSet us : unit_list) {
-							deter_unit_state = deterUnit(us.getUnit());
-							if (deter_unit_state == 1) {
-								State st = handleUnit(us.getUnit(), local_vars, current_no, us.getLine()).getState();
-								state_list.add(st);
-								System.out.println(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'"
-										+ Color.ANSI_RESET);
-								current_no++;
-								st.printForm();
-								System.out.println("------------------------------------");
-							} else if (deter_unit_state == 2) {
-								StateUnitPair su = handleUnit(us.getUnit(), local_vars, current_no, us.getLine());
-								state_list.add(su.getState());
-								System.out.println(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'"
-										+ Color.ANSI_RESET);
-								current_no++;
-								su.getState().printForm();
-								System.out.println("------------------------------------");
-								if (su.getUnit() != null) {
-									unit_target = su.getUnit();
-									unit_target_flag = true;
-									break_flag = true;
-									break; // break UnitSet for-loop
-								}
-							}
-							else if (deter_unit_state == 3) {
-								System.out.println(Color.ANSI_BLUE+"++++++++++++++++ Return +++++++++++++++++"+Color.ANSI_RESET);
-								break_flag = true;
-								break; // break UnitSet for-loop
-							}
-							else  if (deter_unit_state == 4) {
-								System.out.println("ggininder");
-								System.out.println(us.getUnit().toString());
-							}
-						}
-						if (break_flag) {
-							break_flag = false;
-							break; // break U_index for-loop
-						}
-					} 
-				}
-				else {	// second loop starts from the target label section
-					for (Unit u_index : label_list.keySet()) {
-						if (u_index == unit_target) {
-							List<UnitSet> unit_list = label_list.get(u_index);
-							for (UnitSet us : unit_list) {
-								deter_unit_state = deterUnit(us.getUnit());
-								if (deter_unit_state == 1) {
-									State st = handleUnit(us.getUnit(), local_vars, current_no, us.getLine()).getState();
-									state_list.add(st);
-									System.out.println(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'"
-											+ Color.ANSI_RESET);
-									current_no++;
-									System.out.println("------------------------------------");
-								} else if (deter_unit_state == 2) {
-									StateUnitPair su = handleUnit(us.getUnit(), local_vars, current_no, us.getLine());
-									state_list.add(su.getState());
-									if (su.getUnit() != null) {
-										unit_target = su.getUnit();
-									}
-									System.out.println(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'"
-											+ Color.ANSI_RESET);
-									current_no++;
-									System.out.println("------------------------------------");
-									break_flag = true;
-									break; // break UnitSet for-loop
-								}
-								else if (deter_unit_state == 3) {
-									System.out.println(Color.ANSI_BLUE+"++++++++++++++++ Return +++++++++++++++++"+Color.ANSI_RESET);
-									break_flag = true;
-									unit_target_flag = false;
-									break; // break UnitSet for-loop
-								}
-								else  if (deter_unit_state == 4) {
-									System.out.println("ggininder");
-									System.out.println(us.getUnit().toString());
-								}
-							}
-							if (break_flag) {
-								break_flag = false;
-								break; // break U_index for-loop
-							}
-						}
-					} 
-				}
-			} while (unit_target_flag);
-		*/
-			
 			
 		} // end of main analysis
 		
@@ -423,6 +242,25 @@ public class StatementResolver {
 		}
 		
 	}
+	
+	 protected void generateVars(List<ValueBox> defBoxes){
+		for (ValueBox d: defBoxes) {
+			Value value = d.getValue();
+			String str = d.getValue().toString();
+			LocalVars.put(value.toString(), "");
+			System.out.println("Variable " + str);
+		}
+		
+		// Insert input to be X0, X1, X2
+		for (int i = 0; i < 3; i++) {
+			String name = "X" + i;
+			String value = "x" + i;
+			InputListUsed.put(name, false);
+			LocalVars.put(name, value);
+			System.out.println("Variable " + name);
+		}
+	 }
+	
 	// TODO: match all cases.
 	// 0 : null
 	// 1 : no unit return, eg: AssignStmt
@@ -487,66 +325,106 @@ public class StatementResolver {
 		return 4;
 	}
 	
-	protected StateUnitPair handleUnit(Unit u, Map<String, String> local_vars, int num, int command_no) {
-		System.out.println("++ no: " + num + ", line: " + command_no);
-		State st = new State(local_vars, num, u.toString(), command_no);
-		if (u instanceof JLookupSwitchStmt) {
-		}
-		else if (u instanceof AssignStmt) {			
-			DefinitionStmt ds = (DefinitionStmt) u;
-			Value var = ds.getLeftOp();
-			Value assignment = ds.getRightOp();
-			String ass_s = assignment.toString();
-			// Normal assignment
-			if (!ass_s.contains("Iterator")) {
-				String tmp = ass_s.replaceAll("\\(.*?\\)\\s+", ""); // removing quotes
+	protected StateUnitPair performAssignStmt(State st, Unit u) {
+		DefinitionStmt ds = (DefinitionStmt) u;
+		Value var = ds.getLeftOp();
+		Value assignment = ds.getRightOp();
+		String ass_s = assignment.toString();
+		// Normal assignment
+		if (!ass_s.contains("Iterator")) {
+			String tmp = ass_s.replaceAll("\\(.*?\\)\\s+", ""); // removing quotes
+			ass_s = tmp;
+			if (ass_s.contains("int get")) {
+				//tmp = ass_s.replace("virtualinvoke\\s+", "");
+				tmp = ass_s.split("\\s+")[1];
+				tmp = tmp.split("\\.")[0];
 				ass_s = tmp;
-				if (ass_s.contains("int get")) {
-					tmp = ass_s.replaceAll("virtualinvoke\\s+", "").replaceAll("\\.\\<.*?\\>\\s+", "");
+			}
+			for (String re_var: LocalVars.keySet()) {
+				while (ass_s.contains(re_var)) {
+					System.out.println("replace "+re_var+": " + LocalVars.get(re_var));
+					tmp = ass_s.replace(re_var, LocalVars.get(re_var));
 					ass_s = tmp;
 				}
-				for (String re_var: local_vars.keySet()) {
-					if (ass_s.contains(re_var)) {
-						System.out.println("matched "+re_var+": " + local_vars.get(re_var));
-						//tmp = ass_s.replaceAll(re_var, local_vars.get(re_var));
-						//ass_s = tmp;
+			}
+			System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
+			st.update(var.toString(), ass_s);
+		}
+		else { // Handling iterator relative assignments
+			if (ass_s.contains("hasNext()")) {
+				boolean flag = false;
+				for(String in_var : InputListUsed.keySet()) {
+					if (InputListUsed.get(in_var) == false) {
+						flag = true;
+						break;
+					}
+				}
+				if (flag) {
+					ass_s = "1";
+				}
+				else {
+					ass_s = "0";
+				}
+				System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
+				st.update(var.toString(), ass_s);
+			}
+			else if (ass_s.contains("next()")) {
+				for(String in_var : InputListUsed.keySet()) {
+					if (!InputListUsed.get(in_var)) {
+						InputListUsed.put(in_var, true);
+						ass_s = in_var;
+						break;
 					}
 				}
 				System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
 				st.update(var.toString(), ass_s);
 			}
-			else { // Handling iterator relative assignments
-				if (ass_s.contains("hasNext()")) {
-					boolean flag = false;
-					for(String in_var : input_list_used.keySet()) {
-						if (input_list_used.get(in_var) == false) {
-							flag = true;
-							break;
-						}
-					}
-					if (flag) {
-						ass_s = "1";
-					}
-					else {
-						ass_s = "0";
-					}
-					System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
-					st.update(var.toString(), ass_s);
-				}
-				else if (ass_s.contains("next()")) {
-					for(String in_var : input_list_used.keySet()) {
-						if (!input_list_used.get(in_var)) {
-							input_list_used.put(in_var, true);
-							ass_s = in_var;
-							break;
-						}
-					}
-					System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
-					st.update(var.toString(), ass_s);
-				}
-			}
+		}
+		StateUnitPair su = new StateUnitPair(st, null);
+		return su;
+	}
+
+	protected StateUnitPair performGotoStmt(State st, Unit u) {
+		GotoStmt gt_st = (GotoStmt) u;
+		Unit goto_target = gt_st.getTarget();
+		System.out.println(Color.ANSI_GREEN + "goto " + Color.ANSI_RESET + goto_target);
+		StateUnitPair su = new StateUnitPair(st, goto_target);
+		return su;
+	}
+
+	protected StateUnitPair performIfStmt(State st, Unit u) {
+		IfStmt if_st = (IfStmt) u;
+		Unit goto_target = if_st.getTargetBox().getUnit();
+		Value condition = if_st.getCondition();
+		System.out.println(Color.ANSI_GREEN + "goto " + Color.ANSI_RESET + goto_target + Color.ANSI_GREEN + " when " + Color.ANSI_RESET + condition);
+		if (checkCondition(condition)) {
+			StateUnitPair su = new StateUnitPair(st, goto_target);
+			return su;
+		} else {
 			StateUnitPair su = new StateUnitPair(st, null);
-			return su; 
+			return su;
+		}
+	}
+
+	protected StateUnitPair performIdentityStmt(State st, Unit u) {
+		DefinitionStmt ds = (DefinitionStmt) u;
+		Value var = ds.getLeftOp();
+		Value assignment = ds.getRightOp();
+		String assignment_tail = assignment.toString().split("\\.(?=[^\\.]+$)")[1]; // Preserve only org.apache.hadoop.io.'IntWritable'
+		System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + assignment_tail);
+		st.update(var.toString(), assignment_tail);
+		StateUnitPair su = new StateUnitPair(st, null);
+		return su;
+	}
+	
+	protected StateUnitPair handleUnit(Unit u, int num, int command_no) {
+		System.out.println("++ no: " + num + ", line: " + command_no);
+		State st = new State(LocalVars, num, u.toString(), command_no);
+
+		if (u instanceof JLookupSwitchStmt) {
+		}
+		else if (u instanceof AssignStmt) {			
+			return performAssignStmt(st, u); 
 		}
 		else if (u instanceof ArrayRef) {			
 		}
@@ -557,38 +435,17 @@ public class StatementResolver {
 		else if (u instanceof CaughtExceptionRef) {			
 		}
 		else if (u instanceof GotoStmt) {
-			GotoStmt gt_st = (GotoStmt) u;
-			Unit goto_target = gt_st.getTarget();
-			System.out.println(Color.ANSI_GREEN + "goto " + Color.ANSI_RESET + goto_target);
-			StateUnitPair su = new StateUnitPair(st, goto_target);
-			return su;
+			return performGotoStmt(st, u);
 		}
 		else if (u instanceof NoSuchLocalException) {			
 		}
 		else if (u instanceof NullConstant) {			
 		}
 		else if (u instanceof IfStmt) {
-			IfStmt if_st = (IfStmt) u;
-			Unit goto_target = if_st.getTargetBox().getUnit();
-			Value condition = if_st.getCondition();
-			System.out.println(Color.ANSI_GREEN + "goto " + Color.ANSI_RESET + goto_target + Color.ANSI_GREEN + " when " + Color.ANSI_RESET + condition);
-			if (checkCondition(condition, local_vars)) {
-				StateUnitPair su = new StateUnitPair(st, goto_target);
-				return su;
-			} else {
-				StateUnitPair su = new StateUnitPair(st, null);
-				return su;
-			}
+			return performIfStmt(st, u);
 		}
 		else if (u instanceof IdentityStmt) {			
-			DefinitionStmt ds = (DefinitionStmt) u;
-			Value var = ds.getLeftOp();
-			Value assignment = ds.getRightOp();
-			String assignment_tail = assignment.toString().split("\\.(?=[^\\.]+$)")[1]; // Leave org.apache.hadoop.io.'IntWritable'
-			System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + assignment_tail);
-			st.update(var.toString(), assignment_tail);
-			StateUnitPair su = new StateUnitPair(st, null);
-			return su; 	
+			return performIdentityStmt(st, u); 	
 		}
 		else if (u instanceof InstanceOfExpr) {		
 		}
@@ -605,16 +462,15 @@ public class StatementResolver {
 		else if (u instanceof ReturnVoidStmt) {			
 		}
 
-		StateUnitPair su = new StateUnitPair();
-		return su;
+		return null;
 	}
 	
-	protected Boolean checkCondition(Value condition, Map<String, String> local_vars) {
+	protected Boolean checkCondition(Value condition) {
 		String[] parts = condition.toString().split(" ");
 		String left = parts[0];
-		if (local_vars.containsKey(parts[0])) left = local_vars.get(parts[0]);
+		if (LocalVars.containsKey(parts[0])) left = LocalVars.get(parts[0]);
 		String right = parts[2];
-		if (local_vars.containsKey(parts[2])) left = local_vars.get(parts[2]);
+		if (LocalVars.containsKey(parts[2])) left = LocalVars.get(parts[2]);
 		System.out.println("Compare {"+left+"}"+parts[1]+"{"+right+"}");
 		if (parts[1].equals("==")) {
 			if (left.equals(right)) return true;

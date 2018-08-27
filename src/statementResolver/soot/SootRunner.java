@@ -249,7 +249,8 @@ public class SootRunner {
 
 		sootOpt.set_output_format(soot.options.Options.output_format_none);
 		// prevent strange assertion optimization.
-		sootOpt.setPhaseOption("jop.cpf", "enabled:false");
+		sootOpt.setPhaseOption("jop.cpf", "enabled:false");//jop
+		
 		sootOpt.set_allow_phantom_refs(true);
 
 

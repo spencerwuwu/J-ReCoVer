@@ -11,11 +11,11 @@ public class UnitSet {
 		this.line = num;
 	}
 	
-	public Unit getUnit() {
+	public Unit get_unit() {
 		return this.u;
 	}
 	
-	public Integer getLine() {
+	public Integer get_line() {
 		return this.line;
 	}
 	

@@ -17,90 +17,90 @@ import statementResolver.state.UnitSet;
 
 public class TreeNode{
 	
-	List<String> Constraint;
-	State state;
-	String branchInfo;
-	int executionOrder;
-	int nextLine;
-	boolean return_flag = false;
-	public boolean haveFirstLoop = false;
+	List<String> mConstraint;
+	State mState;
+	String mBranchInfo;
+	int mExecutionOrder;
+	int mNextline;
+	boolean mReturnFlag = false;
+	public boolean mHaveFirstLoop = false;
 	
 
 	
 	public TreeNode() {
-		state = null;
-		executionOrder = 0;
-		nextLine = 0;
-		Constraint = new ArrayList<String>();
+		mState = null;
+		mExecutionOrder = 0;
+		mNextline = 0;
+		mConstraint = new ArrayList<String>();
 		
 	}
 	public TreeNode(List<String> constraint_list, State newState, int newOrder, int newNextLine, boolean newReturnFlag) {
-		state = newState;
-		Constraint = constraint_list;
-		executionOrder = newOrder;
-		nextLine = newNextLine;
-		return_flag = newReturnFlag;
+		mConstraint = constraint_list;
+		mState = newState;
+		mExecutionOrder = newOrder;
+		mNextline = newNextLine;
+		mReturnFlag = newReturnFlag;
 	}
 	
-	public void set_state(State state) {
-		state = state;
+	public void setState(State state) {
+		mState = state;
 	}
 	
-	public State get_state() {
-		return state;
+	public State getState() {
+		return mState;
 	}
 	
-	public Map<String, String> get_local_vars(){
-		return get_state().get_local_vars();
+	public Map<String, String> getLocalVars(){
+		return getState().getLocalVars();
 	}
 	
-	public List<String> get_constraint(){
-		return Constraint;
+	public List<String> getConstraint(){
+		return mConstraint;
 	}
 	
-	public void set_constraint(List<String> constraint_list) {
-		Constraint = constraint_list;
+	public void setConstraint(List<String> constraint_list) {
+		mConstraint = constraint_list;
 	}
 	
-	public void add_constraint(String new_constraint) {
-		Constraint.add(new_constraint);
+	public void addConstraint(String new_constraint) {
+		mConstraint.add(new_constraint);
 	}
 	
-	public boolean get_return_flag() {
-		return return_flag;
+	public boolean getReturnFlag() {
+		return mReturnFlag;
 	}
 	
-	public void set_return_flag(boolean rf) {
-		return_flag=rf;
+	public void setReturnFlag(boolean rf) {
+		mReturnFlag = rf;
 	}
 	
-	public int get_next_line() {
-		return nextLine;
+	public int getNextLine() {
+		return mNextline;
 	}
 	
-	public void set_next_line(int i) {
-		nextLine=i;
+	public void setNextLine(int i) {
+		mNextline = i;
 	}
 	
-	public int get_execution_order() {
-		return executionOrder;
+	public int getExecutionOrder() {
+		return mExecutionOrder;
 	}
 	
-	public void set_execution_order(int order) {
-		executionOrder=order;
+	public void setExecutionOrder(int order) {
+		mExecutionOrder = order;
 	}
 	
-	public void set_branch_info(String info) {
-		branchInfo = info;
+	public void setBranchInfo(String info) {
+		mBranchInfo = info;
 	}
 	
-	public String get_branch_info() {
-		return branchInfo;
+	public String getBranchInfo() {
+		return mBranchInfo;
 	}
 	
-	public void print_constraint() {
+	public void printConstraint() {
 		System.out.println("+++++++Constraints++++++++");
-		for (String cons: Constraint){
+		for (String cons: mConstraint){
 			System.out.println("|"+cons);
 		}
 		//st.printForm();

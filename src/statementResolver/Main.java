@@ -1,53 +1,49 @@
-
 package statementResolver;
-
 
 import statementResolver.Option;
 import statementResolver.soot.StatementResolver;
 
 public class Main {
-
 	public static void main(String[] args) {
-		
 		String javaInput = "";
 		String classPath = "";
+		String reducerClassname = "";
 		Option op = new Option();
 		
-		if (args.length > 0) {
-			if (args[0].equals("-h")) {
-				System.out.println(op.Usage);
-			}
-			else {
+		// Parsing arguments
+		if (args.length >= 1) {
+			if (args.length > 1) {
 				javaInput = args[0];
-				
-				if (args.length > 1) {
-					int i = 1;
-					while (i < args.length) {
-						// parse classPath
-						if (args[i].equals("-c")) {
+				reducerClassname = args[1];
+				int i = 1;
+				while (i < args.length) {
+					if (args[i].equals("-c")) {
+						i++;
+						if (i < args.length) {
+							classPath = args[i];
 							i++;
-							if (i < args.length) {
-								classPath = args[i];
-								i++;
-							}
-							else {
-								System.err.println(op.Warning);
-							}
 						}
 						else {
-							op.parse(args[i]);
-							i++;
+							System.err.println(op.Warning);
+							return;
 						}
+					} else {
+						op.parse(args[i]);
+						i++;
 					}
 				}
-				
-				StatementResolver SR = new StatementResolver();
-				SR.run(javaInput, classPath, op);
 			}
+			else if(args[0].equals("-h")) {
+				System.out.println(op.Usage);
+				return;
+			}
+		}
 			
+		if (javaInput.length() != 0 & reducerClassname.length() != 0) {
+			StatementResolver SR = new StatementResolver();
+			SR.run(javaInput, classPath, op, reducerClassname);
 		} else {
 			System.err.println(op.Warning);
 		}
 	}
-	
 }

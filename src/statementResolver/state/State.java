@@ -10,29 +10,29 @@ import soot.Value;
 import statementResolver.color.Color;
 
 public class State {
-	Map<String, String> local_vars;
-	int inputUsedIndex = 0;
-	int num;	// State number
-	String input_command;
-	int command_line_no;
+	Map<String, String> mLocalVars;
+	int mInputUsedIndex = 0;
+	int mNum;	// State number
+	String mInputCommand;
+	int mCommandLineNo;
 	
 
 	public State() {
-		this.local_vars = new HashMap<String, String>();
-		this.num = 0;
+		this.mLocalVars = new HashMap<String, String>();
+		this.mNum = 0;
 	}
 	
 	public State(Map<String, String> in, int number, String comm, int no, int inputindex) {
-		this.local_vars = new LinkedHashMap<String, String>();
-		local_vars.putAll(in);
-		this.num = number;
-		this.input_command = comm;
-		this.command_line_no = no;
-		this.inputUsedIndex = inputindex;
+		this.mLocalVars = new LinkedHashMap<String, String>();
+		mLocalVars.putAll(in);
+		this.mNum = number;
+		this.mInputCommand = comm;
+		this.mCommandLineNo = no;
+		this.mInputUsedIndex = inputindex;
 	}
 	
 	public void update(String v, String str) {
-		this.local_vars.put(v, str);
+		this.mLocalVars.put(v, str);
 	}
 	
 	/*
@@ -45,34 +45,34 @@ public class State {
 	}
 	*/
 	
-	public int get_command_line_no() {
-		return command_line_no;
+	public int getCommandLineNo() {
+		return mCommandLineNo;
 	}
-	public int get_inputUsedIndex() {
-		return inputUsedIndex;
-	}
-	
-	public void add_inputUsedIndex() {
-		inputUsedIndex++;
+	public int getInputUsedIndex() {
+		return mInputUsedIndex;
 	}
 	
-	public void set_input_command(String s) {
-		input_command = s;
+	public void addInputUsedIndex() {
+		mInputUsedIndex++;
 	}
 	
-	public Map<String, String> get_local_vars(){
-		return local_vars;
+	public void setInputCommand(String s) {
+		mInputCommand = s;
 	}
 	
-	public void set_local_vars(Map<String, String> localVars) {
-		local_vars.putAll(localVars);
+	public Map<String, String> getLocalVars(){
+		return mLocalVars;
+	}
+	
+	public void setLocalVars(Map<String, String> localVars) {
+		mLocalVars.putAll(localVars);
 	}
 	
 	public void printForm() {
 		System.out.println("+++++++++++++++++++++++");
-		System.out.println("| no: " + this.num);
-		for (String var : local_vars.keySet()) {
-			System.out.println("| "+var + ":\t" + this.local_vars.get(var));
+		System.out.println("| no: " + this.mNum);
+		for (String var : mLocalVars.keySet()) {
+			System.out.println("| "+var + ":\t" + this.mLocalVars.get(var));
 		}
 		System.out.println("+++++++++++++++++++++++");
 	}

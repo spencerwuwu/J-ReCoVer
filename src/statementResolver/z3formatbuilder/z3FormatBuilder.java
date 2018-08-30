@@ -94,10 +94,6 @@ public class z3FormatBuilder {
 			    declareVars.put(s+"_2com0", "Int");
 			    //}
 			    
-			    
-			    
-			    
-			    
 			}
 			else if (typeTable.get(s) == "double" | typeTable.get(s) == "float" ) {
 				output.append("(declare-const "+s+"_0"+" Real"+")"+"\n");
@@ -163,11 +159,9 @@ public class z3FormatBuilder {
 			    output.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
 			    output.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
 			    
-			    
 			    output.append("(declare-const "+s+"_0com0"+" Int"+")"+"\n");
 			    output.append("(declare-const "+s+"_1com0"+" Int"+")"+"\n");
 			    output.append("(declare-const "+s+"_2com0"+" Int"+")"+"\n");
-			    
 			    
 			    declareVars.put(s+"_0", "Int");
 			    declareVars.put(s+"_1", "Int");
@@ -176,7 +170,6 @@ public class z3FormatBuilder {
 			    declareVars.put(s+"_0com0", "Int");
 			    declareVars.put(s+"_1com0", "Int");
 			    declareVars.put(s+"_2com0", "Int");
-			    
 			    
 			}
 			else {
@@ -195,7 +188,7 @@ public class z3FormatBuilder {
 
 				//deal with constraints
 				String constraintStr = "";
-				for(String str:result.root.get_constraint()) {
+				for(String str:result.mRoot.getConstraint()) {
 					boolean addAND = false;
 					
 					if(str.charAt(0) == '!') {
@@ -208,7 +201,7 @@ public class z3FormatBuilder {
 					    String[] strArray = str.split(" ");
 					    //deal with variable version
 					    /*
-					    if(result.root.get_local_vars().keySet().contains(strArray[3]) ) {
+					    if(result.mRoot.getLocalVars().keySet().contains(strArray[3]) ) {
 					    	strArray[3] = strArray[3]+"_"+String.valueOf(i);
 					    }*/
 					    
@@ -216,7 +209,7 @@ public class z3FormatBuilder {
 					    if(strArray[3].contains("_v")) {strArray[3] = strArray[3].replace("_v", "_"+String.valueOf(i));}
 					    if(strArray[1].equals("input0")) {strArray[1] = strArray[1].replace("input0", "input0_"+String.valueOf(i));}
 					    if(strArray[3].equals("input0")) {strArray[3] = strArray[3].replace("input0", "input0_"+String.valueOf(i));}
-					    if(!strArray[1].contains("_") && result.root.get_local_vars().containsKey(strArray[1])) {
+					    if(!strArray[1].contains("_") && result.mRoot.getLocalVars().containsKey(strArray[1])) {
 					    	strArray[1] = strArray[1].concat("_"+String.valueOf(i));
 					    }
 					    
@@ -231,8 +224,6 @@ public class z3FormatBuilder {
 					    }
 					    
 					    
-					    
-					    
 					}
 					else {
 						if(!constraintStr.equals("") ) {
@@ -244,7 +235,7 @@ public class z3FormatBuilder {
 
 						//deal with variable version
 						/*
-					    if(result.root.get_local_vars().keySet().contains(strArray[2]) ) {
+					    if(result.mRoot.getLocalVars().keySet().contains(strArray[2]) ) {
 					    	strArray[2] = strArray[2]+"_"+String.valueOf(i);
 					    }*/
 					    
@@ -252,7 +243,7 @@ public class z3FormatBuilder {
 					    if(strArray[2].contains("_v")) {strArray[2] = strArray[2].replace("_v", "_"+String.valueOf(i));}
 					    if(strArray[0].equals("input0")) {strArray[0] = strArray[0].replace("input0", "input0_"+String.valueOf(i));}
 					    if(strArray[2].equals("input0")) {strArray[2] = strArray[2].replace("input0", "input0_"+String.valueOf(i));}
-					    if(!strArray[0].contains("_") && result.root.get_local_vars().containsKey(strArray[0])) {
+					    if(!strArray[0].contains("_") && result.mRoot.getLocalVars().containsKey(strArray[0])) {
 					    	strArray[0] = strArray[0].concat("_"+String.valueOf(i));
 					    }
                         
@@ -276,10 +267,10 @@ public class z3FormatBuilder {
 				//deal with result
 				
 				String varStr = "";
-				for(String var:result.root.get_local_vars().keySet()) {
+				for(String var:result.mRoot.getLocalVars().keySet()) {
 					
-					if(result.root.get_local_vars().get(var).contains("@parameter") | 
-					   result.root.get_local_vars().get(var).equals("") |
+					if(result.mRoot.getLocalVars().get(var).contains("@parameter") | 
+					   result.mRoot.getLocalVars().get(var).equals("") |
 					   var.contains("$") ) {continue;}
 					
 					boolean addAND = false;
@@ -290,7 +281,7 @@ public class z3FormatBuilder {
 							varStr = "(and "+varStr+" ";
 						}
 						
-						String next = result.root.get_local_vars().get(var);
+						String next = result.mRoot.getLocalVars().get(var);
 						if( next.contains("_v") ) {
 							next = next.replace("_v", "_"+String.valueOf(i));
 						}
@@ -326,16 +317,11 @@ public class z3FormatBuilder {
 		compareEquation = compareEquation.replace("temp", "input0_1");
 		
 		
-		
-		
-		
 		for(String var:declareVars.keySet()) {
 			if(! var.contains("input") && ! var.contains("beforeLoop") && declareVars.containsKey(var+"com0") ) {
 				compareEquation = compareEquation.replace(var, var+"com0");
 			}
 		}
-		
-	    
 	    
 	    
 	    output.append("(assert "+finalEquation+")\n");

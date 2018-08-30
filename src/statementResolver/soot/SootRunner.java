@@ -78,18 +78,8 @@ public class SootRunner {
 		if (input.endsWith(".jar")) {
 			// run with JAR file
 			runWithJar(input, classPath);
-		}
-		else if (input.endsWith(".class")) {
-			// run with Class file
-			runWithClass(input, classPath);
-		}
-		else {
-			File file = new File(input);
-			if (file.isDirectory()) {
-				runWithPath(input, classPath);
-			} else {
-				throw new RuntimeException("Don't know what to do with: " + input);
-			}
+		} else {
+			throw new RuntimeException("Don't know what to do with: " + input);
 		}
 	}
 
@@ -114,83 +104,6 @@ public class SootRunner {
 			loadClassesIntoScene(enumClasses(new File(jarFile)));
 			
 
-
-		} catch (Exception e) {
-			throw e;
-		}
-	}
-	/**
-	 * Runs Soot by using a path (e.g., from Joogie)
-	 * 
-	 * @param path
-	 *            Path * @param classPath Optional classpath (may be null)
-	 * @param classPath
-	 *            Optional classpath (may be null)
-	 */
-	
-	/**
-	 * Runs Soot by using a class file 
-	 * This is almost the same as run with path
-	 *
-	 */
-	private void runWithClass(String path, String classPath) {
-		try {
-			// dependent JAR files
-			List<File> jarFiles = new ArrayList<File>();
-
-			// additional classpath available?
-			String cp = buildClassPath(jarFiles);
-			if (classPath != null) {
-				cp += File.pathSeparatorChar + classPath;
-			}
-
-			// set soot-class-path
-			sootOpt.set_soot_classpath(cp);
-			sootOpt.set_src_prec(soot.options.Options.src_prec_only_class);
-
-			List<String> processDirs = new LinkedList<String>();
-			processDirs.add(path);
-
-			
-			sootOpt.set_process_dir(processDirs);
-
-
-			// finally, run soot
-			loadClassesIntoScene(new LinkedList<String>());
-
-			// now set the main class
-			//inferMainMethod();
-
-		} catch (Exception e) {
-			throw e;
-		}
-	}
-	private void runWithPath(String path, String classPath) {
-		try {
-			// dependent JAR files
-			List<File> jarFiles = new ArrayList<File>();
-
-			// additional classpath available?
-			String cp = buildClassPath(jarFiles);
-			if (classPath != null) {
-				cp += File.pathSeparatorChar + classPath;
-			}
-
-			// set soot-class-path
-			sootOpt.set_soot_classpath(cp);
-			sootOpt.set_src_prec(soot.options.Options.src_prec_only_class);
-
-			List<String> processDirs = new LinkedList<String>();
-			processDirs.add(path);
-
-			sootOpt.set_process_dir(processDirs);
-
-
-			// finally, run soot
-			loadClassesIntoScene(new LinkedList<String>());
-
-			// now set the main class
-			//inferMainMethod();
 
 		} catch (Exception e) {
 			throw e;

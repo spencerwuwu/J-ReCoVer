@@ -2,7 +2,6 @@ package statementResolver.state;
 
 public enum Type {
 	UNKNOWN,
-	INTEGER, BOOLEAN, 
-	IntWritable, CONTEXT, ITERABLE, 
-	ARRAYLIST
+	BOOL, INT, REAL, STRING,
+	IntWritable, CONTEXT, ITERABLE, ARRAYLIST
 }

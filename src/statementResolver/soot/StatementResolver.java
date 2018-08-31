@@ -4,9 +4,12 @@ import com.google.common.base.Preconditions;
 
 import statementResolver.Option;
 import statementResolver.color.Color;
+import statementResolver.executionTree.ExecutionTree;
+import statementResolver.executionTree.ExecutionTreeNode;
 import statementResolver.state.State;
 import statementResolver.state.StateUnitPair;
 import statementResolver.state.UnitSet;
+import statementResolver.state.VariableSet;
 import statementResolver.tree.Tree;
 import statementResolver.tree.TreeNode;
 import statementResolver.z3formatbuilder.*;
@@ -51,9 +54,9 @@ import java.util.Stack;
 
 public class StatementResolver {
 
-	private LinkedHashMap<String, Boolean> mInputListUsed = new LinkedHashMap<String, Boolean>();
 	private LinkedHashMap<String, String> mLocalVars = new LinkedHashMap<String, String>();
 	private LinkedHashMap<String, String> mVarsType = new LinkedHashMap<String, String>();
+	private LinkedHashMap<String, VariableSet> mVarSets = new LinkedHashMap<String, VariableSet>();
 	private List<State> mStates = new ArrayList<State>();
 	private int mEnterLoopLine = 0;
 	private int mOutLoopLine = 0;
@@ -192,10 +195,10 @@ public class StatementResolver {
 		List<UnitBox> unitBoxes = body.getUnitBoxes(true);
 		
 		List<UnitSet> units = new ArrayList<UnitSet>();
-		Map<Unit,Integer> unitIndexs = new LinkedHashMap<Unit, Integer>();
+		Map<Unit,Integer> unitIndexes = new LinkedHashMap<Unit, Integer>();
 		for (UnitBox ub: unitBoxes) {
 			Unit u = ub.getUnit();
-			unitIndexs.put(u, 0);				
+			unitIndexes.put(u, 0);				
 		}
 		
 		System.out.println(Color.ANSI_BLUE+body.toString()+Color.ANSI_RESET);
@@ -209,44 +212,52 @@ public class StatementResolver {
 		while (gIt.hasNext()) {
 			Unit u = (Unit)gIt.next();	//getClass(): soot.jimple.internal.*Stmt		
 			units.add(new UnitSet(u, command_line_no));
-			if (unitIndexs.containsKey(u)) {
-				unitIndexs.put(u, command_line_no-1);
+			if (unitIndexes.containsKey(u)) {
+				unitIndexes.put(u, command_line_no-1);
 			}
 			command_line_no++;
 		}
 		System.out.println("=======================================");	
+		// Detect where the loop starts
+		detectLoop(graph, unitIndexes);
 		
 		// Starting to analysis
 		System.out.println("Starting analysis");
-		// Detect where the loop starts
-		detectLoop(graph, unitIndexs);
 	
 		//traverse tree to find leaves and doAnalysis
 		
-		State initState1 = new State(mLocalVars, 0, null, 0, 0);
-		State initState2 = new State(mLocalVars, 0, null, mEnterLoopLine, 0);
-		List<String> initConstraint1 = new ArrayList<String>();
-		List<String> initConstraint2 = new ArrayList<String>();
+		State initStateBefore = new State(mLocalVars, 0, null, 0, 0);
+		State initStateInter = new State(mLocalVars, 0, null, mEnterLoopLine, 0);
+		List<String> initConstraintBefore = new ArrayList<String>();
+		List<String> initConstraintInter = new ArrayList<String>();
 		
 		Tree head = new Tree(new TreeNode(null, null, 0, 0, false), null);
-		Tree beforeLoopPart = new Tree(new TreeNode(initConstraint1, initState1, 0, 0, false), head);
-		Tree enterLoopPart = new Tree(new TreeNode(initConstraint2, initState2, 0, mEnterLoopLine, false), head);
+		Tree beforeLoop = new Tree(new TreeNode(initConstraintBefore, initStateBefore, 0, 0, false), head);
+		Tree interLoop = new Tree(new TreeNode(initConstraintInter, initStateInter, 0, mEnterLoopLine, false), head);
 		
-		head.children.add(beforeLoopPart);
-		head.children.add(enterLoopPart);
-		enterLoopPart.mRoot.getConstraint().add("beforeLoop != 0");
-		beforeLoopPart.mRoot.getConstraint().add("beforeLoop == 0");
+		ExecutionTree beforeLoopTree = new ExecutionTree(
+				new ExecutionTreeNode(initConstraintBefore, initStateBefore, 0, 0, false), units, unitIndexes, mEnterLoopLine, mOutLoopLine);
+		ExecutionTree interLoopTree = new ExecutionTree(
+				new ExecutionTreeNode(initConstraintInter, initStateInter, 0, 0, false), units, unitIndexes, mEnterLoopLine, mOutLoopLine);
 		
-		//symbolic execution when out of loop body
-		//use a flag('beforeLoop') to put the code before loop into loop(make it be executed only once)
+		head.children.add(beforeLoop);
+		head.children.add(interLoop);
+		interLoop.mRoot.getConstraint().add("beforeLoop != 0");
+		beforeLoop.mRoot.getConstraint().add("beforeLoop == 0");
+		
+		beforeLoopTree.addRootConstraint("beforeLoop == 0");
+		interLoopTree.addRootConstraint("beforeLoop != 0");
+		
+		// Symbolic execution before entering loop body
+		// Use a flag('beforeLoop') to put the code before loop into loop(make it be executed only once)
 		List<Tree> leavesOut = new ArrayList<Tree>();
 		List<Tree> newLeavesOut = new ArrayList<Tree>();
-		leavesOut.add(beforeLoopPart);
+		leavesOut.add(beforeLoop);
 		List<Tree> toReturn = new ArrayList<Tree>();
 		
 		while(!leavesOut.isEmpty() ) {
 			for(Tree tree : leavesOut) {
-				doAnalysis(units, unitIndexs, tree, toReturn);
+				doAnalysis(units, unitIndexes, tree, toReturn);
 				for(Tree newtree: tree.children) {
 					newLeavesOut.add(newtree);
 				}
@@ -269,12 +280,12 @@ public class StatementResolver {
 		//symbolic execution when enter loop body
 		List<Tree> leaves = new ArrayList<Tree>();
 		List<Tree> newLeaves = new ArrayList<Tree>();
-		leaves.add(enterLoopPart);
+		leaves.add(interLoop);
 		List<Tree> returnLeaf = new ArrayList<Tree>();
 		
 		while(!leaves.isEmpty() ) {
 			for(Tree tree : leaves) {
-				doAnalysis(units, unitIndexs, tree, returnLeaf);
+				doAnalysis(units, unitIndexes, tree, returnLeaf);
 				for(Tree newtree: tree.children) {
 					newLeaves.add(newtree);
 				}
@@ -321,7 +332,7 @@ public class StatementResolver {
 		
 	}
 	
-	protected void doAnalysis(List<UnitSet> Units, Map<Unit,Integer> UnitIndexs, Tree leaf, List<Tree> returnLeaf) {
+	protected void doAnalysis(List<UnitSet> Units, Map<Unit,Integer> UnitIndexes, Tree leaf, List<Tree> returnLeaf) {
 		
 		//add a new state(new node to tree)
         //return a new treenode to adding to the tree
@@ -329,15 +340,15 @@ public class StatementResolver {
 		if (!leaf.mRoot.getReturnFlag() && leaf.mRoot.getNextLine() < Units.size()) {
 			UnitSet us = Units.get( leaf.mRoot.getNextLine() );
 			
-			//System.out.println(us.get_unit().getClass());
+			//System.out.println(us.getUnit().getClass());
 			
-			int deter_unit_state = deter_unit(us.get_unit());
+			int deter_unit_state = deter_unit(us.getUnit());
 			
 			if (deter_unit_state == 1) {
-				Unit newUnit=us.get_unit();
+				Unit newUnit=us.getUnit();
 				if (newUnit instanceof AssignStmt) {
 					State newState = new State(leaf.mRoot.getLocalVars(), leaf.mRoot.getExecutionOrder(), 
-							         newUnit.toString(), us.get_line(), leaf.mRoot.getState().getInputUsedIndex());
+							         newUnit.toString(), us.getLine(), leaf.mRoot.getState().getInputUsedIndex());
 					TreeNode newLeafNode = performAssignStmt(newState, newUnit, leaf.mRoot.getLocalVars());
 					newLeafNode.setConstraint(leaf.mRoot.getConstraint());
 					newLeafNode.setExecutionOrder( leaf.mRoot.getExecutionOrder()+1 );
@@ -346,7 +357,7 @@ public class StatementResolver {
 					Tree newTree = new Tree(newLeafNode, leaf);
 				    leaf.children.add(newTree);
 					
-					System.out.println( Color.ANSI_BLUE+"line '" +us.get_unit().toString()+"'"+ Color.ANSI_RESET);
+					System.out.println( Color.ANSI_BLUE+"line '" +us.getUnit().toString()+"'"+ Color.ANSI_RESET);
 					
 					System.out.println("------------------------------------");
    
@@ -354,7 +365,7 @@ public class StatementResolver {
 				else if (newUnit instanceof IdentityStmt) {
 					
 					State newState = new State(leaf.mRoot.getLocalVars(), leaf.mRoot.getExecutionOrder(), 
-							         newUnit.toString(), us.get_line(), leaf.mRoot.getState().getInputUsedIndex());
+							         newUnit.toString(), us.getLine(), leaf.mRoot.getState().getInputUsedIndex());
 					TreeNode newLeafNode = performIdentityStmt(newState, newUnit);
 					newLeafNode.setConstraint(leaf.mRoot.getConstraint());
 					newLeafNode.setExecutionOrder( leaf.mRoot.getExecutionOrder()+1 );
@@ -364,7 +375,7 @@ public class StatementResolver {
 				    leaf.children.add(newTree);
 					
 				    
-					System.out.println( Color.ANSI_BLUE+"line '" +us.get_unit().toString()+"'"+ Color.ANSI_RESET);
+					System.out.println( Color.ANSI_BLUE+"line '" +us.getUnit().toString()+"'"+ Color.ANSI_RESET);
 					
 					System.out.println("------------------------------------");
 				}
@@ -373,15 +384,15 @@ public class StatementResolver {
 			}
 			
 			else if (deter_unit_state == 2) {
-				Unit newUnit=us.get_unit();
+				Unit newUnit=us.getUnit();
 				if (newUnit instanceof IfStmt) {
 					State newState1 = new State(leaf.mRoot.getLocalVars(), leaf.mRoot.getExecutionOrder(),
-							          newUnit.toString(), us.get_line(), leaf.mRoot.getState().getInputUsedIndex());
+							          newUnit.toString(), us.getLine(), leaf.mRoot.getState().getInputUsedIndex());
 					
 					State newState2 = new State(leaf.mRoot.getLocalVars(), leaf.mRoot.getExecutionOrder(), 
-							          newUnit.toString(), us.get_line(), leaf.mRoot.getState().getInputUsedIndex());
+							          newUnit.toString(), us.getLine(), leaf.mRoot.getState().getInputUsedIndex());
 
-					List<TreeNode> newLeafNodes = performIfStmt(leaf, leaf.mRoot.getConstraint(), newState1, newState2, newUnit, UnitIndexs);
+					List<TreeNode> newLeafNodes = performIfStmt(leaf, leaf.mRoot.getConstraint(), newState1, newState2, newUnit, UnitIndexes);
 					//if branch
 					newLeafNodes.get(0).setExecutionOrder( leaf.mRoot.getExecutionOrder()+1 );
 					//nextLine has been set to 'goto_target' in performIfStmt
@@ -400,7 +411,7 @@ public class StatementResolver {
 				    leaf.children.add(newTree1);
 				    leaf.children.add(newTree2);
 					
-					System.out.println( Color.ANSI_BLUE+"line '" +us.get_unit().toString()+"'"+ Color.ANSI_RESET);
+					System.out.println( Color.ANSI_BLUE+"line '" +us.getUnit().toString()+"'"+ Color.ANSI_RESET);
 					System.out.println("Split the tree here.");
 					
 					System.out.println("------------------------------------");
@@ -408,8 +419,8 @@ public class StatementResolver {
 				}
 				else if (newUnit instanceof GotoStmt) {
 					State newState = new State(leaf.mRoot.getLocalVars(), leaf.mRoot.getExecutionOrder(), 
-							         newUnit.toString(), us.get_line(),leaf.mRoot.getState().getInputUsedIndex());
-					TreeNode newLeafNode = performGotoStmt(newState, newUnit, UnitIndexs, Units);
+							         newUnit.toString(), us.getLine(),leaf.mRoot.getState().getInputUsedIndex());
+					TreeNode newLeafNode = performGotoStmt(newState, newUnit, UnitIndexes, Units);
 					newLeafNode.setConstraint(leaf.mRoot.getConstraint());
 					newLeafNode.setExecutionOrder( leaf.mRoot.getExecutionOrder()+1 );
 					//'nextLine' has been set in performGotoStmt
@@ -418,7 +429,7 @@ public class StatementResolver {
 				    leaf.children.add(newTree);
 					
 				    
-					System.out.println( Color.ANSI_BLUE+"line '" +us.get_unit().toString()+"'"+ Color.ANSI_RESET);
+					System.out.println( Color.ANSI_BLUE+"line '" +us.getUnit().toString()+"'"+ Color.ANSI_RESET);
 					//newLeafNode.getState().printForm();
 					System.out.println("------------------------------------");
 				}
@@ -440,15 +451,15 @@ public class StatementResolver {
 			//deal with invoke(determine output)
 			
 			else if (deter_unit_state == 4) {
-				System.out.println( Color.ANSI_BLUE+"line '" +us.get_unit().toString()+"'"+ Color.ANSI_RESET);
+				System.out.println( Color.ANSI_BLUE+"line '" +us.getUnit().toString()+"'"+ Color.ANSI_RESET);
 				
-				if(us.get_unit().toString().contains("virtualinvoke") ) {
+				if(us.getUnit().toString().contains("virtualinvoke") ) {
 				    int nextLine =  leaf.mRoot.getNextLine()+1 ;  //iterator++;
 				    TreeNode newLeafNode = new TreeNode(leaf.mRoot.getConstraint(), leaf.mRoot.getState(), 
 				    		                            leaf.mRoot.getExecutionOrder(), nextLine, leaf.mRoot.getReturnFlag());
 				    
-				    if(us.get_unit().toString().contains("OutputCollector") || us.get_unit().toString().contains("Context")) {
-				        String value = (us.get_unit().toString().split(">")[1]).split(",")[1];
+				    if(us.getUnit().toString().contains("OutputCollector") || us.getUnit().toString().contains("Context")) {
+				        String value = (us.getUnit().toString().split(">")[1]).split(",")[1];
 				        value = value.replace(")", "");
 				        
                         for(String replace:leaf.mRoot.getLocalVars().keySet()) {
@@ -465,13 +476,13 @@ public class StatementResolver {
 				    Tree newTree = new Tree(newLeafNode, leaf);
 				    leaf.children.add(newTree);
 				}
-				else if(us.get_unit().toString().contains("specialinvoke")) {
+				else if(us.getUnit().toString().contains("specialinvoke")) {
 					int nextLine =  leaf.mRoot.getNextLine()+1 ;  //iterator++;
 				    TreeNode newLeafNode = new TreeNode(leaf.mRoot.getConstraint(), leaf.mRoot.getState(), 
 				    		                            leaf.mRoot.getExecutionOrder(), nextLine, leaf.mRoot.getReturnFlag());
-				    if(us.get_unit().toString().contains("Writable") && us.get_unit().toString().contains("init")) {
-				    	String key = (us.get_unit().toString().split("\\s+")[1]).split("\\.")[0];
-				        String value = us.get_unit().toString().split(">")[2];
+				    if(us.getUnit().toString().contains("Writable") && us.getUnit().toString().contains("init")) {
+				    	String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
+				        String value = us.getUnit().toString().split(">")[2];
 				        value = value.replace(")", "");
 				        value = value.replace("(", "");
 				        
@@ -493,7 +504,7 @@ public class StatementResolver {
 			}
 			
 			else {
-				System.out.println( Color.ANSI_BLUE+"line '" +us.get_unit().toString()+"'"+ Color.ANSI_RESET);
+				System.out.println( Color.ANSI_BLUE+"line '" +us.getUnit().toString()+"'"+ Color.ANSI_RESET);
 				int nextLine =  leaf.mRoot.getNextLine()+1 ;  //iterator++;
 				TreeNode newLeafNode = new TreeNode(leaf.mRoot.getConstraint(), leaf.mRoot.getState(), leaf.mRoot.getExecutionOrder(), nextLine, leaf.mRoot.getReturnFlag());
 			    Tree newTree = new Tree(newLeafNode, leaf);
@@ -504,7 +515,7 @@ public class StatementResolver {
 	
     }
 	
-	protected void detectLoop(UnitGraph graph, Map<Unit, Integer> unitIndexs) {
+	protected void detectLoop(UnitGraph graph, Map<Unit, Integer> unitIndexes) {
 		//only detect one output now
 		int currentLine = 0;
 		Iterator gIt = graph.iterator();
@@ -513,8 +524,8 @@ public class StatementResolver {
 			if(u instanceof GotoStmt) {
 				GotoStmt gtStmt = (GotoStmt) u;
 				Unit gotoTarget = gtStmt.getTarget();
-				if(unitIndexs.get(gotoTarget) < currentLine) {
-					mEnterLoopLine = unitIndexs.get(gotoTarget);
+				if(unitIndexes.get(gotoTarget) < currentLine) {
+					mEnterLoopLine = unitIndexes.get(gotoTarget);
 					mOutLoopLine = currentLine;
 					System.out.println("loop from line: "+String.valueOf(mEnterLoopLine)+" to "+String.valueOf(mOutLoopLine));
 					return;
@@ -575,27 +586,24 @@ public class StatementResolver {
 	 protected void generateVars(List<ValueBox> defBoxes){
 		for (ValueBox d: defBoxes) {
 			Value value = d.getValue();
-			String str = value.getType().toString()+" "+d.getValue().toString();
-			mVarsType.put(d.getValue().toString(), value.getType().toString());
-			mLocalVars.put(value.toString(), value.toString()+"_v");
-			System.out.println("Variable " + str);
+			String type = value.getType().toString();
+			String localVar = value.toString() + "_v";
+			mVarsType.put(value.toString(), type);
+			mLocalVars.put(value.toString(), localVar);
+			System.out.println("Variable " + type + " " + localVar);
+			mVarSets.put(value.toString(), new VariableSet(type, localVar));
 		}
-		
 		// Insert some input (only one input now)
-		for (int i = 0; i < 1; i++) {
-			String name = "Input" + i;
-			String value = "input" + i;
-			mInputListUsed.put(name, false);
-			mVarsType.put(name, "no need");
-			mLocalVars.put(name, value);
-			System.out.println("Variable " + name);
-		}
 		mLocalVars.put("output", "");
 		mVarsType.put("output", "");
+		System.out.println("Variable output");
+		mVarSets.put("output", new VariableSet());
+
 		mLocalVars.put("beforeLoop", "bL_v");
 		mVarsType.put("beforeLoop", "before loop flag");
-		System.out.println("Variable output");
 		System.out.println("Variable boolean beforeLoop");
+		mVarSets.put("beforeLoop", new VariableSet("before loop flag", "bL_v"));
+
 	 }
 	
 	// TODO: Far from matching all cases.
@@ -756,41 +764,12 @@ public class StatementResolver {
 		else { 
 			// Handling iterator relative assignments
 			if (ass_s.contains("hasNext()")) {
-				//no need to detect wheater it enter loop or not
-				/*
-				boolean flag = false;
-				for(String in_var : mInputListUsed.keySet()) {
-					if (mInputListUsed.get(in_var) == false) {
-						flag = true;
-						break;
-					}
-				}
-				if (flag) {
-					ass_s = "1";
-				}
-				else {
-					ass_s = "0";
-				}
-				*/
 				System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
-	
 				st.update(var.toString(), "hasNext");
 				
 			}
 			else if (ass_s.contains("next()")) {
-				/*
-				for(String in_var : mInputListUsed.keySet()) {
-					if (!mInputListUsed.get(in_var)) {
-						mInputListUsed.put(in_var, true);
-						ass_s = in_var;
-						
-						inputUsedIndex++;
-						mInputListUsed.put("input"+String.valueOf(inputUsedIndex), false);
-						break;
-					}
-				*/
 				if(mBefore) {mUseNextBeforeLoop = true;}
-				
 				//use a new input
 				mVarsType.put("input"+st.getInputUsedIndex(), "input type");
 				
@@ -806,23 +785,23 @@ public class StatementResolver {
 		return newNode;
 	}
 
-	protected TreeNode performGotoStmt(State st, Unit u, Map<Unit,Integer> UnitIndexs, List<UnitSet> Units) {
+	protected TreeNode performGotoStmt(State st, Unit u, Map<Unit,Integer> UnitIndexes, List<UnitSet> Units) {
 		GotoStmt gt_st = (GotoStmt) u;
 		Unit goto_target = gt_st.getTarget();
 		TreeNode node;
 		
-		if( UnitIndexs.get(goto_target) > st.getCommandLineNo()  ) {
+		if( UnitIndexes.get(goto_target) > st.getCommandLineNo()  ) {
 		    System.out.println(Color.ANSI_GREEN + "goto " + Color.ANSI_RESET + goto_target);
-		    node = new TreeNode(null, st, 0, UnitIndexs.get(goto_target), false);
+		    node = new TreeNode(null, st, 0, UnitIndexes.get(goto_target), false);
 		}
 		else {
 			node = new TreeNode(null, st, 0, st.getCommandLineNo(), false);
-			System.out.println(Color.ANSI_GREEN + "goto " + Color.ANSI_RESET + Units.get(st.getCommandLineNo()).get_unit() );
+			System.out.println(Color.ANSI_GREEN + "goto " + Color.ANSI_RESET + Units.get(st.getCommandLineNo()).getUnit() );
 		}
 		return node;
 	}
 
-	protected List<TreeNode> performIfStmt(Tree parrent, List<String> conditionBefore, State ifBranchState, State elseBranchState, Unit u, Map<Unit,Integer> UnitIndexs) {
+	protected List<TreeNode> performIfStmt(Tree parrent, List<String> conditionBefore, State ifBranchState, State elseBranchState, Unit u, Map<Unit,Integer> UnitIndexes) {
 		IfStmt if_st = (IfStmt) u;
 		Unit goto_target = if_st.getTargetBox().getUnit();
 		Value condition = if_st.getCondition();
@@ -862,7 +841,7 @@ public class StatementResolver {
 		elseCondition.add( newElseCondition );
 		
 				
-		TreeNode ifBranch = new TreeNode(ifCondition, ifBranchState, 0, UnitIndexs.get(goto_target), false);
+		TreeNode ifBranch = new TreeNode(ifCondition, ifBranchState, 0, UnitIndexes.get(goto_target), false);
 		TreeNode elseBranch = new TreeNode(elseCondition, elseBranchState, 0, 0, false);
 		
 		if(parrent.mRoot.getLocalVars().get(conditionStmt.getOp1().toString()) == "hasNext" ) {

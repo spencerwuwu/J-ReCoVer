@@ -6,12 +6,12 @@ import java.util.ArrayList;
 public class Tree{
 	
 	public TreeNode mRoot;
-	public Tree parrent;
+	public Tree mParrent;
 	public List<Tree> children;
 	
 	public Tree(TreeNode node, Tree parrent) {
 		mRoot = node;
-		parrent = parrent;
+		mParrent = parrent;
 		children = new ArrayList<Tree>();
 	}
 	
@@ -27,11 +27,11 @@ public class Tree{
 	}
 	
 	public void setParrent(Tree parrent) {
-		parrent = parrent;
+		mParrent = parrent;
 	}
 	
 	public Tree getParrent() {
-		return parrent;
+		return mParrent;
 	}
 	
 	public boolean hasChildren() {

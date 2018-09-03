@@ -7,7 +7,7 @@ import java.util.Map;
 import statementResolver.state.State;
 
 public class ExecutionTreeNode {
-	public List<ExecutionTreeNode> mChildren;
+	public List<ExecutionTreeNode> mChildren = new ArrayList<ExecutionTreeNode>();
 
 	private List<String> mConstraint;
 	private State mState;
@@ -22,6 +22,7 @@ public class ExecutionTreeNode {
 		mExecutionOrder = 0;
 		mNextline = 0;
 		mConstraint = new ArrayList<String>();
+		mReturnFlag = false;
 	}
 
 	public ExecutionTreeNode(List<String> constraintList, State newState, int newOrder, int newNextLine, boolean newReturnFlag) {
@@ -97,5 +98,9 @@ public class ExecutionTreeNode {
 		System.out.println("+++++++Constraints++++++++");
 	}
 	
+	public void print() {
+		printConstraint();
+		getState().printForm();
+	}
 
 }

@@ -235,18 +235,11 @@ public class StatementResolver {
 		Tree beforeLoop = new Tree(new TreeNode(initConstraintBefore, initStateBefore, 0, 0, false), head);
 		Tree interLoop = new Tree(new TreeNode(initConstraintInter, initStateInter, 0, mEnterLoopLine, false), head);
 		
-		ExecutionTree beforeLoopTree = new ExecutionTree(
-				new ExecutionTreeNode(initConstraintBefore, initStateBefore, 0, 0, false), units, unitIndexes, mEnterLoopLine, mOutLoopLine);
-		ExecutionTree interLoopTree = new ExecutionTree(
-				new ExecutionTreeNode(initConstraintInter, initStateInter, 0, 0, false), units, unitIndexes, mEnterLoopLine, mOutLoopLine);
 		
 		head.children.add(beforeLoop);
 		head.children.add(interLoop);
 		interLoop.mRoot.getConstraint().add("beforeLoop != 0");
 		beforeLoop.mRoot.getConstraint().add("beforeLoop == 0");
-		
-		beforeLoopTree.addRootConstraint("beforeLoop == 0");
-		interLoopTree.addRootConstraint("beforeLoop != 0");
 		
 		// Symbolic execution before entering loop body
 		// Use a flag('beforeLoop') to put the code before loop into loop(make it be executed only once)
@@ -255,6 +248,7 @@ public class StatementResolver {
 		leavesOut.add(beforeLoop);
 		List<Tree> toReturn = new ArrayList<Tree>();
 		
+		/*
 		while(!leavesOut.isEmpty() ) {
 			for(Tree tree : leavesOut) {
 				doAnalysis(units, unitIndexes, tree, toReturn);
@@ -274,6 +268,7 @@ public class StatementResolver {
 			}
 			newLeavesOut.clear();
 		}
+		*/
 		
  		mBefore = false; 
 		
@@ -283,6 +278,7 @@ public class StatementResolver {
 		leaves.add(interLoop);
 		List<Tree> returnLeaf = new ArrayList<Tree>();
 		
+		/*
 		while(!leaves.isEmpty() ) {
 			for(Tree tree : leaves) {
 				doAnalysis(units, unitIndexes, tree, returnLeaf);
@@ -320,7 +316,38 @@ public class StatementResolver {
 			returnLeaf.get(i).print();
 			System.out.println("\n");
 		}
+		*/
+		ExecutionTree beforeLoopTree = new ExecutionTree(
+				new ExecutionTreeNode(initConstraintBefore, initStateBefore, 0, 0, false), units, 
+				unitIndexes, mEnterLoopLine, mOutLoopLine, mVarsType, true);
+		beforeLoopTree.addRootConstraint("beforeLoop == 0");
+		beforeLoopTree.executeTree();
+		for (Map.Entry<String, String> entry : beforeLoopTree.getVarType().entrySet()) {
+			mVarsType.put(entry.getKey(), entry.getValue());
+		}
+
+		ExecutionTree interLoopTree = new ExecutionTree(
+				new ExecutionTreeNode(initConstraintInter, initStateInter, 0, mEnterLoopLine, false), units, 
+				unitIndexes, mEnterLoopLine, mOutLoopLine, mVarsType, false);
+		interLoopTree.addRootConstraint("beforeLoop != 0");
+		interLoopTree.executeTree();
+		
+		beforeLoopTree.print();
+		interLoopTree.print();
+		
+		for (Map.Entry<String, String> entry : interLoopTree.getVarType().entrySet()) {
+			mVarsType.put(entry.getKey(), entry.getValue());
+		}
+		
         
+		List<ExecutionTreeNode> toWriteZ3 = new ArrayList<ExecutionTreeNode>();
+		toWriteZ3.addAll(beforeLoopTree.getEndNodes());
+		interLoopTree.getEndNodes().remove(0);
+		toWriteZ3.addAll(interLoopTree.getEndNodes());
+		z3FormatBuilder z3write = new z3FormatBuilder();
+		z3write.init(mVarsType, beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3Format.txt", mUseNextBeforeLoop);
+		z3write.writeZ3FormatNew();
+		/*
 		List<Tree> toWriteZ3 = new ArrayList<Tree>();
 		toWriteZ3.addAll(toReturn);
 		
@@ -329,6 +356,7 @@ public class StatementResolver {
 		toWriteZ3.addAll(returnLeaf);
 		z3FormatBuilder z3write = new z3FormatBuilder(mVarsType, toWriteZ3, "z3Format.txt", mUseNextBeforeLoop);
 		z3write.writeZ3Format();
+		*/
 		
 	}
 	
@@ -438,7 +466,7 @@ public class StatementResolver {
 			}
 			else if (deter_unit_state == 3) {
 				System.out.println(Color.ANSI_BLUE+"++++++++++++++++ Return +++++++++++++++++"+Color.ANSI_RESET);
-				//adding this treenode to returnlist, waiting to print the result
+				// Add this treenode to returnlist, waiting to print the result
 				returnLeaf.add(leaf);
 				
 				boolean newReturnFlag = true;

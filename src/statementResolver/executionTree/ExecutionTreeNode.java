@@ -90,12 +90,10 @@ public class ExecutionTreeNode {
 	}
 	
 	public void printConstraint() {
-		System.out.println("+++++++Constraints++++++++");
+		System.out.println("++++++ Constraints +++++++");
 		for (String cons: mConstraint){
-			System.out.println("|"+cons);
+			System.out.println("| " + cons);
 		}
-		//st.printForm();
-		System.out.println("+++++++Constraints++++++++");
 	}
 	
 	public void print() {

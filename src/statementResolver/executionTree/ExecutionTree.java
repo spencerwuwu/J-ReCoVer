@@ -1,7 +1,6 @@
 package statementResolver.executionTree;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -81,9 +80,9 @@ public class ExecutionTree {
 		int index = 0;
 		for (ExecutionTreeNode node : mEndNodes) {
 			if (mBefore) {
-				System.out.println("======Before Loop" + String.valueOf(index + 1) + "======");
+				System.out.println("====== Before Loop" + String.valueOf(index + 1) + " ======");
 			} else {
-				System.out.println("======After Loop" + String.valueOf(index + 1) + "======");
+				System.out.println("====== After Loop" + String.valueOf(index + 1) + " ======");
 			}
 			if (!mBefore) detectOutput(node);
 			node.getLocalVars().put("beforeLoop", "1");
@@ -157,10 +156,10 @@ public class ExecutionTree {
 				System.out.println(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'" + Color.ANSI_RESET);
 				if(us.getUnit().toString().contains("specialinvoke")) {
 				    ExecutionTreeNode newLeaf = performSpecialInvoke(currentNode, us);
-				    currentNode.mChildren.add(newLeaf);
+				    if (newLeaf != null) currentNode.mChildren.add(newLeaf);
 				} else if(us.getUnit().toString().contains("virtualinvoke") ) {
 				    ExecutionTreeNode newLeaf = performVirtualInvoke(currentNode, us);
-				    currentNode.mChildren.add(newLeaf);
+				    if (newLeaf != null) currentNode.mChildren.add(newLeaf);
 				}
 
 			} else {
@@ -390,7 +389,7 @@ public class ExecutionTree {
 				}
 			}
 			newLeaf.getState().update("output", value);
-		return newLeaf;
+			return newLeaf;
 		}
 		return null;
 
@@ -424,6 +423,8 @@ public class ExecutionTree {
 	public Map<String, String> getVarType() {
 		return mVarsType;
 	}
+	
+	// Does not affect the result, just to make the Symbolic State more reasonable
 	protected void detectOutput(ExecutionTreeNode node) {
 		for (UnitSet us : mUnits) {
 			Unit u = us.getUnit();

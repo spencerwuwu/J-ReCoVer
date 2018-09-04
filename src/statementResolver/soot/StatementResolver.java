@@ -8,6 +8,7 @@ import statementResolver.executionTree.ExecutionTree;
 import statementResolver.executionTree.ExecutionTreeNode;
 import statementResolver.state.State;
 import statementResolver.state.UnitSet;
+import statementResolver.state.VariableSet;
 import statementResolver.z3formatbuilder.*;
 import soot.Body;
 import soot.RefType;
@@ -49,6 +50,7 @@ public class StatementResolver {
 
 	private LinkedHashMap<String, String> mLocalVars = new LinkedHashMap<String, String>();
 	private LinkedHashMap<String, String> mVarsType = new LinkedHashMap<String, String>();
+	private LinkedHashMap<String, VariableSet> mVarSets = new LinkedHashMap<String, VariableSet>();
 	private int mEnterLoopLine = 0;
 	private int mOutLoopLine = 0;
 	private boolean mUseNextBeforeLoop = false;
@@ -205,7 +207,6 @@ public class StatementResolver {
 		System.out.println("Starting analysis");
 	
 		//traverse tree to find leaves and doAnalysis
-		
 		State initStateBefore = new State(mLocalVars, 0, null, 0, 0);
 		State initStateInter = new State(mLocalVars, 0, null, mEnterLoopLine, 0);
 		List<String> initConstraintBefore = new ArrayList<String>();
@@ -236,7 +237,9 @@ public class StatementResolver {
         
 		List<ExecutionTreeNode> toWriteZ3 = new ArrayList<ExecutionTreeNode>();
 		toWriteZ3.addAll(beforeLoopTree.getEndNodes());
-		interLoopTree.getEndNodes().remove(0);
+		if (interLoopTree.getEndNodes().size() > 0) {
+			interLoopTree.getEndNodes().remove(0);
+		}
 		toWriteZ3.addAll(interLoopTree.getEndNodes());
 		z3FormatBuilder z3Builder = new z3FormatBuilder(mVarsType, 
 				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3Format.txt", mUseNextBeforeLoop);
@@ -253,19 +256,21 @@ public class StatementResolver {
 		int currentLine = 0;
 		Iterator gIt = graph.iterator();
 		while(gIt.hasNext()) {
-			Unit u =(Unit)gIt.next();
+			Unit u = (Unit)gIt.next();
 			if(u instanceof GotoStmt) {
 				GotoStmt gtStmt = (GotoStmt) u;
 				Unit gotoTarget = gtStmt.getTarget();
-				if(unitIndexes.get(gotoTarget) < currentLine) {
+				//if(unitIndexes.get(gotoTarget) < currentLine) {
+				if(unitIndexes.get(gotoTarget) < currentLine && 
+				         (mEnterLoopLine == 0 || unitIndexes.get(gotoTarget) < mEnterLoopLine)) {
 					mEnterLoopLine = unitIndexes.get(gotoTarget);
 					mOutLoopLine = currentLine;
-					System.out.println("loop from line: "+String.valueOf(mEnterLoopLine)+" to "+String.valueOf(mOutLoopLine));
-					return;
 				}
 			}
 			currentLine++;
 		}
+		// System.out.println("loop from line: " + mEnterLoopLine + " to " + mOutLoopLine);
+		System.out.println("loop started from line: " + mEnterLoopLine);
 		
 	}
 	
@@ -276,6 +281,7 @@ public class StatementResolver {
 			String localVar = value.toString() + "_v";
 			mVarsType.put(value.toString(), type);
 			mLocalVars.put(value.toString(), localVar);
+			mVarSets.put(value.toString(), new VariableSet(type, localVar));
 			System.out.println("Variable " + type + " " + localVar);
 		}
 		// Insert some input (only one input now)

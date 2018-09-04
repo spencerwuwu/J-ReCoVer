@@ -3,6 +3,8 @@ package statementResolver.executionTree;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import soot.Unit;
 import soot.Value;
@@ -64,7 +66,10 @@ public class ExecutionTree {
 						endNodes.add(node);
 					}
 				} else {
-					if (!node.getReturnFlag() && node.getNextLine() < mExitLoopLine) {
+					//if (!node.getReturnFlag() && node.getNextLine() < mExitLoopLine) {
+					// After loop will go straight to the end of the program
+					// instead of exiting at the end of loop
+					 if (!node.getReturnFlag()) {
 						currentNodes.add(node);
 					} else {
 						endNodes.add(node);
@@ -98,13 +103,16 @@ public class ExecutionTree {
 			int determineUnitState = determineUnit(us.getUnit());
 
 			if (determineUnitState == 1) {
-				Unit newUnit=us.getUnit();
+				Unit newUnit = us.getUnit();
 				State newState = new State(currentNode.getLocalVars(), currentNode.getExecutionOrder(), 
 								 newUnit.toString(), us.getLine(), currentNode.getState().getInputUsedIndex());
 				if (newUnit instanceof AssignStmt) {
 					newState = performAssignStmt(newState, newUnit, currentNode.getLocalVars());
 				} else if (newUnit instanceof IdentityStmt){
 					newState = performIdentityStmt(newState, newUnit);
+				} else {
+					System.out.println(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
+					return;
 				}
 				ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), newState, 
 						currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
@@ -140,6 +148,9 @@ public class ExecutionTree {
 					System.out.println( Color.ANSI_BLUE+"line '" +us.getUnit().toString()+"'"+ Color.ANSI_RESET);
 					System.out.println("------------------------------------");
 
+				} else {
+					System.out.println(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
+					return;
 				}
 			} else if (determineUnitState == 3) {
 				System.out.println(Color.ANSI_BLUE+"++++++++++++++++ Return +++++++++++++++++"+Color.ANSI_RESET);
@@ -152,22 +163,36 @@ public class ExecutionTree {
 			    endNodes.add(newLeaf);
 
 			} else if (determineUnitState == 4) {
-				// Deal with specialinvoke and vritualinvoke (especially the output collector)
+				// Deal with specialinvoke and vritualinvoke
 				System.out.println(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'" + Color.ANSI_RESET);
 				if(us.getUnit().toString().contains("specialinvoke")) {
 				    ExecutionTreeNode newLeaf = performSpecialInvoke(currentNode, us);
 				    if (newLeaf != null) currentNode.mChildren.add(newLeaf);
+
 				} else if(us.getUnit().toString().contains("virtualinvoke") ) {
-				    ExecutionTreeNode newLeaf = performVirtualInvoke(currentNode, us);
-				    if (newLeaf != null) currentNode.mChildren.add(newLeaf);
+					if (us.getUnit().toString().contains("OutputCollector")) {
+						ExecutionTreeNode newLeaf = performVirtualInvoke(currentNode, us);
+						if (newLeaf != null) currentNode.mChildren.add(newLeaf); 
+					} else {
+						// Similar to assignStmt
+						
+					}
+
+				} else {
+					System.out.println(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
 				}
+					System.out.println("------------------------------------");
 
 			} else {
 				System.out.println(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'" + Color.ANSI_RESET);
+				System.out.println(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
+				System.out.println("------------------------------------");
+				return;
+				/*
 				ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), currentNode.getState(),
 						currentNode.getExecutionOrder(), currentNode.getNextLine() + 1, currentNode.getReturnFlag());
 				currentNode.mChildren.add(newLeaf);
-				System.out.println(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
+				*/
 			}
 		}
 	}
@@ -250,20 +275,37 @@ public class ExecutionTree {
 			ass_s = ass_s.replaceAll("\\(.*?\\)\\s+", "");
 
 			// handle int get(), eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
+			/*
 			if (ass_s.contains("get")) {
 				ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
+			}
+			*/
+			// handle virtualinvoke, eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
+			if (ass_s.contains("virtualinvoke")) {
+				ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
+			}
+			// handle staticinvoke, eg: staticinvoke <java.lang.Long: java.lang.Long valueOf(long)>(l0) -> l0
+			if (ass_s.contains("staticinvoke")) {
+				ass_s = ass_s.split(">")[1].replace("(", "").replace(")", "");
 			}
 
 			// change to prefix
 			String[] temp = ass_s.split(" ");
 			if(temp.length == 3) {
-				ass_s = "("+temp[1]+" "+temp[0]+" "+temp[2]+")";
+				ass_s = "(" + temp[1] + " " + temp[0] + " " + temp[2] + ")";
+			}
+			
+			// parse long 123L -> 123
+			Pattern p = Pattern.compile("^[0-9]+L$");
+			Matcher m = p.matcher(ass_s);
+			if (m.find()) {
+				ass_s = ass_s.split("L")[0];
 			}
 			
 			// replace rhs with mLocalVars value
 			for (String re_var: lastEnv.keySet()) {
 				if (ass_s.contains(re_var)) {
-					System.out.println("replace "+re_var+": " + lastEnv.get(re_var));
+					System.out.println("replace " + re_var + ": " + lastEnv.get(re_var));
 					ass_s = ass_s.replace(re_var, lastEnv.get(re_var));
 				
 				}
@@ -378,6 +420,7 @@ public class ExecutionTree {
 		ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), currentNode.getState(), 
 											currentNode.getExecutionOrder(), currentNode.getNextLine() + 1, currentNode.getReturnFlag());
 		
+		// handling OutputCollector
 		if(us.getUnit().toString().contains("OutputCollector") || us.getUnit().toString().contains("Context")) {
 			String value = (us.getUnit().toString().split(">")[1]).split(",")[1];
 			value = value.replace(")", "");
@@ -390,6 +433,21 @@ public class ExecutionTree {
 			}
 			newLeaf.getState().update("output", value);
 			return newLeaf;
+		} else {
+			Map<String, String>lastEnv = newLeaf.getLocalVars();
+			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
+			String value = us.getUnit().toString().split(">")[2];
+			value = value.replace(")", "");
+			value = value.replace("(", "");
+			for (String re_var: lastEnv.keySet()) {
+				if (value.contains(re_var)) {
+					System.out.println("replace " + re_var + ": " + lastEnv.get(re_var));
+					value = value.replace(re_var, lastEnv.get(re_var));
+				}
+			}
+
+			System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + us.getUnit().toString() + " -> " + value);
+			newLeaf.getState().update(key.toString() , value);
 		}
 		return null;
 
@@ -398,7 +456,7 @@ public class ExecutionTree {
 	protected ExecutionTreeNode performSpecialInvoke(ExecutionTreeNode currentNode, UnitSet us) {
 		ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), currentNode.getState(), 
 											currentNode.getExecutionOrder(), currentNode.getNextLine() + 1, currentNode.getReturnFlag());
-		if(us.getUnit().toString().contains("Writable") && us.getUnit().toString().contains("init")) {
+		if(us.getUnit().toString().contains("init")) {
 			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
 			String value = us.getUnit().toString().split(">")[2];
 			value = value.replace(")", "");

@@ -6,41 +6,39 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 
 public class z3FormatBuilder {
 	Map<String, String> typeTable;
-	List<Tree> finalStateList;
 	List<ExecutionTreeNode> mFinalStates = new ArrayList<ExecutionTreeNode>();
-	List<ExecutionTreeNode> mBeforeNodes;
-	List<ExecutionTreeNode> mInterNodes;
 	boolean usingNextBeforeLoop = false;
-	File file;
-	PrintWriter output;
+	File mFile;
+	PrintWriter mOutput;
 	
 	public z3FormatBuilder() {
 		typeTable = new HashMap<String, String>();
-		finalStateList = new ArrayList<Tree>();
-		file = new File("z3Format");
+		mFile = new File("z3Format");
 		
 		try {
-		    file.createNewFile();
+		    mFile.createNewFile();
 		    System.out.println("Create file successfully");
-		    System.out.println(file.getAbsolutePath());
+		    System.out.println(mFile.getAbsolutePath());
 		}
 		catch(IOException ex) {
 			ex.printStackTrace();
 		}
 		
 		try {
-		    output = new PrintWriter(file);
+		    mOutput = new PrintWriter(mFile);
 		}
 		catch(FileNotFoundException f){
 			f.printStackTrace();
@@ -52,29 +50,59 @@ public class z3FormatBuilder {
 		typeTable = table;
 		mFinalStates.addAll(beforeNodes);
 		mFinalStates.addAll(interNodes);
-		mBeforeNodes = beforeNodes;
-		mInterNodes = interNodes;
 		usingNextBeforeLoop = useNextFlag;
-		file = new File(filename);
+		mFile = new File(filename);
 		System.out.print("Using getNext before loop: ");
 		System.out.print(usingNextBeforeLoop);
 		System.out.print("\n");
 		
 		try {
-		    file.createNewFile();
+		    mFile.createNewFile();
 		    System.out.println("Create file successfully");
-		    System.out.println(file.getAbsolutePath());
 		}
 		catch(IOException ex) {
 			ex.printStackTrace();
 		}
 		
 		try {
-		    output = new PrintWriter(file);
+		    mOutput = new PrintWriter(mFile);
 		}
 		catch(FileNotFoundException f){
 			f.printStackTrace();
 		}
+	}
+	
+	public boolean getResult() {
+		writeZ3Format();
+		Process process = null;
+		try {
+			process = new ProcessBuilder("z3", mFile.getAbsolutePath()).start();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		InputStream is = process.getInputStream();
+		InputStreamReader isr = new InputStreamReader(is);
+		BufferedReader br = new BufferedReader(isr);
+		String line = null, result = null;
+		System.out.println("z3 Result: ");
+		try {
+			while ((line = br.readLine()) != null) {
+				System.out.println(line);
+				result = line;
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println("\n");
+
+		if (result.contains("unsat")) {
+			return true;
+		} else {
+			return false;
+		}
+
 	}
 	
 	public void writeZ3Format() {
@@ -86,17 +114,17 @@ public class z3FormatBuilder {
 		*/
 		for(String s:typeTable.keySet()) {
 			if (typeTable.get(s) == "int" | typeTable.get(s) == "byte" | typeTable.get(s) == "short" | typeTable.get(s) == "long") {
-			    output.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
 			    declareVars.put(s+"_0", "Int");
 			    declareVars.put(s+"_1", "Int");
 			    declareVars.put(s+"_2", "Int");
 			    
 			    //if(s.contains("$")) {
-			    //output.append("(declare-const "+s+"_0com0"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_1com0"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_2com0"+" Int"+")"+"\n");
+			    //mOutput.append("(declare-const "+s+"_0com0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_1com0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_2com0"+" Int"+")"+"\n");
 			    //declareVars.put(s+"_0com0", "Int");
 			    declareVars.put(s+"_1com0", "Int");
 			    declareVars.put(s+"_2com0", "Int");
@@ -104,17 +132,17 @@ public class z3FormatBuilder {
 			    
 			}
 			else if (typeTable.get(s) == "double" | typeTable.get(s) == "float" ) {
-				output.append("(declare-const "+s+"_0"+" Real"+")"+"\n");
-			    output.append("(declare-const "+s+"_1"+" Real"+")"+"\n");
-			    output.append("(declare-const "+s+"_2"+" Real"+")"+"\n");
+				mOutput.append("(declare-const "+s+"_0"+" Real"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_1"+" Real"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_2"+" Real"+")"+"\n");
 			    declareVars.put(s+"_0", "Real");
 			    declareVars.put(s+"_1", "Real");
 			    declareVars.put(s+"_2", "Real");
 			    
 			    //if(s.contains("$")) {
-			    //output.append("(declare-const "+s+"_0com0"+" Real"+")"+"\n");
-			    output.append("(declare-const "+s+"_1com0"+" Real"+")"+"\n");
-			    output.append("(declare-const "+s+"_2com0"+" Real"+")"+"\n");
+			    //mOutput.append("(declare-const "+s+"_0com0"+" Real"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_1com0"+" Real"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_2com0"+" Real"+")"+"\n");
 			    //declareVars.put(s+"_0com0", "Real");
 			    declareVars.put(s+"_1com0", "Real");
 			    declareVars.put(s+"_2com0", "Real");
@@ -124,17 +152,17 @@ public class z3FormatBuilder {
 			}
 			else if (typeTable.get(s) == "boolean" ) {
 				//use Int in Z3 would be easier
-				output.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
+				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
 			    declareVars.put(s+"_0", "Bool");
 			    declareVars.put(s+"_1", "Bool");
 			    declareVars.put(s+"_2", "Bool");
 			    
 			    //if(s.contains("$")) {
-			    //output.append("(declare-const "+s+"_0com0"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_1com0"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_2com0"+" Int"+")"+"\n");
+			    //mOutput.append("(declare-const "+s+"_0com0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_1com0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_2com0"+" Int"+")"+"\n");
 			    //declareVars.put(s+"_0com0", "Bool");
 			    declareVars.put(s+"_1com0", "Bool");
 			    declareVars.put(s+"_2com0", "Bool");
@@ -143,18 +171,18 @@ public class z3FormatBuilder {
 			    
 			}
 			else if (typeTable.get(s) == "input type") {
-				output.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
+				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
 			    declareVars.put(s+"_0", "Int");
 			    declareVars.put(s+"_1", "Int");
 			    declareVars.put(s+"_2", "Int");
 			    
 			}
 			else if (typeTable.get(s) == "before loop flag") {
-				output.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
+				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
 			    declareVars.put(s+"_0", "Int");
 			    declareVars.put(s+"_1", "Int");
 			    declareVars.put(s+"_2", "Int");
@@ -163,13 +191,13 @@ public class z3FormatBuilder {
 			
 			else if (typeTable.get(s) == "") {
 				//deal with output
-				output.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
+				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
 			    
-			    output.append("(declare-const "+s+"_0com0"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_1com0"+" Int"+")"+"\n");
-			    output.append("(declare-const "+s+"_2com0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_0com0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_1com0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_2com0"+" Int"+")"+"\n");
 			    
 			    declareVars.put(s+"_0", "Int");
 			    declareVars.put(s+"_1", "Int");
@@ -184,7 +212,7 @@ public class z3FormatBuilder {
 				// Not supported in z3 Format
 			}
 		}
-		output.flush();
+		mOutput.flush();
 		
 		String finalEquation = "";
 		
@@ -330,17 +358,17 @@ public class z3FormatBuilder {
 		}
 	    
 	    
-	    output.append("(assert "+finalEquation+")\n");
-	    output.append("(assert "+compareEquation+")\n");
+	    mOutput.append("(assert "+finalEquation+")\n");
+	    mOutput.append("(assert "+compareEquation+")\n");
 	    
 	    if(!usingNextBeforeLoop) {
-	    	output.append("(assert (= beforeLoop_0 1))\n");
+	    	mOutput.append("(assert (= beforeLoop_0 1))\n");
 	    }
 	   
-        output.append("(assert (not (= output_2 output_2com0)) )\n");
+        mOutput.append("(assert (not (= output_2 output_2com0)) )\n");
 
-		output.append("(check-sat)\n");
-		output.flush();
+		mOutput.append("(check-sat)\n");
+		mOutput.flush();
 	}
 		
 	

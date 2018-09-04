@@ -238,9 +238,13 @@ public class StatementResolver {
 		toWriteZ3.addAll(beforeLoopTree.getEndNodes());
 		interLoopTree.getEndNodes().remove(0);
 		toWriteZ3.addAll(interLoopTree.getEndNodes());
-		z3FormatBuilder z3write = new z3FormatBuilder(mVarsType, 
+		z3FormatBuilder z3Builder = new z3FormatBuilder(mVarsType, 
 				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3Format.txt", mUseNextBeforeLoop);
-		z3write.writeZ3Format();
+		if (z3Builder.getResult()) {
+			System.out.println("RESULT: Prove your reducer to be communicative");
+		} else {
+			System.out.println("RESULT: Prove your reducer to be NOT communicative");
+		}
 
 	}
 	

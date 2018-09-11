@@ -1,9 +1,10 @@
 package statementResolver.state;
 
 public class VariableSet {
-	Type mType = Type.UNKNOWN;
-	String mVarType;		// Type in String
-	String mLocalVar;		// Name + "_v"
+	private Type mType = Type.UNKNOWN;
+	private String mVarType;		// Type in String
+	private String mLocalVar;		// Name + "_v"
+	private boolean mIsNull = true;
 	
 	public VariableSet(String varType, String localVar) {
 		mVarType = varType;
@@ -38,5 +39,9 @@ public class VariableSet {
 	
 	public Type getType() {
 		return mType;
+	}
+	
+	public String getLocalVar() {
+		return mLocalVar;
 	}
 }

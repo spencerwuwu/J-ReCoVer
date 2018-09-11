@@ -199,7 +199,16 @@ public class StatementResolver {
 			}
 			command_line_no++;
 		}
-		System.out.println("=======================================");	
+		
+		// Does not support String 
+		for(UnitSet us : units) {
+			String unit = us.getUnit().toString();
+			if (unit.contains("String")) {
+				System.err.println("Currently support no String operation");
+				return;
+			}
+		}
+		
 		// Detect where the loop starts
 		detectLoop(graph, unitIndexes);
 		

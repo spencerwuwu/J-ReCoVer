@@ -1,5 +1,6 @@
 package statementResolver.z3formatbuilder;
 
+import statementResolver.color.Color;
 import statementResolver.executionTree.ExecutionTreeNode;
 import statementResolver.tree.*;
 import java.util.HashMap;
@@ -47,7 +48,8 @@ public class z3FormatBuilder {
 
 	public z3FormatBuilder(Map<String, String> table, List<ExecutionTreeNode> beforeNodes, List<ExecutionTreeNode> interNodes, 
 			String filename, boolean useNextFlag) {
-		typeTable = table;
+		//typeTable = table;
+		mVariableTypes = variablesTypes;
 		mFinalStates.addAll(beforeNodes);
 		mFinalStates.addAll(interNodes);
 		usingNextBeforeLoop = useNextFlag;
@@ -113,7 +115,8 @@ public class z3FormatBuilder {
 		  result formula wouldn't take variable with '$' into account.
 		*/
 		for(String s:typeTable.keySet()) {
-			if (typeTable.get(s) == "int" | typeTable.get(s) == "byte" | typeTable.get(s) == "short" | typeTable.get(s) == "long") {
+			String type = typeTable.get(s);
+			if (type == "int" | type == "byte" | type == "short" | type == "long") {
 			    mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
 			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
 			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
@@ -131,7 +134,7 @@ public class z3FormatBuilder {
 			    //}
 			    
 			}
-			else if (typeTable.get(s) == "double" | typeTable.get(s) == "float" ) {
+			else if (type == "double" | type == "float" ) {
 				mOutput.append("(declare-const "+s+"_0"+" Real"+")"+"\n");
 			    mOutput.append("(declare-const "+s+"_1"+" Real"+")"+"\n");
 			    mOutput.append("(declare-const "+s+"_2"+" Real"+")"+"\n");
@@ -150,7 +153,7 @@ public class z3FormatBuilder {
 			    
 				
 			}
-			else if (typeTable.get(s) == "boolean" ) {
+			else if (type == "boolean" ) {
 				//use Int in Z3 would be easier
 				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
 			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
@@ -170,7 +173,7 @@ public class z3FormatBuilder {
 			    
 			    
 			}
-			else if (typeTable.get(s) == "input type") {
+			else if (type == "input type") {
 				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
 			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
 			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
@@ -179,7 +182,7 @@ public class z3FormatBuilder {
 			    declareVars.put(s+"_2", "Int");
 			    
 			}
-			else if (typeTable.get(s) == "before loop flag") {
+			else if (type == "before loop flag") {
 				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
 			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
 			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
@@ -189,7 +192,7 @@ public class z3FormatBuilder {
 			}
 			
 			
-			else if (typeTable.get(s) == "") {
+			else if (type == "") {
 				//deal with output
 				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
 			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
@@ -208,8 +211,18 @@ public class z3FormatBuilder {
 			    declareVars.put(s+"_2com0", "Int");
 			    
 			}
+			else if (type.contains("Object")){
+				mOutput.append("(declare-const "+s+"_0"+" Real"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_1"+" Real"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_2"+" Real"+")"+"\n");
+			    declareVars.put(s+"_0", "Real");
+			    declareVars.put(s+"_1", "Real");
+			    declareVars.put(s+"_2", "Real");
+			    System.out.println(s + " " + Color.ANSI_RED + typeTable.get(s) + " -> REAL" + Color.ANSI_RESET);
+			}
 			else {
 				// Not supported in z3 Format
+			    System.out.println(s + " " + Color.ANSI_RED + typeTable.get(s) + Color.ANSI_RESET);
 			}
 		}
 		mOutput.flush();
@@ -303,9 +316,9 @@ public class z3FormatBuilder {
 				String varStr = "";
 				for (String var : node.getLocalVars().keySet()) {
 					
-					if(node.getLocalVars().get(var).contains("@parameter") | 
-					   node.getLocalVars().get(var).equals("") |
-					   var.contains("$") ) {continue;}
+					if(node.getLocalVars().get(var).contains("@parameter")
+					   | node.getLocalVars().get(var).equals("")
+					   | var.contains("$") ) {continue;}
 					
 					boolean addAND = false;
 					

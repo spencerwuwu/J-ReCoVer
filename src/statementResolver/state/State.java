@@ -11,6 +11,7 @@ import statementResolver.color.Color;
 
 public class State {
 	Map<String, String> mLocalVars;
+	Map<String, VariableSet> mVarSets;
 	int mInputUsedIndex = 0;
 	int mNum;	// State number
 	String mInputCommand;
@@ -18,21 +19,34 @@ public class State {
 	
 
 	public State() {
-		this.mLocalVars = new HashMap<String, String>();
-		this.mNum = 0;
+		mLocalVars = new HashMap<String, String>();
+		mNum = 0;
 	}
 	
 	public State(Map<String, String> in, int number, String comm, int no, int inputindex) {
-		this.mLocalVars = new LinkedHashMap<String, String>();
+		mLocalVars = new LinkedHashMap<String, String>();
 		mLocalVars.putAll(in);
-		this.mNum = number;
-		this.mInputCommand = comm;
-		this.mCommandLineNo = no;
-		this.mInputUsedIndex = inputindex;
+		mNum = number;
+		mInputCommand = comm;
+		mCommandLineNo = no;
+		mInputUsedIndex = inputindex;
+	}
+
+	public State(Map<String, VariableSet> vars, int number, String comm, int no, int inputindex, boolean tmp) {
+		mLocalVars = new LinkedHashMap<String, String>();
+		mVarSets = new LinkedHashMap<String, VariableSet>();
+		mVarSets.putAll(vars);
+		for (String key : mVarSets.keySet()) {
+			mLocalVars.put(key, mVarSets.get(key).getLocalVar());
+		}
+		mNum = number;
+		mInputCommand = comm;
+		mCommandLineNo = no;
+		mInputUsedIndex = inputindex;
 	}
 	
 	public void update(String v, String str) {
-		this.mLocalVars.put(v, str);
+		mLocalVars.put(v, str);
 	}
 	
 	/*
@@ -70,7 +84,6 @@ public class State {
 	
 	public void printForm() {
 		System.out.println("+++++++++++++++++++++++");
-		System.out.println("| no: " + this.mNum);
 		for (String var : mLocalVars.keySet()) {
 			System.out.println("| "+var + ":\t" + this.mLocalVars.get(var));
 		}

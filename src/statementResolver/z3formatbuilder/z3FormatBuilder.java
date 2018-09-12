@@ -48,8 +48,7 @@ public class z3FormatBuilder {
 
 	public z3FormatBuilder(Map<String, String> table, List<ExecutionTreeNode> beforeNodes, List<ExecutionTreeNode> interNodes, 
 			String filename, boolean useNextFlag) {
-		//typeTable = table;
-		mVariableTypes = variablesTypes;
+		typeTable = table;
 		mFinalStates.addAll(beforeNodes);
 		mFinalStates.addAll(interNodes);
 		usingNextBeforeLoop = useNextFlag;
@@ -190,8 +189,14 @@ public class z3FormatBuilder {
 			    declareVars.put(s+"_1", "Int");
 			    declareVars.put(s+"_2", "Int");
 			}
-			
-			
+			else if (type.contains("bld")) {
+				mOutput.append("(declare-const "+s.replace("_v", "")+"_0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s.replace("_v", "")+"_1"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s.replace("_v", "")+"_2"+" Int"+")"+"\n");
+			    declareVars.put(s.replace("_v", "")+"_0", "Int");
+			    declareVars.put(s.replace("_v", "")+"_1", "Int");
+			    declareVars.put(s.replace("_v", "")+"_2", "Int");
+			}
 			else if (type == "") {
 				//deal with output
 				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
@@ -219,6 +224,15 @@ public class z3FormatBuilder {
 			    declareVars.put(s+"_1", "Real");
 			    declareVars.put(s+"_2", "Real");
 			    System.out.println(s + " " + Color.ANSI_RED + typeTable.get(s) + " -> REAL" + Color.ANSI_RESET);
+			}
+			else if (type.contains("IntWritable") || type.contains("LongWritable")) {
+				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
+			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
+			    declareVars.put(s+"_0", "Int");
+			    declareVars.put(s+"_1", "Int");
+			    declareVars.put(s+"_2", "Int");
+			    System.out.println(s + " " + Color.ANSI_RED + typeTable.get(s) + " -> Int" + Color.ANSI_RESET);
 			}
 			else {
 				// Not supported in z3 Format

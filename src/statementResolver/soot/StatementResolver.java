@@ -229,6 +229,7 @@ public class StatementResolver {
 		for (Map.Entry<String, String> entry : beforeLoopTree.getVarType().entrySet()) {
 			mVarsType.put(entry.getKey(), entry.getValue());
 		}
+		mUseNextBeforeLoop = beforeLoopTree.useNextBeforeLoop();
 
 		ExecutionTree interLoopTree = new ExecutionTree(
 				new ExecutionTreeNode(initConstraintInter, initStateInter, 0, mEnterLoopLine, false), units, 
@@ -246,9 +247,11 @@ public class StatementResolver {
         
 		List<ExecutionTreeNode> toWriteZ3 = new ArrayList<ExecutionTreeNode>();
 		toWriteZ3.addAll(beforeLoopTree.getEndNodes());
+		/*
 		if (interLoopTree.getEndNodes().size() > 0) {
 			interLoopTree.getEndNodes().remove(0);
 		}
+		*/
 		toWriteZ3.addAll(interLoopTree.getEndNodes());
 		z3FormatBuilder z3Builder = new z3FormatBuilder(mVarsType, 
 				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3Format.txt", mUseNextBeforeLoop);
@@ -299,9 +302,13 @@ public class StatementResolver {
 		System.out.println("Variable output");
 
 		mLocalVars.put("beforeLoop", "bL_v");
-		mVarsType.put("beforeLoop", "before loop flag");
+		mVarsType.put("beforeLoop", "boolean");
 		System.out.println("Variable boolean beforeLoop");
-
+		
+		mLocalVars.put("beforeLoopDegree", "bLD_v");
+		mVarsType.put("beforeLoopDegree", "int");
+		mVarsType.put("bLD", "int");
+		System.out.println("Variable integer beforeLoopDegree");
 	 }
     
 	protected Set<JimpleBody> getSceneBodies() {

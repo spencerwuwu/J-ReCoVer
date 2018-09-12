@@ -24,6 +24,7 @@ public class ExecutionTree {
 	private Map<String, String> mVarsType;
 
 	private boolean mUseNextBeforeLoop = false;
+	private int mBeforeLoopDegree = 0;
 	private boolean mBefore = true;
 	
 
@@ -40,6 +41,10 @@ public class ExecutionTree {
 	
 	public void addRootConstraint(String constraint) {
 		mRoot.addConstraint(constraint);
+	}
+	
+	public boolean useNextBeforeLoop() {
+		return mUseNextBeforeLoop;
 	}
 	
 	public void executeTree() {
@@ -63,13 +68,14 @@ public class ExecutionTree {
 					if (!node.getReturnFlag() && node.getNextLine() < mEnterLoopLine) {
 						currentNodes.add(node);
 					} else {
+						if (mUseNextBeforeLoop) {
+							node.addConstraint("beforeLoopDegree == " + mBeforeLoopDegree);
+							System.out.println("add");
+						}
 						endNodes.add(node);
 					}
 				} else {
 					if (!node.getReturnFlag() && node.getNextLine() < mExitLoopLine) {
-					// After loop will go straight to the end of the program
-					// instead of exiting at the end of loop
-					//if (!node.getReturnFlag()) {
 						currentNodes.add(node);
 					} else {
 						endNodes.add(node);
@@ -87,10 +93,14 @@ public class ExecutionTree {
 			if (mBefore) {
 				System.out.println("====== Before Loop" + String.valueOf(index + 1) + " ======");
 			} else {
-				System.out.println("====== After Loop" + String.valueOf(index + 1) + " ======");
+				System.out.println("====== Inter Loop" + String.valueOf(index + 1) + " ======");
 			}
-			if (!mBefore) detectOutput(node);
-			node.getLocalVars().put("beforeLoop", "1");
+			if (!mBefore) {
+				detectOutput(node);
+				node.getLocalVars().put("beforeLoop", "1");
+			} else {
+				node.getLocalVars().put("beforeLoop", "0");
+			}
 			node.print();
 			System.out.println("");
 			index += 1;
@@ -108,18 +118,32 @@ public class ExecutionTree {
 				State newState = new State(currentNode.getLocalVars(), currentNode.getExecutionOrder(), 
 								 newUnit.toString(), us.getLine(), currentNode.getState().getInputUsedIndex());
 				if (newUnit instanceof AssignStmt) {
-					newState = performAssignStmt(newState, newUnit, currentNode.getLocalVars());
+					List<State> assignStates = performAssignStmt(newState, newUnit, currentNode.getLocalVars());
+					if (assignStates.size() == 1) {
+						ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), assignStates.get(0), 
+								currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
+						currentNode.mChildren.add(newLeaf);
+					} else {
+						List<String> condition = new ArrayList<String>();
+						condition.addAll(currentNode.getConstraint());
+						ExecutionTreeNode endLeaf = new ExecutionTreeNode(condition, assignStates.get(0), 
+								currentNode.getExecutionOrder(), currentNode.getNextLine(), currentNode.getReturnFlag());
+						endLeaf.addConstraint("beforeLoopDegree == " + (mBeforeLoopDegree - 1));
+						endNodes.add(endLeaf);
+						ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), assignStates.get(1), 
+								currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
+						currentNode.mChildren.add(newLeaf);
+					}
 				} else if (newUnit instanceof IdentityStmt){
 					newState = performIdentityStmt(newState, newUnit);
+					ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), newState, 
+							currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
+					
+					currentNode.mChildren.add(newLeaf);
 				} else {
 					System.out.println(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
 					return;
 				}
-				ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), newState, 
-						currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
-				
-				newLeaf.getState().printForm();
-				currentNode.mChildren.add(newLeaf);
 
 			} else if (determineUnitState == 2) {
 				Unit newUnit=us.getUnit();
@@ -274,7 +298,7 @@ public class ExecutionTree {
 		return newValue;
 	}
 
-	protected State performAssignStmt(State st, Unit u, Map<String,String> lastEnv) {
+	protected List<State> performAssignStmt(State st, Unit u, Map<String,String> lastEnv) {
 		//adding flag to decide if it is in loop or not
 		DefinitionStmt ds = (DefinitionStmt) u;
 		Value var = ds.getLeftOp();
@@ -282,6 +306,8 @@ public class ExecutionTree {
 		Value assignment = ds.getRightOp();
 		
 		String ass_s = assignment.toString();
+		
+		List<State> returnStates = new ArrayList<State>();
 		// Normal assignment
 		if (!ass_s.contains("Iterator")) {
 			// removing quotes, eg: (org.apache.hadoop.io.IntWritable) $r6 -> $r6
@@ -320,24 +346,53 @@ public class ExecutionTree {
 
 			System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
 			st.update(var.toString(), ass_s);
+			returnStates.add(st);
 		}
 		else { 
 			// Handling iterator relative assignments
 			if (ass_s.contains("hasNext()")) {
 				System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
 				st.update(var.toString(), "hasNext");
+				returnStates.add(st);
 			} else if (ass_s.contains("next()")) {
-				if(mBefore) {mUseNextBeforeLoop = true;}
-				//use a new input
-				mVarsType.put("input" + st.getInputUsedIndex(), "input type");
-				
-				ass_s = "input" + st.getInputUsedIndex();
-				st.addInputUsedIndex();
-				st.update(var.toString(), ass_s);
-				System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);    
+				if (mBefore) {
+					mBeforeLoopDegree += 1;
+					if (!mUseNextBeforeLoop) {
+						mUseNextBeforeLoop = true;
+						mVarsType.put("input0", "input type");
+						st.update(var.toString(), "input0");
+						st.update("beforeLoopDegree", Integer.toString(mBeforeLoopDegree));
+						System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "input0");    
+						returnStates.add(st);
+					} else {
+						returnStates.add(st);
+						State newState = st.clone();
+						String replaceStr = "bld_" + (mBeforeLoopDegree - 1) + "_v";
+						for (String key : newState.getLocalVars().keySet()) {
+							if (newState.getLocalVars().get(key).equals("input0")) {
+								newState.update(key, replaceStr);
+								System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + replaceStr);    
+							}
+						}
+						newState.update(var.toString(), "input0");
+						mVarsType.put(replaceStr, "bld");
+						newState.update("beforeLoopDegree", Integer.toString(mBeforeLoopDegree));
+						System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "input0");    
+						returnStates.add(newState);
+					}
+				} else {
+					//use a new input
+					mVarsType.put("input" + st.getInputUsedIndex(), "input type");
+					
+					ass_s = "input" + st.getInputUsedIndex();
+					//st.addInputUsedIndex();
+					st.update(var.toString(), ass_s);
+					System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);    
+					returnStates.add(st);
+				}
 		    }	
 		}
-		return st;
+		return returnStates;
 	}
 
 	protected State performIdentityStmt(State st, Unit u) {
@@ -410,14 +465,19 @@ public class ExecutionTree {
 			lastEnv.remove(key);
 		}
 		*/
+		
+		// Won't set new branch for hasNext, automatically set as true
+		boolean hasNextFlag = false;
 		newIfCondition = valueReplace(newIfCondition, lastEnv);
+		newElseCondition = valueReplace(newElseCondition, lastEnv);
+		/*
 		if (newIfCondition.equals("hasNext")) {
 			newIfCondition = "0";
 		}
-		newElseCondition = valueReplace(newElseCondition, lastEnv);
 		if (newElseCondition.equals("hasNext")) {
 			newElseCondition = "0";
 		}
+		*/
 		ifCondition.add( newIfCondition );
 		elseCondition.add( newElseCondition );
 				
@@ -429,12 +489,15 @@ public class ExecutionTree {
 		if(parent.getLocalVars().get(conditionStmt.getOp1().toString()) == "hasNext" ) {
 			ifBranch.getLocalVars().put(conditionStmt.getOp1().toString(), "0");
 			elseBranch.getLocalVars().put(conditionStmt.getOp1().toString(), "1");
+			hasNextFlag = true;
 		}
 		ifBranch.setBranchInfo("IF branch from" + parent.getState().getCommandLineNo() );
 		elseBranch.setBranchInfo("ELSE branch from" + parent.getState().getCommandLineNo() );
 		
 		List<ExecutionTreeNode> returnList = new ArrayList<ExecutionTreeNode>();
-		returnList.add(ifBranch);
+		if (!hasNextFlag) {
+			returnList.add(ifBranch);
+		}
 		returnList.add(elseBranch);
 		return returnList;
 	}

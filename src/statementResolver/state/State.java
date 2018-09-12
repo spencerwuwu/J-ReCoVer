@@ -59,6 +59,10 @@ public class State {
 	}
 	*/
 	
+	public State clone() {
+		return new State(mLocalVars, mNum, mInputCommand, mCommandLineNo, mInputUsedIndex);
+	}
+	
 	public int getCommandLineNo() {
 		return mCommandLineNo;
 	}

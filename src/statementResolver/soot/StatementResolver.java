@@ -51,6 +51,8 @@ public class StatementResolver {
 	private LinkedHashMap<String, String> mLocalVars = new LinkedHashMap<String, String>();
 	private LinkedHashMap<String, String> mVarsType = new LinkedHashMap<String, String>();
 	private LinkedHashMap<String, VariableSet> mVarSets = new LinkedHashMap<String, VariableSet>();
+	Map<String, Boolean>mOutputRelated = new LinkedHashMap<String, Boolean>();
+	Map<String, Boolean>mConditionRelated = new LinkedHashMap<String, Boolean>();
 	private int mEnterLoopLine = 0;
 	private int mOutLoopLine = 0;
 	private boolean mUseNextBeforeLoop = false;
@@ -200,6 +202,7 @@ public class StatementResolver {
 			command_line_no++;
 		}
 		
+		checkOutputRelated(units);
 		// Does not support String 
 		for(UnitSet us : units) {
 			String unit = us.getUnit().toString();
@@ -254,13 +257,91 @@ public class StatementResolver {
 		*/
 		toWriteZ3.addAll(interLoopTree.getEndNodes());
 		z3FormatBuilder z3Builder = new z3FormatBuilder(mVarsType, 
-				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3Format.txt", mUseNextBeforeLoop);
+				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3Format.txt", mUseNextBeforeLoop, mOutputRelated, mConditionRelated);
 		if (z3Builder.getResult()) {
 			System.out.println("RESULT: Prove your reducer to be communicative");
 		} else {
 			System.out.println("RESULT: Prove your reducer to be NOT communicative");
 		}
 
+	}
+	
+	protected void checkOutputRelated(List<UnitSet> units) {
+		List<Unit> unitList = new ArrayList<Unit>();
+		int index = units.size() - 1;
+		while (index >= 0) {
+			unitList.add(units.get(index).getUnit());
+			index -= 1;
+		}
+		for (String key : mLocalVars.keySet()) {
+			mOutputRelated.put(key, false);
+			mConditionRelated.put(key, false);
+		}
+		
+		for (Unit unit : unitList) {
+			if (unit instanceof AssignStmt) {
+				DefinitionStmt ds = (DefinitionStmt) unit;
+				String var = ds.getLeftOp().toString();
+				String ass_s = ds.getRightOp().toString();
+				if (!ass_s.contains("Iterator")) {
+					// removing quotes, eg: (org.apache.hadoop.io.IntWritable) $r6 -> $r6
+					ass_s = ass_s.replaceAll("\\(.*?\\)\\s+", "");
+					// handle virtualinvoke, eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
+					if (ass_s.contains("virtualinvoke")) {
+						ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
+					}
+					// handle staticinvoke, eg: staticinvoke <java.lang.Long: java.lang.Long valueOf(long)>(l0) -> l0
+					if (ass_s.contains("staticinvoke")) {
+						ass_s = ass_s.split(">")[1].replace("(", "").replace(")", "");
+					}
+					String ass[] = ass_s.split("\\s+");
+					if (mOutputRelated.get(var)) {
+						for (String str : ass) {
+							for (String key : mOutputRelated.keySet()) {
+								if (str.equals(key)) {
+									//mOutputRelated.put(key, true);
+								}
+							}
+						}
+					}
+				}
+
+			} else if (unit instanceof IfStmt) {
+				IfStmt if_st = (IfStmt) unit;
+				Value condition = if_st.getCondition();
+				String vars[] = condition.toString().split("\\s+");
+				for (String var : vars) {
+					for (String key : mOutputRelated.keySet()) {
+						if (var.equals(key)) {
+							mOutputRelated.put(key, true);
+							mConditionRelated.put(key, true);
+						}
+					}
+				}
+			} else if(unit.toString().contains("virtualinvoke")) {
+				if(unit.toString().contains("OutputCollector") || unit.toString().contains("Context")) {
+					String key = (unit.toString().split("\\s+")[1]).split("\\.")[0];
+					String value = (unit.toString().split(">")[1]).split(",")[1];
+					value = value.replace(")", "");
+					value = value.replace(" ", "");
+					mOutputRelated.put(value, true);
+				} else {
+					String key = (unit.toString().split("\\s+")[1]).split("\\.")[0];
+					if (mOutputRelated.get(key)) {
+						String value = unit.toString().split(">")[1];
+						value = value.replace(")", "");
+						value = value.replace("(", "");
+						mOutputRelated.put(value, true);
+					}
+				}
+			}
+		}
+
+		System.out.println("====== Output/Condition Related ======");
+		for (String key : mOutputRelated.keySet()) {
+			System.out.println(key + ": \t" + mOutputRelated.get(key) + "/" + mConditionRelated.get(key));
+		}
+		System.out.println("======================================");
 	}
 	
 	protected void detectLoop(UnitGraph graph, Map<Unit, Integer> unitIndexes) {
@@ -297,18 +378,22 @@ public class StatementResolver {
 			System.out.println("Variable " + type + " " + localVar);
 		}
 		// Insert some input (only one input now)
-		mLocalVars.put("output", "");
+		mLocalVars.put("output", "0");
 		mVarsType.put("output", "");
 		System.out.println("Variable output");
 
 		mLocalVars.put("beforeLoop", "bL_v");
-		mVarsType.put("beforeLoop", "boolean");
+		mVarsType.put("beforeLoop", "beforeLoop");
 		System.out.println("Variable boolean beforeLoop");
 		
-		mLocalVars.put("beforeLoopDegree", "bLD_v");
-		mVarsType.put("beforeLoopDegree", "int");
-		mVarsType.put("bLD", "int");
+		mLocalVars.put("beforeLoopDegree", "0");
+		mVarsType.put("beforeLoopDegree", "beforeLoopDegree");
 		System.out.println("Variable integer beforeLoopDegree");
+
+		mOutputRelated.put("beforeLoop", true);
+		mOutputRelated.put("beforeLoopDegree", true);
+		mConditionRelated.put("beforeLoop", true);
+		mConditionRelated.put("beforeLoopDegree", true);
 	 }
     
 	protected Set<JimpleBody> getSceneBodies() {

@@ -76,6 +76,7 @@ public class ExecutionTree {
 					}
 				} else {
 					if (!node.getReturnFlag() && node.getNextLine() < mExitLoopLine) {
+					//if (!node.getReturnFlag()) {
 						currentNodes.add(node);
 					} else {
 						endNodes.add(node);
@@ -312,13 +313,6 @@ public class ExecutionTree {
 		if (!ass_s.contains("Iterator")) {
 			// removing quotes, eg: (org.apache.hadoop.io.IntWritable) $r6 -> $r6
 			ass_s = ass_s.replaceAll("\\(.*?\\)\\s+", "");
-
-			// handle int get(), eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
-			/*
-			if (ass_s.contains("get")) {
-				ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
-			}
-			*/
 			// handle virtualinvoke, eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
 			if (ass_s.contains("virtualinvoke")) {
 				ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
@@ -327,6 +321,7 @@ public class ExecutionTree {
 			if (ass_s.contains("staticinvoke")) {
 				ass_s = ass_s.split(">")[1].replace("(", "").replace(")", "");
 			}
+			
 
 			// change to prefix
 			String[] temp = ass_s.split(" ");
@@ -340,6 +335,8 @@ public class ExecutionTree {
 			if (m.find()) {
 				ass_s = ass_s.split("L")[0];
 			}
+			
+			if (ass_s.length() == 0) ass_s = "0";
 			
 			// replace rhs with mLocalVars value
 			ass_s = valueReplace(ass_s, lastEnv);
@@ -478,6 +475,16 @@ public class ExecutionTree {
 			newElseCondition = "0";
 		}
 		*/
+		if(parent.getLocalVars().get(conditionStmt.getOp1().toString()) == "hasNext" ) {
+			ExecutionTreeNode elseBranch = new ExecutionTreeNode(elseCondition, elseBranchState, 
+					parent.getExecutionOrder() + 1, parent.getNextLine() + 1, parent.getReturnFlag());
+			//elseBranch.getLocalVars().put(conditionStmt.getOp1().toString(), "1");
+			elseBranch.setBranchInfo("ELSE branch from" + parent.getState().getCommandLineNo() );
+			List<ExecutionTreeNode> returnList = new ArrayList<ExecutionTreeNode>();
+			returnList.add(elseBranch);
+			System.out.println("Actually we didn't");
+			return returnList;
+		}
 		ifCondition.add( newIfCondition );
 		elseCondition.add( newElseCondition );
 				
@@ -564,7 +571,7 @@ public class ExecutionTree {
 				value = "0";
 			}
 			
-			value = valueReplace(value, currentNode.getLocalVars());
+			value = valueReplace(value, currentNode.getState().getLocalVars());
 			System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + value);
 			newLeaf.getState().update(key, value);
 			

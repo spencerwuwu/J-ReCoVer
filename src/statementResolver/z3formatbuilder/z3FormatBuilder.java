@@ -20,8 +20,13 @@ import java.io.PrintWriter;
 
 public class z3FormatBuilder {
 	Map<String, String> typeTable;
-	List<ExecutionTreeNode> mFinalStates = new ArrayList<ExecutionTreeNode>();
-	boolean usingNextBeforeLoop = false;
+	List<ExecutionTreeNode> mFinalNodes = new ArrayList<ExecutionTreeNode>();
+	List<ExecutionTreeNode> mBeforeNodes = new ArrayList<ExecutionTreeNode>();
+	List<ExecutionTreeNode> mInnerNodes = new ArrayList<ExecutionTreeNode>();
+	Map<String, Boolean>mVariables = new HashMap<String, Boolean>();
+	Map<String, Boolean>mOutputRelated;
+	Map<String, Boolean>mConditionRelated;
+	boolean mUsingNextBeforeLoop = false;
 	File mFile;
 	PrintWriter mOutput;
 	
@@ -33,48 +38,49 @@ public class z3FormatBuilder {
 		    mFile.createNewFile();
 		    System.out.println("Create file successfully");
 		    System.out.println(mFile.getAbsolutePath());
-		}
-		catch(IOException ex) {
+		} catch(IOException ex) {
 			ex.printStackTrace();
 		}
 		
 		try {
 		    mOutput = new PrintWriter(mFile);
-		}
-		catch(FileNotFoundException f){
+		} catch(FileNotFoundException f){
 			f.printStackTrace();
 		}
 	}
 
 	public z3FormatBuilder(Map<String, String> table, List<ExecutionTreeNode> beforeNodes, List<ExecutionTreeNode> interNodes, 
-			String filename, boolean useNextFlag) {
+			String filename, boolean useNextFlag, Map<String, Boolean> outputRelated, Map<String, Boolean> conditionRelated) {
 		typeTable = table;
-		mFinalStates.addAll(beforeNodes);
-		mFinalStates.addAll(interNodes);
-		usingNextBeforeLoop = useNextFlag;
+		mFinalNodes.addAll(beforeNodes);
+		mFinalNodes.addAll(interNodes);
+		mBeforeNodes.addAll(beforeNodes);
+		mInnerNodes.addAll(interNodes);
+		mUsingNextBeforeLoop = useNextFlag;
+		mOutputRelated = outputRelated;
+		mConditionRelated = conditionRelated;
 		mFile = new File(filename);
 		System.out.print("Using getNext before loop: ");
-		System.out.print(usingNextBeforeLoop);
+		System.out.print(mUsingNextBeforeLoop);
 		System.out.print("\n");
 		
 		try {
 		    mFile.createNewFile();
 		    System.out.println("Create file successfully");
-		}
-		catch(IOException ex) {
+		} catch(IOException ex) {
 			ex.printStackTrace();
 		}
 		
 		try {
 		    mOutput = new PrintWriter(mFile);
-		}
-		catch(FileNotFoundException f){
+		} catch(FileNotFoundException f){
 			f.printStackTrace();
 		}
 	}
 	
 	public boolean getResult() {
 		writeZ3Format();
+
 		Process process = null;
 		try {
 			process = new ProcessBuilder("z3", mFile.getAbsolutePath()).start();
@@ -98,305 +104,224 @@ public class z3FormatBuilder {
 		}
 		System.out.println("\n");
 
+		if (result == null) {
+			System.err.println("Error in z3\n");
+			return false;
+		}
+
 		if (result.contains("unsat")) {
 			return true;
 		} else {
 			return false;
 		}
-
 	}
 	
 	public void writeZ3Format() {
-		Map<String, String>declareVars = new HashMap<String, String>();
+		variableTypeDeclare();
+		
+		int stage = 1;
+		while (stage <= 2) {
+			constructFormula(stage, 1);
+			constructFormula(stage, 2);
+			stage += 1;
+		}
+		//mOutput.append("(assert (not (= input0_1 input0_2)))\n");
+		mOutput.append("(assert (not (= input0_1_r1 input0_2_r1)))\n");
+		mOutput.append("(assert (= input0_1_r1 input0_2_r2))\n");
+		mOutput.append("(assert (= input0_2_r1 input0_1_r2))\n");
+		
+		if (!mUsingNextBeforeLoop) {
+			mOutput.append("(assert (= beforeLoop_1_r1 1))\n");
+		}
+		mOutput.append("(assert (= beforeLoop_1_r1 beforeLoop_1_r2))\n");
+		mOutput.append("(assert (= beforeLoop_2_r1 1))\n");
+		mOutput.append("(assert (= beforeLoop_2_r2 1))\n");
+
+		String finalAssertion = "";
+		for (String key : mVariables.keySet()) {
+			if (key.contains("input")) continue;
+			if (!mOutputRelated.get(key)) continue;
+			if (mConditionRelated.get(key)) continue;
+			if (finalAssertion.length() == 0) {
+				finalAssertion = "(not (= " + key + "_2_r1 " + key + "_2_r2))\n"; 
+			} else {
+				finalAssertion = "(or " + finalAssertion + "(not (= " + key + "_2_r1 " + key + "_2_r2)))\n"; 
+			}
+		}
+		mOutput.append("(assert " + finalAssertion + ")\n");
+
+		mOutput.append("(check-sat)\n");
+		mOutput.flush();
+
+	}
+	
+	protected void constructFormula(int stage, int round) {
+		// Generate formula for each variable in each round
+		for (String key : mVariables.keySet()) {
+			String finalValue = "";
+			for (ExecutionTreeNode node : mBeforeNodes) {
+				if (node.getLocalVars().get(key) == null) continue;
+				String value = combineValueCondition(node, key, stage, round);
+				if (value.length() == 0) continue;
+				
+				if (finalValue.length() == 0) {
+					finalValue = value;
+				} else {
+					finalValue = "(or " + finalValue + " " + value + ")\n";
+				}
+			}
+			for (ExecutionTreeNode node : mInnerNodes) {
+				if (node.getLocalVars().get(key) == null) continue;
+				String value = combineValueCondition(node, key, stage, round);
+				if (value.length() == 0) continue;
+
+				if (finalValue.length() == 0) {
+					finalValue = value;
+				} else {
+					finalValue = "(or " + finalValue + " " + value + ")\n";
+				}
+			}
+			if (finalValue.length() == 0) continue;
+			
+			if (mOutputRelated.get(key)) {
+				if (finalValue.contains("hasNext")) {
+					mOutputRelated.put(key, false);
+					continue;
+				}
+				finalValue = "(assert \n" + finalValue + ")";
+				mOutput.append(finalValue + "\n");
+			}
+		}
+		
+		mOutput.flush();
+	}
+	
+	protected String combineValueCondition(ExecutionTreeNode node, String var, int stage, int round) {
+		String condition = generateConditions(node.getConstraint(), stage, round);
+		String valueTokens[] = node.getLocalVars().get(var).split("\\s+");
+		String value = "";
+		for (String token : valueTokens) {
+			if (token.contains("_v")) {
+				token = token.replace("_v", "_" + (stage - 1) + "_r" + round);
+			} else if (token.contains("input")) {
+				token = token + "_" + stage + "_r" + round;
+			}
+			if (value.length() == 0) value = token;
+			else value = value + " " + token;
+		}
+		if (value.length() == 0) return "";
+
+		value = "(= " + var + "_" + stage + "_r" + round + " " + value + ")";
+		return "(and " + condition + " " + value + ")\n";
+	}
+	
+	protected String generateConditions(List<String> constraints, int stage, int round) {
+		String conditions = "";
+		for (String constraint : constraints) {
+			String tokens[] = constraint.split("\\s+");
+			String operation = "";
+			String lhs = "";
+			String rhs = "";
+			String condition = "";
+			boolean negative = false;
+			if (tokens.length == 4 && tokens[0].equals("!")) {
+				lhs = tokens[1];
+				operation = tokens[2];
+				rhs = tokens[3];
+				negative = true;
+			} else {
+				lhs = tokens[0];
+				operation = tokens[1];
+				rhs = tokens[2];
+			}
+			
+			if (lhs.equals("beforeLoopDegree")) continue;
+			
+			for (String key : mVariables.keySet()) {
+				if (lhs.equals(key)) {
+					lhs = lhs + "_" + stage + "_r" + round;
+					break;
+				}
+			}
+			for (String key : mVariables.keySet()) {
+				if (rhs.equals(key)) {
+					rhs = rhs + "_" + stage + "_r" + round;
+					break;
+				}
+			}
+
+			if (operation.equals("!=")) {
+				condition = "(not (= " + lhs + " " + rhs + "))";
+			} else if (operation.equals("==")) {
+				condition = "(= " + lhs + " " + rhs + ")";
+			} else {
+				condition = "(" + operation + " " + lhs + " " + rhs + ")";
+			}
+			
+			if (negative) {
+				condition = "(not " + condition + ")";
+			}
+			
+			if (conditions.length() == 0) conditions = condition;
+			else conditions = "(and " + conditions + " " + condition + ")";
+		}
+		return conditions;
+	}
+	
+	public void variableTypeDeclare() {
 		/*
 		  initialize variable
 		  initial version would be the same, but internal version(_1, _2) maybe not.
 		  result formula wouldn't take variable with '$' into account.
 		*/
-		for(String s:typeTable.keySet()) {
-			String type = typeTable.get(s);
-			if (type == "int" | type == "byte" | type == "short" | type == "long") {
-			    mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
-			    declareVars.put(s+"_0", "Int");
-			    declareVars.put(s+"_1", "Int");
-			    declareVars.put(s+"_2", "Int");
-			    
-			    //if(s.contains("$")) {
-			    //mOutput.append("(declare-const "+s+"_0com0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_1com0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_2com0"+" Int"+")"+"\n");
-			    //declareVars.put(s+"_0com0", "Int");
-			    declareVars.put(s+"_1com0", "Int");
-			    declareVars.put(s+"_2com0", "Int");
-			    //}
-			    
-			}
-			else if (type == "double" | type == "float" ) {
-				mOutput.append("(declare-const "+s+"_0"+" Real"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_1"+" Real"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_2"+" Real"+")"+"\n");
-			    declareVars.put(s+"_0", "Real");
-			    declareVars.put(s+"_1", "Real");
-			    declareVars.put(s+"_2", "Real");
-			    
-			    //if(s.contains("$")) {
-			    //mOutput.append("(declare-const "+s+"_0com0"+" Real"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_1com0"+" Real"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_2com0"+" Real"+")"+"\n");
-			    //declareVars.put(s+"_0com0", "Real");
-			    declareVars.put(s+"_1com0", "Real");
-			    declareVars.put(s+"_2com0", "Real");
-			    //}
-			    
-				
-			}
-			else if (type == "boolean" ) {
-				//use Int in Z3 would be easier
-				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
-			    declareVars.put(s+"_0", "Bool");
-			    declareVars.put(s+"_1", "Bool");
-			    declareVars.put(s+"_2", "Bool");
-			    
-			    //if(s.contains("$")) {
-			    //mOutput.append("(declare-const "+s+"_0com0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_1com0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_2com0"+" Int"+")"+"\n");
-			    //declareVars.put(s+"_0com0", "Bool");
-			    declareVars.put(s+"_1com0", "Bool");
-			    declareVars.put(s+"_2com0", "Bool");
-			    //}
-			    
-			    
-			}
-			else if (type == "input type") {
-				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
-			    declareVars.put(s+"_0", "Int");
-			    declareVars.put(s+"_1", "Int");
-			    declareVars.put(s+"_2", "Int");
-			    
-			}
-			else if (type == "before loop flag") {
-				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
-			    declareVars.put(s+"_0", "Int");
-			    declareVars.put(s+"_1", "Int");
-			    declareVars.put(s+"_2", "Int");
-			}
-			else if (type.contains("bld")) {
-				mOutput.append("(declare-const "+s.replace("_v", "")+"_0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s.replace("_v", "")+"_1"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s.replace("_v", "")+"_2"+" Int"+")"+"\n");
-			    declareVars.put(s.replace("_v", "")+"_0", "Int");
-			    declareVars.put(s.replace("_v", "")+"_1", "Int");
-			    declareVars.put(s.replace("_v", "")+"_2", "Int");
-			}
-			else if (type == "") {
+		for(String variable : typeTable.keySet()) {
+			String type = typeTable.get(variable);
+			String var = variable.replace("_v", "");
+
+			if (type == "int" || type == "byte" || type == "short" || type == "long"
+					|| type == "input type" || type == "before loop flag") {
+				type = "Int";
+				mVariables.put(var, false);
+			} else if (type == "double" | type == "float" ) {
+				type = "Real";
+				mVariables.put(var, false);
+			} else if (type == "boolean" ) {
+				type = "Int";
+				mVariables.put(var, false);
+			} else if (type.contains("beforeLoopDegree")) {
+				type = "Int";
+				mVariables.put(var, false);
+			} else if (type.contains("beforeLoop")) {
+				type = "Int";
+				mVariables.put(var, false);
+			} else if (type == "") {
 				//deal with output
-				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
-			    
-			    mOutput.append("(declare-const "+s+"_0com0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_1com0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_2com0"+" Int"+")"+"\n");
-			    
-			    declareVars.put(s+"_0", "Int");
-			    declareVars.put(s+"_1", "Int");
-			    declareVars.put(s+"_2", "Int");
-			    
-			    declareVars.put(s+"_0com0", "Int");
-			    declareVars.put(s+"_1com0", "Int");
-			    declareVars.put(s+"_2com0", "Int");
-			    
-			}
-			else if (type.contains("Object")){
-				mOutput.append("(declare-const "+s+"_0"+" Real"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_1"+" Real"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_2"+" Real"+")"+"\n");
-			    declareVars.put(s+"_0", "Real");
-			    declareVars.put(s+"_1", "Real");
-			    declareVars.put(s+"_2", "Real");
-			    System.out.println(s + " " + Color.ANSI_RED + typeTable.get(s) + " -> REAL" + Color.ANSI_RESET);
-			}
-			else if (type.contains("IntWritable") || type.contains("LongWritable")) {
-				mOutput.append("(declare-const "+s+"_0"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_1"+" Int"+")"+"\n");
-			    mOutput.append("(declare-const "+s+"_2"+" Int"+")"+"\n");
-			    declareVars.put(s+"_0", "Int");
-			    declareVars.put(s+"_1", "Int");
-			    declareVars.put(s+"_2", "Int");
-			    System.out.println(s + " " + Color.ANSI_RED + typeTable.get(s) + " -> Int" + Color.ANSI_RESET);
-			}
-			else {
+				type = "Int";
+				mVariables.put(var, false);
+			} else if (type.contains("Object")){
+				type = "Real";
+				mVariables.put(var, false);
+			} else if (type.contains("IntWritable") || type.contains("LongWritable")) {
+				type = "Int";
+			    System.out.println(variable + " " + Color.ANSI_RED + typeTable.get(variable) + " -> Int" + Color.ANSI_RESET);
+				mVariables.put(var, false);
+			} else {
 				// Not supported in z3 Format
-			    System.out.println(s + " " + Color.ANSI_RED + typeTable.get(s) + Color.ANSI_RESET);
+			    System.out.println(variable + " " + Color.ANSI_RED + typeTable.get(variable) + Color.ANSI_RESET);
+			    continue;
 			}
-		}
-		mOutput.flush();
-		
-		String finalEquation = "";
-		
-		for(int i = 0; i < 2; i++) {
-			String oneIter = "";
-			for(ExecutionTreeNode node: mFinalStates) {
-
-				//deal with constraints
-				String constraintStr = "";
-				for(String str : node.getConstraint()) {
-					boolean addAND = false;
-					
-					if(str.charAt(0) == '!') {
-						
-						if(!constraintStr.equals("") ) {
-							addAND = true;
-							constraintStr = "(and "+constraintStr+" ";
-						}
-
-					    String[] strArray = str.split(" ");
-					    //deal with variable version
-					    /*
-					    if(result.mRoot.getLocalVars().keySet().contains(strArray[3]) ) {
-					    	strArray[3] = strArray[3]+"_"+String.valueOf(i);
-					    }*/
-					    
-					    if(strArray[1].contains("_v")) {strArray[1] = strArray[1].replace("_v", "_"+String.valueOf(i));}
-					    if(strArray[3].contains("_v")) {strArray[3] = strArray[3].replace("_v", "_"+String.valueOf(i));}
-					    if(strArray[1].equals("input0")) {strArray[1] = strArray[1].replace("input0", "input0_"+String.valueOf(i));}
-					    if(strArray[3].equals("input0")) {strArray[3] = strArray[3].replace("input0", "input0_"+String.valueOf(i));}
-					    if(!strArray[1].contains("_") && node.getLocalVars().containsKey(strArray[1])) {
-					    	strArray[1] = strArray[1].concat("_"+String.valueOf(i));
-					    }
-					    
-					    if(strArray[2].equals("!=") ) {
-					        constraintStr += "(= "+strArray[1]+" "+strArray[3]+")";
-					    }
-					    else if(strArray[2].equals("==") ){
-					    	constraintStr += "(not (="+" "+strArray[1]+" "+strArray[3]+"))";
-					    }
-					    else {
-					    	constraintStr += "(not ("+strArray[2]+" "+strArray[1]+" "+strArray[3]+"))";
-					    }
-					    
-					    
-					}
-					else {
-						if(!constraintStr.equals("") ) {
-							addAND = true;
-							constraintStr = "(and "+constraintStr+" ";
-						}
-
-						String[] strArray = str.split(" ");
-
-						//deal with variable version
-						/*
-					    if(result.mRoot.getLocalVars().keySet().contains(strArray[2]) ) {
-					    	strArray[2] = strArray[2]+"_"+String.valueOf(i);
-					    }*/
-					    
-					    if(strArray[0].contains("_v")) {strArray[0] = strArray[0].replace("_v", "_"+String.valueOf(i));}
-					    if(strArray[2].contains("_v")) {strArray[2] = strArray[2].replace("_v", "_"+String.valueOf(i));}
-					    if(strArray[0].equals("input0")) {strArray[0] = strArray[0].replace("input0", "input0_"+String.valueOf(i));}
-					    if(strArray[2].equals("input0")) {strArray[2] = strArray[2].replace("input0", "input0_"+String.valueOf(i));}
-					    if(!strArray[0].contains("_") && node.getLocalVars().containsKey(strArray[0])) {
-					    	strArray[0] = strArray[0].concat("_"+String.valueOf(i));
-					    }
-                        
-					    
-						if(strArray[1].equals("!=") ) {
-							constraintStr += "(not (= "+strArray[0]+" "+strArray[2]+"))";
-						}
-						else if(strArray[1].equals("==") ){
-							
-					    	constraintStr += "(="+" "+strArray[0]+" "+strArray[2]+")";
-					    }
-					    else {
-					    	constraintStr += "("+strArray[1]+" "+strArray[0]+" "+strArray[2]+")";
-					    }
-					}
-					if (addAND == true) {
-						constraintStr+=")";
-					}
-				}
+			int index = 0;
+			while (index <= 2) {
+				mOutput.append("(declare-const " + var + "_" + index + "_r1" + " " + type +")\n");
+				mOutput.append("(declare-const " + var + "_" + index + "_r2" + " " + type +")\n");
 				
-				//deal with result
-				
-				String varStr = "";
-				for (String var : node.getLocalVars().keySet()) {
-					
-					if(node.getLocalVars().get(var).contains("@parameter")
-					   | node.getLocalVars().get(var).equals("")
-					   | var.contains("$") ) {continue;}
-					
-					boolean addAND = false;
-					
-					if(declareVars.containsKey(var+"_"+String.valueOf(i+1))) {
-						if(!varStr.equals("") ) {
-							addAND = true;
-							varStr = "(and "+varStr+" ";
-						}
-						
-						String next = node.getLocalVars().get(var);
-						if( next.contains("_v") ) {
-							next = next.replace("_v", "_"+String.valueOf(i));
-						}
-						//assume only use one input each iter
-						if( next.contains("input0") ) {
-							next = next.replace("input0", "input0_"+String.valueOf(i));//has problem
-					    } 
-						varStr +="(= "+var+"_"+String.valueOf(i+1)+" "+next+")";
-					    if(addAND == true) {
-						    varStr = varStr + ")";
-					    }
-			        }
-				}
-				if(oneIter.equals("")) {
-					oneIter = "(and "+constraintStr+" "+varStr+")";
-				}
-				else {
-					oneIter ="(or "+oneIter+" "+"(and "+constraintStr+" "+varStr+")"+")";
-				}
+			    index += 1;
 			}
-			if(finalEquation.equals("")) {
-				finalEquation = new String(oneIter);
-			}
-			else {
-			    finalEquation = "(and "+finalEquation+" "+oneIter+")";
-			}
-		
-	    }
-		
-		String compareEquation = new String(finalEquation);
-		compareEquation = compareEquation.replace("input0_0", "temp");
-		compareEquation = compareEquation.replace("input0_1", "input0_0");
-		compareEquation = compareEquation.replace("temp", "input0_1");
-		
-		
-		for(String var:declareVars.keySet()) {
-			if(! var.contains("input") && ! var.contains("beforeLoop") && declareVars.containsKey(var+"com0") ) {
-				compareEquation = compareEquation.replace(var, var+"com0");
-			}
+			if (!var.contains("input")) mOutput.append("(assert (= " + var + "_0_r1 " + var + "_0_r2" + "))\n");
 		}
-	    
-	    
-	    mOutput.append("(assert "+finalEquation+")\n");
-	    mOutput.append("(assert "+compareEquation+")\n");
-	    
-	    if(!usingNextBeforeLoop) {
-	    	mOutput.append("(assert (= beforeLoop_0 1))\n");
-	    }
-	   
-        mOutput.append("(assert (not (= output_2 output_2com0)) )\n");
-
-		mOutput.append("(check-sat)\n");
 		mOutput.flush();
 	}
+
 		
 	
 } 

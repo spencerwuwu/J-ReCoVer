@@ -207,7 +207,7 @@ public class StatementResolver {
 		for(UnitSet us : units) {
 			String unit = us.getUnit().toString();
 			if (unit.contains("String")) {
-				System.err.println("Currently support no String operation");
+				System.err.print("Currently support no String operation or Assertion ");
 				return;
 			}
 		}
@@ -268,6 +268,7 @@ public class StatementResolver {
 	
 	protected void checkOutputRelated(List<UnitSet> units) {
 		List<Unit> unitList = new ArrayList<Unit>();
+
 		int index = units.size() - 1;
 		while (index >= 0) {
 			unitList.add(units.get(index).getUnit());
@@ -289,21 +290,20 @@ public class StatementResolver {
 					// handle virtualinvoke, eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
 					if (ass_s.contains("virtualinvoke")) {
 						ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
+						if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, false);
+						continue;
 					}
 					// handle staticinvoke, eg: staticinvoke <java.lang.Long: java.lang.Long valueOf(long)>(l0) -> l0
 					if (ass_s.contains("staticinvoke")) {
 						ass_s = ass_s.split(">")[1].replace("(", "").replace(")", "");
+						mOutputRelated.put(var, false);
+						continue;
 					}
 					String ass[] = ass_s.split("\\s+");
-					if (mOutputRelated.get(var)) {
-						for (String str : ass) {
-							for (String key : mOutputRelated.keySet()) {
-								if (str.equals(key)) {
-									//mOutputRelated.put(key, true);
-								}
-							}
-						}
-					}
+					
+					// Continue if assignment is being operated (exclude directly assignment of input)
+					if (ass.length <= 1) continue;
+					if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, true);
 				}
 
 			} else if (unit instanceof IfStmt) {
@@ -311,11 +311,9 @@ public class StatementResolver {
 				Value condition = if_st.getCondition();
 				String vars[] = condition.toString().split("\\s+");
 				for (String var : vars) {
-					for (String key : mOutputRelated.keySet()) {
-						if (var.equals(key)) {
-							mOutputRelated.put(key, true);
-							mConditionRelated.put(key, true);
-						}
+					if (mOutputRelated.containsKey(var)) {
+						mOutputRelated.put(var, true);
+						mConditionRelated.put(var, true);
 					}
 				}
 			} else if(unit.toString().contains("virtualinvoke")) {
@@ -327,10 +325,22 @@ public class StatementResolver {
 					mOutputRelated.put(value, true);
 				} else {
 					String key = (unit.toString().split("\\s+")[1]).split("\\.")[0];
-					if (mOutputRelated.get(key)) {
+					if (mOutputRelated.containsKey(key) && mOutputRelated.get(key)) {
 						String value = unit.toString().split(">")[1];
 						value = value.replace(")", "");
 						value = value.replace("(", "");
+						mOutputRelated.put(value, true);
+					}
+				}
+			} else if(unit.toString().contains("specialinvoke")) {
+				if(unit.toString().contains("init")) {
+					String var = (unit.toString().split("\\s+")[1]).split("\\.")[0];
+					String value = unit.toString().split(">")[2];
+					value = value.replace(")", "");
+					value = value.replace("(", "");
+					if (value.length() == 0) continue;
+					
+					if (mOutputRelated.containsKey(var) && mOutputRelated.get(var)) {
 						mOutputRelated.put(value, true);
 					}
 				}

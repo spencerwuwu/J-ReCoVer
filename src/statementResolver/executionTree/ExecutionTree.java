@@ -427,54 +427,11 @@ public class ExecutionTree {
 		
 		// replace with mLocalVars value
 		Map<String, String> lastEnv = parent.getLocalVars();
-		/*
-		String ifKey = "";
-		String elseKey = "";
-		for (String re_var: lastEnv.keySet()) {
-			if (newIfCondition.contains(re_var) && lastEnv.get(re_var)!="hasNext" ) {
-				if (ifKey.length() < re_var.length()) {
-					ifKey = re_var;
-				}
-			}
-			if (newElseCondition.contains(re_var) && lastEnv.get(re_var)!="hasNext" ) {
-				if (elseKey.length() < re_var.length()) {
-					elseKey = re_var;
-				}
-				System.out.println("replace "+re_var+": " + lastEnv.get(re_var));
-				newElseCondition = newElseCondition.replace(re_var, lastEnv.get(re_var));
-			}
-		}
-		if (ifKey.length() > 0) {
-			System.out.println("replace " + ifKey + ": " + lastEnv.get(ifKey));
-			newIfCondition = newIfCondition.replace(ifKey, lastEnv.get(ifKey));
-		}
-		if (elseKey.length() > 0) {
-			System.out.println("replace " + elseKey + ": " + lastEnv.get(elseKey));
-			newIfCondition = newIfCondition.replace(elseKey, lastEnv.get(elseKey));
-		}
-		List<String> rmKeys = new ArrayList<String>();
-		for (String key : lastEnv.keySet()) {
-			if (lastEnv.get(key).equals("hasNext")) {
-				rmKeys.add(key);
-			}
-		}
-		for (String key : rmKeys) {
-			lastEnv.remove(key);
-		}
-		*/
 		
 		// Won't set new branch for hasNext, automatically set as true
-		boolean hasNextFlag = false;
-		newIfCondition = valueReplace(newIfCondition, lastEnv);
-		newElseCondition = valueReplace(newElseCondition, lastEnv);
-		/*
-		if (newIfCondition.equals("hasNext")) {
-			newIfCondition = "0";
-		}
-		if (newElseCondition.equals("hasNext")) {
-			newElseCondition = "0";
-		}
-		*/
+		newIfCondition = valueReplace(newIfCondition, lastEnv).replace("_v", "");
+		newElseCondition = valueReplace(newElseCondition, lastEnv).replace("_v", "");
+
 		if(parent.getLocalVars().get(conditionStmt.getOp1().toString()) == "hasNext" ) {
 			ExecutionTreeNode elseBranch = new ExecutionTreeNode(elseCondition, elseBranchState, 
 					parent.getExecutionOrder() + 1, parent.getNextLine() + 1, parent.getReturnFlag());
@@ -493,18 +450,11 @@ public class ExecutionTree {
 		ExecutionTreeNode elseBranch = new ExecutionTreeNode(elseCondition, elseBranchState, 
 				parent.getExecutionOrder() + 1, parent.getNextLine() + 1, parent.getReturnFlag());
 		
-		if(parent.getLocalVars().get(conditionStmt.getOp1().toString()) == "hasNext" ) {
-			ifBranch.getLocalVars().put(conditionStmt.getOp1().toString(), "0");
-			elseBranch.getLocalVars().put(conditionStmt.getOp1().toString(), "1");
-			hasNextFlag = true;
-		}
 		ifBranch.setBranchInfo("IF branch from" + parent.getState().getCommandLineNo() );
 		elseBranch.setBranchInfo("ELSE branch from" + parent.getState().getCommandLineNo() );
 		
 		List<ExecutionTreeNode> returnList = new ArrayList<ExecutionTreeNode>();
-		if (!hasNextFlag) {
-			returnList.add(ifBranch);
-		}
+		returnList.add(ifBranch);
 		returnList.add(elseBranch);
 		return returnList;
 	}

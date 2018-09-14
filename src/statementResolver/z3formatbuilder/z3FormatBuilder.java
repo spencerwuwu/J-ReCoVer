@@ -319,6 +319,8 @@ public class z3FormatBuilder {
 			}
 			if (!var.contains("input")) mOutput.append("(assert (= " + var + "_0_r1 " + var + "_0_r2" + "))\n");
 		}
+		mOutput.append("(declare-const null Int)\n");
+		mOutput.append("(assert (= null 0))\n");
 		mOutput.flush();
 	}
 

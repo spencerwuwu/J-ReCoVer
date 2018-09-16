@@ -1,17 +1,14 @@
-package statementResolver.state;
+package communicativeSolver.state;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-
-
+import communicativeSolver.color.Color;
 import soot.Value;
-import statementResolver.color.Color;
 
 public class State {
 	Map<String, String> mLocalVars;
-	Map<String, VariableSet> mVarSets;
 	int mInputUsedIndex = 0;
 	int mNum;	// State number
 	String mInputCommand;
@@ -26,19 +23,6 @@ public class State {
 	public State(Map<String, String> in, int number, String comm, int no, int inputindex) {
 		mLocalVars = new LinkedHashMap<String, String>();
 		mLocalVars.putAll(in);
-		mNum = number;
-		mInputCommand = comm;
-		mCommandLineNo = no;
-		mInputUsedIndex = inputindex;
-	}
-
-	public State(Map<String, VariableSet> vars, int number, String comm, int no, int inputindex, boolean tmp) {
-		mLocalVars = new LinkedHashMap<String, String>();
-		mVarSets = new LinkedHashMap<String, VariableSet>();
-		mVarSets.putAll(vars);
-		for (String key : mVarSets.keySet()) {
-			mLocalVars.put(key, mVarSets.get(key).getLocalVar());
-		}
 		mNum = number;
 		mInputCommand = comm;
 		mCommandLineNo = no;

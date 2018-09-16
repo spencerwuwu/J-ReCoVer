@@ -1,5 +1,5 @@
 
-package statementResolver.color;
+package communicativeSolver.color;
 
 public class Color {
 

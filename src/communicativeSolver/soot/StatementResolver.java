@@ -1,15 +1,14 @@
-package statementResolver.soot;
+package communicativeSolver.soot;
 
 import com.google.common.base.Preconditions;
 
-import statementResolver.Option;
-import statementResolver.color.Color;
-import statementResolver.executionTree.ExecutionTree;
-import statementResolver.executionTree.ExecutionTreeNode;
-import statementResolver.state.State;
-import statementResolver.state.UnitSet;
-import statementResolver.state.VariableSet;
-import statementResolver.z3formatbuilder.*;
+import communicativeSolver.Option;
+import communicativeSolver.color.Color;
+import communicativeSolver.executionTree.ExecutionTree;
+import communicativeSolver.executionTree.ExecutionTreeNode;
+import communicativeSolver.state.State;
+import communicativeSolver.state.UnitSet;
+import communicativeSolver.z3formatbuilder.*;
 import soot.Body;
 import soot.RefType;
 import soot.Scene;
@@ -50,7 +49,6 @@ public class StatementResolver {
 
 	private LinkedHashMap<String, String> mLocalVars = new LinkedHashMap<String, String>();
 	private LinkedHashMap<String, String> mVarsType = new LinkedHashMap<String, String>();
-	private LinkedHashMap<String, VariableSet> mVarSets = new LinkedHashMap<String, VariableSet>();
 	Map<String, Boolean>mOutputRelated = new LinkedHashMap<String, Boolean>();
 	Map<String, Boolean>mConditionRelated = new LinkedHashMap<String, Boolean>();
 	private int mEnterLoopLine = 0;
@@ -207,7 +205,7 @@ public class StatementResolver {
 		for(UnitSet us : units) {
 			String unit = us.getUnit().toString();
 			if (unit.contains("String")) {
-				System.err.print("Currently support no String operation or Assertion ");
+				System.err.print("Currently support no String operation or Assertion \n");
 				return;
 			}
 		}
@@ -384,7 +382,6 @@ public class StatementResolver {
 			String localVar = value.toString() + "_v";
 			mVarsType.put(value.toString(), type);
 			mLocalVars.put(value.toString(), localVar);
-			mVarSets.put(value.toString(), new VariableSet(type, localVar));
 			System.out.println("Variable " + type + " " + localVar);
 		}
 		// Insert some input (only one input now)

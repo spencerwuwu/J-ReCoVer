@@ -1,4 +1,4 @@
-package statementResolver.executionTree;
+package communicativeSolver.executionTree;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,13 +6,13 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import communicativeSolver.color.Color;
+import communicativeSolver.state.State;
+import communicativeSolver.state.UnitSet;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.*;
 import soot.jimple.internal.*;
-import statementResolver.color.Color;
-import statementResolver.state.State;
-import statementResolver.state.UnitSet;
 
 public class ExecutionTree {
 	private ExecutionTreeNode mRoot;
@@ -124,7 +124,7 @@ public class ExecutionTree {
 						ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), assignStates.get(0), 
 								currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
 						currentNode.mChildren.add(newLeaf);
-					} else {
+					} else if (assignStates.size() == 2) {
 						List<String> condition = new ArrayList<String>();
 						condition.addAll(currentNode.getConstraint());
 						ExecutionTreeNode endLeaf = new ExecutionTreeNode(condition, assignStates.get(0), 

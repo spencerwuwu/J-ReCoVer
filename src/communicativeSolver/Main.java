@@ -1,7 +1,7 @@
-package statementResolver;
+package communicativeSolver;
 
-import statementResolver.Option;
-import statementResolver.soot.StatementResolver;
+import communicativeSolver.Option;
+import communicativeSolver.soot.StatementResolver;
 
 public class Main {
 	public static void main(String[] args) {

@@ -17,7 +17,7 @@
     <target name="create_run_jar" depends="compile">
         <jar destfile="${dir.jarfile}/jsr.jar" filesetmanifest="mergewithoutmain">
             <manifest>
-                <attribute name="Main-Class" value="statementResolver.Main"/>
+                <attribute name="Main-Class" value="communicativeSolver.Main"/>
                 <attribute name="Class-Path" value="."/>
             </manifest>
             <fileset dir="${dir.buildfile}/bin"/>

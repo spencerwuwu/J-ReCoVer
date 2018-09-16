@@ -1,5 +1,5 @@
 
-package statementResolver;
+package communicativeSolver;
 
 public class Option {
 

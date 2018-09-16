@@ -1,10 +1,10 @@
-package statementResolver.executionTree;
+package communicativeSolver.executionTree;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import statementResolver.state.State;
+import communicativeSolver.state.State;
 
 public class ExecutionTreeNode {
 	public List<ExecutionTreeNode> mChildren = new ArrayList<ExecutionTreeNode>();

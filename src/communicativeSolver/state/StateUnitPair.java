@@ -1,4 +1,4 @@
-package statementResolver.state;
+package communicativeSolver.state;
 
 import soot.Unit;
 

@@ -1,10 +1,12 @@
-package statementResolver.z3formatbuilder;
+package communicativeSolver.z3formatbuilder;
 
-import statementResolver.color.Color;
-import statementResolver.executionTree.ExecutionTreeNode;
-import statementResolver.tree.*;
 import java.util.HashMap;
 import java.util.Map;
+
+import communicativeSolver.color.Color;
+import communicativeSolver.executionTree.ExecutionTreeNode;
+import communicativeSolver.tree.*;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.io.BufferedReader;

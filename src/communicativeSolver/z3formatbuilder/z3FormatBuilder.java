@@ -140,7 +140,7 @@ public class z3FormatBuilder {
 		for (String key : mVariables.keySet()) {
 			if (key.contains("input")) continue;
 			if (!mOutputRelated.get(key)) continue;
-			if (mConditionRelated.get(key)) continue;
+			//if (mConditionRelated.get(key)) continue;
 			if (finalAssertion.length() == 0) {
 				finalAssertion = "(not (= " + key + "_2_r1 " + key + "_2_r2))\n"; 
 			} else {
@@ -355,7 +355,9 @@ public class z3FormatBuilder {
 					&& !element.contains("-")
 					&& !element.contains("*")
 					&& !element.contains("/")
-					&& !element.matches("-?[0-9]*")
+					&& !element.contains("mod")
+					&& !element.contains("null")
+					&& !element.matches("-?[0-9]*\\.?[0-9]*")
 					&& !vars.containsKey(element)) {
 				if (!mGlobalVariables.contains(element)) mGlobalVariables.add(element);
 			}

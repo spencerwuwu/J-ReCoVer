@@ -347,9 +347,18 @@ public class ExecutionTree {
 		if (!ass_s.contains("Iterator")) {
 			// removing quotes, eg: (org.apache.hadoop.io.IntWritable) $r6 -> $r6
 			ass_s = ass_s.replaceAll("\\(.*?\\)\\s+", "");
-			// handle virtualinvoke, eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
+
 			if (ass_s.contains("virtualinvoke")) {
-				ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
+				if (ass_s.contains("compareTo")) {
+					// $i0 = virtualinvoke r6.<org.apache.hadoop.io.LongWritable: int compareTo(org.apache.hadoop.io.LongWritable)>(r4)
+					String valueL = ass_s.split("\\s+")[1].split("\\.")[0];
+					String valueR = ass_s.split("\\>")[1].replace("(", "").replace(")", "");
+					if (valueR.length() == 0) ass_s = "1";
+					else ass_s = valueL + " - " + valueR ;
+				} else {
+					// handle virtualinvoke, eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
+					ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
+				}
 			}
 			// handle staticinvoke, eg: staticinvoke <java.lang.Long: java.lang.Long valueOf(long)>(l0) -> l0
 			if (ass_s.contains("staticinvoke")) {

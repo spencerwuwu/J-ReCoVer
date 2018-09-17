@@ -86,6 +86,7 @@ public class ExecutionTree {
 			newNodes.clear();
 		}
 		mEndNodes = endNodes;
+		
 	}
 	
 	public void print() {
@@ -97,7 +98,7 @@ public class ExecutionTree {
 				System.out.println("====== Inter Loop" + String.valueOf(index + 1) + " ======");
 			}
 			if (!mBefore) {
-				detectOutput(node);
+				// detectOutput(node);
 				node.getLocalVars().put("beforeLoop", "1");
 			} else {
 				node.getLocalVars().put("beforeLoop", "0");
@@ -271,9 +272,42 @@ public class ExecutionTree {
 		}
 		return 4;
 	}
+	protected String parseLong(String value){
+		String values[] = value.split("\\s+");
+
+		// parse long 123L -> 123
+		Pattern p = Pattern.compile("^[0-9]+L$");
+		int i = 0;
+		while (i < values.length) {
+			Matcher m = p.matcher(values[i]);
+			if (m.find()) {
+				values[i] = values[i].split("L")[0];
+			}
+			i += 1;
+		}
+		String result = "";
+		for (String str : values) {
+			if (result.length() == 0) result = str;
+			else result = result + " " + str;
+		}
+		
+		return result;
+	}
 	
 	protected String valueReplace(String value, Map<String, String>lastEnv){
 		String values[] = value.split("\\s+");
+
+		// parse long 123L -> 123
+		Pattern p = Pattern.compile("^[0-9]+L$");
+		int i = 0;
+		while (i < values.length) {
+			Matcher m = p.matcher(values[i]);
+			if (m.find()) {
+				values[i] = values[i].split("L")[0];
+			}
+			i += 1;
+		}
+
 		boolean endFlag = false;
 		while (!endFlag) {
 			endFlag = true;
@@ -321,19 +355,31 @@ public class ExecutionTree {
 			if (ass_s.contains("staticinvoke")) {
 				ass_s = ass_s.split(">")[1].replace("(", "").replace(")", "");
 			}
-			
 
-			// change to prefix
-			String[] temp = ass_s.split(" ");
-			if(temp.length == 3) {
-				ass_s = "(" + temp[1] + " " + temp[0] + " " + temp[2] + " )";
+			// eg: $i3 = <reduce_test.context141_200_30_8: int k>
+			if (ass_s.contains("<")) {
+				ass_s = ass_s.split("\\s+")[2].replace(">", "");
 			}
 			
-			// parse long 123L -> 123
-			Pattern p = Pattern.compile("^[0-9]+L$");
-			Matcher m = p.matcher(ass_s);
-			if (m.find()) {
-				ass_s = ass_s.split("L")[0];
+			// eg: set $z0 = <reduce_test.collector0_90_5_15: boolean $assertionsDisabled> -> 1
+			// bypass assertion
+			
+			if (ass_s.contains("assertionsDisabled") || ass_s.contains("wasConfigured")) {
+				ass_s = "1";
+			}
+
+			// change to prefix
+			String[] tmp = ass_s.split(" ");
+			/*
+			if(tmp.length == 3) ass_s = "(" + tmp[1] + " " + tmp[0] + " " + tmp[2] + " )";
+			*/
+			if(tmp.length == 3) {
+				if (!tmp[1].contains("cmp"))
+					ass_s = "(" + tmp[1] + " " + tmp[0] + " " + tmp[2] + " )";
+				else {
+					//ass_s = "(ite (= " + tmp[0] + " " + tmp[2] + " ) 0 ((ite (< " + tmp[0] + " " + tmp[2] + " ) -1 1)))";
+					ass_s = "(- " + tmp[0] + " " + tmp[2] + " )";
+				}
 			}
 			
 			if (ass_s.length() == 0) ass_s = "0";
@@ -429,8 +475,10 @@ public class ExecutionTree {
 		Map<String, String> lastEnv = parent.getLocalVars();
 		
 		// Won't set new branch for hasNext, automatically set as true
-		newIfCondition = valueReplace(newIfCondition, lastEnv).replace("_v", "");
-		newElseCondition = valueReplace(newElseCondition, lastEnv).replace("_v", "");
+		//newIfCondition = valueReplace(newIfCondition, lastEnv).replace("_v", "");
+		//newElseCondition = valueReplace(newElseCondition, lastEnv).replace("_v", "");
+		newIfCondition = parseLong(newIfCondition).replace("_v", "");
+		newElseCondition = parseLong(newElseCondition).replace("_v", "");
 
 		if(parent.getLocalVars().get(conditionStmt.getOp1().toString()) == "hasNext" ) {
 			ExecutionTreeNode elseBranch = new ExecutionTreeNode(elseCondition, elseBranchState, 

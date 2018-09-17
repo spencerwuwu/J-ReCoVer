@@ -1,6 +1,7 @@
 package communicativeSolver.executionTree;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -96,6 +97,17 @@ public class ExecutionTreeNode {
 		}
 	}
 	
+	public void patchNullValue() {
+		Map<String, String> vars = getLocalVars();
+		Iterator it = vars.keySet().iterator();
+		while (it.hasNext()) {
+			String key = (String) it.next();
+			String value = vars.get(key);
+			System.out.println("'" + value + "'");
+			if (value == null || value.length() == 0) vars.put(key, "0");
+		}
+	}
+ 	
 	public void print() {
 		printConstraint();
 		getState().printForm();

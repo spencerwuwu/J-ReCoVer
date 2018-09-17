@@ -206,7 +206,7 @@ public class StatementResolver {
 			String unit = us.getUnit().toString();
 			if (unit.contains("String")) {
 				System.err.print("Currently support no String operation or Assertion \n");
-				return;
+				//return;
 			}
 		}
 		
@@ -279,30 +279,7 @@ public class StatementResolver {
 		
 		for (Unit unit : unitList) {
 			if (unit instanceof AssignStmt) {
-				DefinitionStmt ds = (DefinitionStmt) unit;
-				String var = ds.getLeftOp().toString();
-				String ass_s = ds.getRightOp().toString();
-				if (!ass_s.contains("Iterator")) {
-					// removing quotes, eg: (org.apache.hadoop.io.IntWritable) $r6 -> $r6
-					ass_s = ass_s.replaceAll("\\(.*?\\)\\s+", "");
-					// handle virtualinvoke, eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
-					if (ass_s.contains("virtualinvoke")) {
-						ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
-						if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, false);
-						continue;
-					}
-					// handle staticinvoke, eg: staticinvoke <java.lang.Long: java.lang.Long valueOf(long)>(l0) -> l0
-					if (ass_s.contains("staticinvoke")) {
-						ass_s = ass_s.split(">")[1].replace("(", "").replace(")", "");
-						mOutputRelated.put(var, false);
-						continue;
-					}
-					String ass[] = ass_s.split("\\s+");
-					
-					// Continue if assignment is being operated (exclude directly assignment of input)
-					if (ass.length <= 1) continue;
-					if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, true);
-				}
+				parseAssignment(unit);
 
 			} else if (unit instanceof IfStmt) {
 				IfStmt if_st = (IfStmt) unit;
@@ -314,22 +291,10 @@ public class StatementResolver {
 						mConditionRelated.put(var, true);
 					}
 				}
+
 			} else if(unit.toString().contains("virtualinvoke")) {
-				if(unit.toString().contains("OutputCollector") || unit.toString().contains("Context")) {
-					String key = (unit.toString().split("\\s+")[1]).split("\\.")[0];
-					String value = (unit.toString().split(">")[1]).split(",")[1];
-					value = value.replace(")", "");
-					value = value.replace(" ", "");
-					mOutputRelated.put(value, true);
-				} else {
-					String key = (unit.toString().split("\\s+")[1]).split("\\.")[0];
-					if (mOutputRelated.containsKey(key) && mOutputRelated.get(key)) {
-						String value = unit.toString().split(">")[1];
-						value = value.replace(")", "");
-						value = value.replace("(", "");
-						mOutputRelated.put(value, true);
-					}
-				}
+				parseVirtualinvoke(unit);
+
 			} else if(unit.toString().contains("specialinvoke")) {
 				if(unit.toString().contains("init")) {
 					String var = (unit.toString().split("\\s+")[1]).split("\\.")[0];
@@ -342,6 +307,34 @@ public class StatementResolver {
 						mOutputRelated.put(value, true);
 					}
 				}
+
+			}
+		}
+
+		List<Unit> unitList2 = new ArrayList<Unit>();
+		index = 0;
+		while (index < units.size()) {
+			unitList2.add(units.get(index).getUnit());
+			index += 1;
+		}
+		for (Unit unit : unitList2) {
+			if (unit instanceof AssignStmt) {
+				DefinitionStmt ds = (DefinitionStmt) unit;
+				String var = ds.getLeftOp().toString();
+				String ass_s = ds.getRightOp().toString();
+				if (!ass_s.contains("Iterator") && !ass_s.contains("invoke")) {
+					if (ass_s.contains("<")) {
+						ass_s = ass_s.split("\\s+")[2].replace(">", "");
+					}
+					String ass[] = ass_s.split("\\s+");
+					if (ass.length < 1) continue;
+					for (String value : ass) {
+						if (mOutputRelated.containsKey(value) && mOutputRelated.get(value)) {
+							mOutputRelated.put(var, true);
+							break;
+						}
+					}
+				}
 			}
 		}
 
@@ -350,6 +343,56 @@ public class StatementResolver {
 			System.out.println(key + ": \t" + mOutputRelated.get(key) + "/" + mConditionRelated.get(key));
 		}
 		System.out.println("======================================");
+	}
+	
+	protected void parseAssignment(Unit unit) {
+		DefinitionStmt ds = (DefinitionStmt) unit;
+		String var = ds.getLeftOp().toString();
+		String ass_s = ds.getRightOp().toString();
+		if (!ass_s.contains("Iterator")) {
+			// removing quotes, eg: (org.apache.hadoop.io.IntWritable) $r6 -> $r6
+			ass_s = ass_s.replaceAll("\\(.*?\\)\\s+", "");
+			// handle virtualinvoke, eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
+			if (ass_s.contains("virtualinvoke")) {
+				ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
+				if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, false);
+				return;
+			}
+			// handle staticinvoke, eg: staticinvoke <java.lang.Long: java.lang.Long valueOf(long)>(l0) -> l0
+			if (ass_s.contains("staticinvoke")) {
+				ass_s = ass_s.split(">")[1].replace("(", "").replace(")", "");
+				mOutputRelated.put(var, false);
+				return;
+			}
+			
+			// eg: $i3 = <reduce_test.context141_200_30_8: int k>
+			if (ass_s.contains("<")) {
+				ass_s = ass_s.split("\\s+")[2].replace(">", "");
+			}
+			String ass[] = ass_s.split("\\s+");
+			
+			// Continue if assignment is being operated (exclude directly assignment of input)
+			if (ass.length <= 1) return;
+			if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, true);
+		}
+	}
+	
+	protected void parseVirtualinvoke(Unit unit) {
+		if(unit.toString().contains("OutputCollector") || unit.toString().contains("Context")) {
+			String key = (unit.toString().split("\\s+")[1]).split("\\.")[0];
+			String value = (unit.toString().split(">")[1]).split(",")[1];
+			value = value.replace(")", "");
+			value = value.replace(" ", "");
+			mOutputRelated.put(value, true);
+		} else {
+			String key = (unit.toString().split("\\s+")[1]).split("\\.")[0];
+			if (mOutputRelated.containsKey(key) && mOutputRelated.get(key)) {
+				String value = unit.toString().split(">")[1];
+				value = value.replace(")", "");
+				value = value.replace("(", "");
+				mOutputRelated.put(value, true);
+			}
+		}
 	}
 	
 	protected void detectLoop(UnitGraph graph, Map<Unit, Integer> unitIndexes) {
@@ -378,10 +421,15 @@ public class StatementResolver {
 	 protected void generateVars(List<ValueBox> defBoxes){
 		for (ValueBox d: defBoxes) {
 			Value value = d.getValue();
+			String valueName = value.toString();
+			// Parse <reduce_test.context141_200_30_8: k> -> k
+			if (valueName.contains("<")) {
+				valueName = valueName.split("\\s+")[1].replaceAll(">", "");
+			}
 			String type = value.getType().toString();
-			String localVar = value.toString() + "_v";
-			mVarsType.put(value.toString(), type);
-			mLocalVars.put(value.toString(), localVar);
+			String localVar = valueName + "_v";
+			mVarsType.put(valueName, type);
+			mLocalVars.put(valueName, localVar);
 			System.out.println("Variable " + type + " " + localVar);
 		}
 		// Insert some input (only one input now)

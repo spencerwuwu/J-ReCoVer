@@ -5,7 +5,6 @@ import java.util.Map;
 
 import communicativeSolver.color.Color;
 import communicativeSolver.executionTree.ExecutionTreeNode;
-import communicativeSolver.tree.*;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -22,7 +21,7 @@ import java.io.PrintWriter;
 
 public class z3FormatBuilder {
 	Map<String, String> typeTable;
-	List<ExecutionTreeNode> mFinalNodes = new ArrayList<ExecutionTreeNode>();
+	List<String> mGlobalVariables = new ArrayList<String>();
 	List<ExecutionTreeNode> mBeforeNodes = new ArrayList<ExecutionTreeNode>();
 	List<ExecutionTreeNode> mInnerNodes = new ArrayList<ExecutionTreeNode>();
 	Map<String, Boolean>mVariables = new HashMap<String, Boolean>();
@@ -54,8 +53,6 @@ public class z3FormatBuilder {
 	public z3FormatBuilder(Map<String, String> table, List<ExecutionTreeNode> beforeNodes, List<ExecutionTreeNode> interNodes, 
 			String filename, boolean useNextFlag, Map<String, Boolean> outputRelated, Map<String, Boolean> conditionRelated) {
 		typeTable = table;
-		mFinalNodes.addAll(beforeNodes);
-		mFinalNodes.addAll(interNodes);
 		mBeforeNodes.addAll(beforeNodes);
 		mInnerNodes.addAll(interNodes);
 		mUsingNextBeforeLoop = useNextFlag;
@@ -323,9 +320,47 @@ public class z3FormatBuilder {
 		}
 		mOutput.append("(declare-const null Int)\n");
 		mOutput.append("(assert (= null 0))\n");
+		
+		// Declare z3 variable for global variable
+		for (ExecutionTreeNode node : mBeforeNodes) {
+			for (String value : node.getLocalVars().values()) catchGlobalVariable(node.getLocalVars(), value);
+			for (String value : node.getConstraint()) catchGlobalVariable(node.getLocalVars(), value);
+		}
+
+		for (ExecutionTreeNode node : mInnerNodes) {
+			for (String value : node.getLocalVars().values()) catchGlobalVariable(node.getLocalVars(), value);
+			for (String value : node.getConstraint()) catchGlobalVariable(node.getLocalVars(), value);
+		}
+		
+		for (String element : mGlobalVariables) {
+			mOutput.append("(declare-const " + element + " Int)\n");
+		}
+		
 		mOutput.flush();
 	}
 
+	
+	protected void catchGlobalVariable(Map<String, String> vars, String value) {
+		String valueSet[] = value.split("\\s+");
+		for (String element : valueSet) {
+			if (!element.contains("(") 
+					&& !element.contains(")") 
+					&& !element.contains("_v")
+					&& !element.contains("input")
+					&& !element.contains("!")
+					&& !element.contains("=")
+					&& !element.contains("<")
+					&& !element.contains(">")
+					&& !element.contains("+")
+					&& !element.contains("-")
+					&& !element.contains("*")
+					&& !element.contains("/")
+					&& !element.matches("-?[0-9]*")
+					&& !vars.containsKey(element)) {
+				if (!mGlobalVariables.contains(element)) mGlobalVariables.add(element);
+			}
+		}
+	}
 		
 	
 } 

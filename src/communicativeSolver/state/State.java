@@ -73,7 +73,7 @@ public class State {
 	public void printForm() {
 		System.out.println("+++++++++++++++++++++++");
 		for (String var : mLocalVars.keySet()) {
-			System.out.println("| "+var + ":\t" + this.mLocalVars.get(var));
+			System.out.println("| " + var + ":\t" + mLocalVars.get(var));
 		}
 		System.out.println("+++++++++++++++++++++++");
 	}

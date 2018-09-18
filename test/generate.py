@@ -1,11 +1,7 @@
 #!/bin/python2.7
 import os
 
-Command = "java -jar jsr.jar build/reducers/target/New_iiii-1.0-SNAPSHOT.jar "
 Path = "reducers/src/main/java/reduce_test/benchmark"
-TRUE = "RESULT: Prove your reducer to be communicative"
-FALSE = "RESULT: Prove your reducer to be NOT communicative"
-UNKNOWN = "----"
 
 def main():
 

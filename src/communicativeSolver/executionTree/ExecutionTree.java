@@ -1,6 +1,7 @@
 package communicativeSolver.executionTree;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -13,6 +14,8 @@ import soot.Unit;
 import soot.Value;
 import soot.jimple.*;
 import soot.jimple.internal.*;
+import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.toolkits.graph.UnitGraph;
 
 public class ExecutionTree {
 	private ExecutionTreeNode mRoot;
@@ -360,9 +363,18 @@ public class ExecutionTree {
 					ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
 				}
 			}
+
 			// handle staticinvoke, eg: staticinvoke <java.lang.Long: java.lang.Long valueOf(long)>(l0) -> l0
 			if (ass_s.contains("staticinvoke")) {
-				ass_s = ass_s.split(">")[1].replace("(", "").replace(")", "");
+				if (ass_s.contains("java.lang.Math")) {
+					// i0 = staticinvoke <java.lang.Math: int max(int,int)>(i0, $i1);
+					String params[] = ass_s.split(">")[1].replace("(", "").replace(")", "").split(",\\s+");
+					if (ass_s.contains("max")) {
+						ass_s = "(ite (> " + params[0] + " " + params[1] + " ) " + params[0] + " " + params[1] + " )";
+					}
+				} else {
+					ass_s = ass_s.split(">")[1].replace("(", "").replace(")", "");
+				}
 			}
 
 			// eg: $i3 = <reduce_test.context141_200_30_8: int k>
@@ -535,6 +547,20 @@ public class ExecutionTree {
 	protected ExecutionTreeNode performVirtualInvoke(ExecutionTreeNode currentNode, UnitSet us) {
 		State newState = currentNode.getState();
 		Map<String, String>lastEnv = newState.getLocalVars();
+		/*
+		InvokeExpr ivk = ((Stmt) us.getUnit()).getInvokeExpr();
+		JimpleBody body = (JimpleBody) ivk.getMethod().retrieveActiveBody();
+		List<Unit> units = new ArrayList<Unit>();
+		UnitGraph graph = new ExceptionalUnitGraph(body);
+		Iterator gIt = graph.iterator();
+		while (gIt.hasNext()) {
+			Unit u = (Unit)gIt.next();	//getClass(): soot.jimple.internal.*Stmt		
+			units.add(u);
+		}
+		for (Unit u : units) {
+			System.out.println(u.toString());
+		}
+		*/
 		
 		// handling OutputCollector
 		if(us.getUnit().toString().contains("OutputCollector") || us.getUnit().toString().contains("Context")) {

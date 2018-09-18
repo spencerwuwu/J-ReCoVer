@@ -26,7 +26,6 @@ public class z3FormatBuilder {
 	List<ExecutionTreeNode> mInnerNodes = new ArrayList<ExecutionTreeNode>();
 	Map<String, Boolean>mVariables = new HashMap<String, Boolean>();
 	Map<String, Boolean>mOutputRelated;
-	Map<String, Boolean>mConditionRelated;
 	boolean mUsingNextBeforeLoop = false;
 	File mFile;
 	PrintWriter mOutput;
@@ -51,13 +50,12 @@ public class z3FormatBuilder {
 	}
 
 	public z3FormatBuilder(Map<String, String> table, List<ExecutionTreeNode> beforeNodes, List<ExecutionTreeNode> interNodes, 
-			String filename, boolean useNextFlag, Map<String, Boolean> outputRelated, Map<String, Boolean> conditionRelated) {
+			String filename, boolean useNextFlag, Map<String, Boolean> outputRelated) {
 		typeTable = table;
 		mBeforeNodes.addAll(beforeNodes);
 		mInnerNodes.addAll(interNodes);
 		mUsingNextBeforeLoop = useNextFlag;
 		mOutputRelated = outputRelated;
-		mConditionRelated = conditionRelated;
 		mFile = new File(filename);
 		System.out.print("Using getNext before loop: ");
 		System.out.print(mUsingNextBeforeLoop);

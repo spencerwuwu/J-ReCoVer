@@ -200,7 +200,6 @@ public class StatementResolver {
 			command_line_no++;
 		}
 		
-		checkOutputRelated(units);
 		// Does not support String 
 		for(UnitSet us : units) {
 			String unit = us.getUnit().toString();
@@ -209,9 +208,11 @@ public class StatementResolver {
 				//return;
 			}
 		}
-		
+
 		// Detect where the loop starts
 		detectLoop(graph, unitIndexes);
+		
+		checkOutputRelated(units);
 		
 		// Starting to analysis
 		System.out.println("Starting analysis");
@@ -255,7 +256,7 @@ public class StatementResolver {
 		*/
 		toWriteZ3.addAll(interLoopTree.getEndNodes());
 		z3FormatBuilder z3Builder = new z3FormatBuilder(mVarsType, 
-				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3Format.txt", mUseNextBeforeLoop, mOutputRelated, mConditionRelated);
+				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3Format.txt", mUseNextBeforeLoop, mOutputRelated);
 		if (z3Builder.getResult()) {
 			System.out.println("RESULT: Prove your reducer to be communicative");
 		} else {
@@ -266,6 +267,7 @@ public class StatementResolver {
 	
 	protected void checkOutputRelated(List<UnitSet> units) {
 		List<Unit> unitList = new ArrayList<Unit>();
+		boolean emphsisTail = false;
 
 		int index = units.size() - 1;
 		while (index >= 0) {
@@ -277,7 +279,13 @@ public class StatementResolver {
 			mConditionRelated.put(key, false);
 		}
 		
+		index = units.size();
 		for (Unit unit : unitList) {
+			if (emphsisTail && index <= mOutLoopLine) {
+				index -= 1;
+				continue;
+			}
+
 			if (unit instanceof AssignStmt) {
 				parseAssignment(unit);
 
@@ -293,7 +301,7 @@ public class StatementResolver {
 				}
 
 			} else if(unit.toString().contains("virtualinvoke")) {
-				parseVirtualinvoke(unit);
+				if (!emphsisTail) emphsisTail = parseVirtualinvoke(unit, index);
 
 			} else if(unit.toString().contains("specialinvoke")) {
 				if(unit.toString().contains("init")) {
@@ -309,6 +317,7 @@ public class StatementResolver {
 				}
 
 			}
+			index -= 1;
 		}
 
 		List<Unit> unitList2 = new ArrayList<Unit>();
@@ -377,13 +386,15 @@ public class StatementResolver {
 		}
 	}
 	
-	protected void parseVirtualinvoke(Unit unit) {
+	protected boolean parseVirtualinvoke(Unit unit, int currentLine) {
 		if(unit.toString().contains("OutputCollector") || unit.toString().contains("Context")) {
 			String key = (unit.toString().split("\\s+")[1]).split("\\.")[0];
 			String value = (unit.toString().split(">")[1]).split(",")[1];
 			value = value.replace(")", "");
 			value = value.replace(" ", "");
 			mOutputRelated.put(value, true);
+			if (currentLine > mOutLoopLine) return true;
+			else return false;
 		} else {
 			String key = (unit.toString().split("\\s+")[1]).split("\\.")[0];
 			if (mOutputRelated.containsKey(key) && mOutputRelated.get(key)) {
@@ -393,6 +404,7 @@ public class StatementResolver {
 				mOutputRelated.put(value, true);
 			}
 		}
+		return false;
 	}
 	
 	protected void detectLoop(UnitGraph graph, Map<Unit, Integer> unitIndexes) {

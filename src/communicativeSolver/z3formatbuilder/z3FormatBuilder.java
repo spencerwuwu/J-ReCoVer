@@ -137,9 +137,11 @@ public class z3FormatBuilder {
 		mOutput.append("(assert (= beforeLoop_2_r2 1))\n");
 
 		String finalAssertion = "";
+		boolean noVariable = true;
 		for (String key : mVariables.keySet()) {
 			if (key.contains("input")) continue;
 			if (!mOutputRelated.get(key)) continue;
+			noVariable = false;
 			//if (mConditionRelated.get(key)) continue;
 			if (finalAssertion.length() == 0) {
 				finalAssertion = "(not (= " + key + "_2_r1 " + key + "_2_r2))\n"; 
@@ -147,6 +149,7 @@ public class z3FormatBuilder {
 				finalAssertion = "(or " + finalAssertion + "(not (= " + key + "_2_r1 " + key + "_2_r2)))\n"; 
 			}
 		}
+		if (noVariable) finalAssertion = "(not (= 1 1))";
 		mOutput.append("(assert " + finalAssertion + ")\n");
 
 		mOutput.append("(check-sat)\n");
@@ -182,14 +185,14 @@ public class z3FormatBuilder {
 			}
 			if (finalValue.length() == 0) continue;
 			
-			if (mOutputRelated.get(key)) {
+			//if (mOutputRelated.get(key)) {
 				if (finalValue.contains("hasNext")) {
 					mOutputRelated.put(key, false);
 					continue;
 				}
 				finalValue = "(assert \n" + finalValue + ")";
 				mOutput.append(finalValue + "\n");
-			}
+			//}
 		}
 		
 		mOutput.flush();

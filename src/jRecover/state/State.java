@@ -1,10 +1,10 @@
-package communicativeSolver.state;
+package jRecover.state;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import communicativeSolver.color.Color;
+import jRecover.color.Color;
 import soot.Value;
 
 public class State {

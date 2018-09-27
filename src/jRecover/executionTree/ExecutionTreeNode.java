@@ -1,11 +1,11 @@
-package communicativeSolver.executionTree;
+package jRecover.executionTree;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import communicativeSolver.state.State;
+import jRecover.state.State;
 
 public class ExecutionTreeNode {
 	public List<ExecutionTreeNode> mChildren = new ArrayList<ExecutionTreeNode>();

@@ -1,5 +1,5 @@
 
-package communicativeSolver.color;
+package jRecover.color;
 
 public class Color {
 

@@ -1,4 +1,4 @@
-package communicativeSolver.state;
+package jRecover.state;
 
 public enum Type {
 	UNKNOWN,

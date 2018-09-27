@@ -1,11 +1,11 @@
 
-package communicativeSolver;
+package jRecover;
 
 public class Option {
 
 	public final static String Usage = 
 			  " * Usage:"
-			+ "     <*.jar> <classname> [options] \n\n"
+			+ "     <*.jar> <classname> [option] \n\n"
 			+ " * Options:\n"
 			+ "    -h              help\n"
 			+ "    -c classpath    Set classpath (Optional if you had packed all libs into the jar)\n"
@@ -24,13 +24,15 @@ public class Option {
 		cfg_flag = false;
 	}
 	
-	public void parse(String input) {
+	public String parse(String input) {
 		if (input.equals("-g")) {
 			this.cfg_flag = true;
-		}
-		if (input.equals("-s")) {
+		} else if (input.equals("-s")) {
 			this.silence_flag = true;
+		} else {
+			return "z3_" + input + ".txt";
 		}
+		return "z3_.txt";
 	}
 	
 }

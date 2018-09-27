@@ -1,14 +1,14 @@
-package communicativeSolver.soot;
+package jRecover.soot;
 
 import com.google.common.base.Preconditions;
 
-import communicativeSolver.Option;
-import communicativeSolver.color.Color;
-import communicativeSolver.executionTree.ExecutionTree;
-import communicativeSolver.executionTree.ExecutionTreeNode;
-import communicativeSolver.state.State;
-import communicativeSolver.state.UnitSet;
-import communicativeSolver.z3formatbuilder.*;
+import jRecover.Option;
+import jRecover.color.Color;
+import jRecover.executionTree.ExecutionTree;
+import jRecover.executionTree.ExecutionTreeNode;
+import jRecover.state.State;
+import jRecover.state.UnitSet;
+import jRecover.z3formatbuilder.*;
 import soot.Body;
 import soot.RefType;
 import soot.Scene;
@@ -69,12 +69,12 @@ public class StatementResolver {
 		soot.G.reset();
 	}
 
-	public void run(String input, String classPath, Option option, String reducerClassname) {
+	public void run(String input, String classPath, Option option, String reducerClassname, String z3FileName) {
 		SootRunner runner = new SootRunner();
 		runner.run(input, classPath);
 		op = option;
 		// Main analysis starts from here
-		performAnalysis(reducerClassname);
+		performAnalysis(reducerClassname, z3FileName);
 	}
 
 	private void addDefaultInitializers(SootMethod constructor, SootClass containingClass) {
@@ -112,7 +112,7 @@ public class StatementResolver {
 		return Scene.v().getSootClass(SootRunner.assertionClassName);
 	}
 
-	public void performAnalysis(String reducerClassname) {
+	public void performAnalysis(String reducerClassname, String z3FileName) {
 		List<SootClass> classes = new LinkedList<SootClass>(Scene.v().getClasses());
 		for (SootClass sc : classes) {
 			if (sc == getAssertionClass()) {
@@ -145,7 +145,7 @@ public class StatementResolver {
 		
 		for (JimpleBody body : bodies) {
 			if (op.silence_flag) silenceAnalysis(body);
-			else completeAnalysis(body);
+			else completeAnalysis(body, z3FileName);
 		}
 		
 		// TODO: Not really doing this tbh
@@ -169,7 +169,7 @@ public class StatementResolver {
 		System.out.println(body.toString());
 	}
 
-	public void completeAnalysis(JimpleBody body) {
+	public void completeAnalysis(JimpleBody body, String z3FileName) {
 		int command_line_no = 1;
 		UnitGraph graph = new ExceptionalUnitGraph(body);
 		Iterator gIt = graph.iterator();
@@ -256,7 +256,7 @@ public class StatementResolver {
 		*/
 		toWriteZ3.addAll(interLoopTree.getEndNodes());
 		z3FormatBuilder z3Builder = new z3FormatBuilder(mVarsType, 
-				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3Format.txt", mUseNextBeforeLoop, mOutputRelated);
+				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), z3FileName, mUseNextBeforeLoop, mOutputRelated);
 		if (z3Builder.getResult()) {
 			System.out.println("RESULT: Prove your reducer to be communicative");
 		} else {

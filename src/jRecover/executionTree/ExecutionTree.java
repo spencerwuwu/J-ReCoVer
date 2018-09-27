@@ -1,4 +1,4 @@
-package communicativeSolver.executionTree;
+package jRecover.executionTree;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -7,9 +7,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import communicativeSolver.color.Color;
-import communicativeSolver.state.State;
-import communicativeSolver.state.UnitSet;
+import jRecover.color.Color;
+import jRecover.state.State;
+import jRecover.state.UnitSet;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.*;

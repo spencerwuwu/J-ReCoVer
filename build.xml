@@ -15,9 +15,9 @@
 	</target>
 
     <target name="create_run_jar" depends="compile">
-        <jar destfile="${dir.jarfile}/jsr.jar" filesetmanifest="mergewithoutmain">
+        <jar destfile="${dir.jarfile}/j-recover.jar" filesetmanifest="mergewithoutmain">
             <manifest>
-                <attribute name="Main-Class" value="communicativeSolver.Main"/>
+                <attribute name="Main-Class" value="jRecover.Main"/>
                 <attribute name="Class-Path" value="."/>
             </manifest>
             <fileset dir="${dir.buildfile}/bin"/>

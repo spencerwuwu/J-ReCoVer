@@ -1,7 +1,7 @@
-package communicativeSolver;
+package jRecover;
 
-import communicativeSolver.Option;
-import communicativeSolver.soot.StatementResolver;
+import jRecover.Option;
+import jRecover.soot.StatementResolver;
 
 public class Main {
 	public static void main(String[] args) {
@@ -9,6 +9,7 @@ public class Main {
 		String classPath = "";
 		String reducerClassname = "";
 		Option op = new Option();
+		String z3FileName = "z3_.txt";
 		
 		// Parsing arguments
 		if (args.length >= 1) {
@@ -28,7 +29,7 @@ public class Main {
 							return;
 						}
 					} else {
-						op.parse(args[i]);
+						z3FileName = op.parse(args[i]);
 						i++;
 					}
 				}
@@ -41,7 +42,7 @@ public class Main {
 			
 		if (javaInput.length() != 0 & reducerClassname.length() != 0) {
 			StatementResolver SR = new StatementResolver();
-			SR.run(javaInput, classPath, op, reducerClassname);
+			SR.run(javaInput, classPath, op, reducerClassname, z3FileName);
 		} else {
 			System.err.println(op.Warning);
 		}

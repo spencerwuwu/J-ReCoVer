@@ -1,10 +1,10 @@
-package communicativeSolver.z3formatbuilder;
+package jRecover.z3formatbuilder;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import communicativeSolver.color.Color;
-import communicativeSolver.executionTree.ExecutionTreeNode;
+import jRecover.color.Color;
+import jRecover.executionTree.ExecutionTreeNode;
 
 import java.util.List;
 import java.util.ArrayList;

@@ -1,2 +1,4 @@
 fields/
+.fields/
 j-recover.jar
+reducer.java

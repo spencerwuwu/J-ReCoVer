@@ -31,7 +31,7 @@ public class Tester<T1,T2,T3,T4> {
     if (oc1.equals(oc2)) {
       System.out.println("The reducer is commutative");
     } else {
-      System.out.println("The reducer is not commutative");
+      System.out.println("The reducer is Not commutative");
     }    
 
     return oc1.equals(oc2);

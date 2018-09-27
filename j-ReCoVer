@@ -6,7 +6,7 @@ import sys
 
 Reducer = "reducer.java"
 Mvn = "mvn package -q -Dmaven.test.skip=true -B"
-TIMEOUT = 5
+TIMEOUT = 7
 
 def error_exit(path):
     os.system("rm -rf " + path)
@@ -46,8 +46,8 @@ def parse_finder_output(log):
     full_log = ""
     for line in log.splitlines():
         if "The reducer is" in line:
-            if "NOT" in line:
-                print "Counter example:"
+            if "Not" in line:
+                print "Counter example found:"
                 print data
                 return
             else:
@@ -76,7 +76,10 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
         wrapper = wrapper + "_c.java"
 
     wrapper_f = open(wrapper, "r")
-    reducer_f = open(global_path + Reducer, "r")
+    if len(sys.argv) == 6:
+        reducer_f = open(global_path + Reducer, "r")
+    else:
+        reducer_f = open(global_path + sys.argv[6], "r")
     generator_f = open(autoGenerator, "w")
 
     for line in wrapper_f.readlines():
@@ -112,7 +115,7 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
         print "Compile Error"
         for line in result:
             line = line.replace("\n", "")
-            if ("/home/" in line) and ("/fields/" in line):
+            if ("/home/" in line) and ("/.fields/" in line):
                 parts = line.split(" ")
                 del parts[1]
                 line = ""
@@ -157,6 +160,7 @@ def run_finder(global_path, path):
 # argv[3]: T3
 # argv[4]: T4
 # argv[5]: r_type
+# argv[6]: reducer file (optional)
 
 def main():
     T1 = sys.argv[1]
@@ -166,8 +170,8 @@ def main():
     r_type = sys.argv[5]
     global_path = os.path.dirname(os.path.abspath(__file__)) + "/"
     p_name = str(int(time.time()) % 10000)
-    os.system("mkdir -p " + global_path + "fields")
-    path = global_path + "fields/" + p_name + "/"
+    os.system("mkdir -p " + global_path + ".fields")
+    path = global_path + ".fields/" + p_name + "/"
 
     print "================================"
     print "###         Compile          ###"
@@ -180,17 +184,17 @@ def main():
     print "###        j-ReCoVer         ###"
     print "================================"
     checker_result = run_checker(global_path, path, p_name)
-    print "\n"
+    print ""
 
     if not checker_result:
-        print "Trying to find a counter example"
+        print "Trying to find a counter example..."
         run_finder(global_path, path)
 
     os.system("rm -rf " + path)
 
 if __name__ == "__main__":
-    if (len(sys.argv) != 6):
-        print "Usage: ./j-ReCoVer T1 T2 T3 T4 reducer_type"
+    if (len(sys.argv) != 6) and (len(sys.argv) != 7):
+        print "Usage: ./j-ReCoVer T1 T2 T3 T4 reducer_type [reducer file]"
         exit(1)
 
     main()

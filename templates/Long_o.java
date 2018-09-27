@@ -40,7 +40,7 @@ T4
 					,
 				T4
 					>();
-			Long[] solutionArray = { -1L, 0, 1L, 3L };
+			Long[] solutionArray = { -1L, 0L, 1L, 3L };
 			try {
 				tester.test(new 
 						T1_

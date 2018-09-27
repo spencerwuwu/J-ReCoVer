@@ -47,8 +47,8 @@ def parse_finder_output(log):
     for line in log.splitlines():
         if "The reducer is" in line:
             if "NOT" in line:
+                print "Counter example:"
                 print data
-                print line
                 return
             else:
                 full_log = full_log + data
@@ -68,12 +68,7 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
     template_path = global_path + "templates/build"
     os.system("cp -r " + template_path + " " + path)
 
-    if "IntWritable" in T2:
-        wrapper = wrapper + "IntWritable"
-    elif "DoubleWritable" in T2:
-        wrapper = wrapper + "DoubleWritable"
-    elif "LongWritable" in T2:
-        wrapper = wrapper + "LongWritable"
+    wrapper = wrapper + T2 
         
     if "Collector" in r_type:
         wrapper = wrapper + "_o.java"
@@ -90,6 +85,12 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
                 generator_f.write("IntWritable(1)")
             elif "Text" in T1:
                 generator_f.write("Text(\"1\")")
+            elif "LongWritable" in T1:
+                generator_f.write("LongWritable(1L)")
+            elif "Integer" in T1:
+                generator_f.write("1")
+            elif "Long" in T1:
+                generator_f.write("1L")
         elif "T1" in line:
             generator_f.write(T1)
         elif "T3" in line:
@@ -157,11 +158,7 @@ def run_finder(global_path, path):
 # argv[4]: T4
 # argv[5]: r_type
 
-if __name__ == "__main__":
-    if (len(sys.argv) != 6):
-        print "Usage: ./__ T1 T2 T3 T4 reducer_type"
-        exit(1)
-
+def main():
     T1 = sys.argv[1]
     T2 = sys.argv[2]
     T3 = sys.argv[3]
@@ -169,6 +166,7 @@ if __name__ == "__main__":
     r_type = sys.argv[5]
     global_path = os.path.dirname(os.path.abspath(__file__)) + "/"
     p_name = str(int(time.time()) % 10000)
+    os.system("mkdir -p " + global_path + "fields")
     path = global_path + "fields/" + p_name + "/"
 
     print "================================"
@@ -189,3 +187,11 @@ if __name__ == "__main__":
         run_finder(global_path, path)
 
     os.system("rm -rf " + path)
+
+if __name__ == "__main__":
+    if (len(sys.argv) != 6):
+        print "Usage: ./j-ReCoVer T1 T2 T3 T4 reducer_type"
+        exit(1)
+
+    main()
+

@@ -32,7 +32,8 @@ T4
 			, DoubleWritable, 
 				T3
 					,
-				T4> tester=new Tester<
+				T4
+                    > tester=new Tester<
 					T1
 					, DoubleWritable, 
 				T3

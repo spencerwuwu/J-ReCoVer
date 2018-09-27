@@ -40,7 +40,7 @@ T4
 					,
 				T4
 					>();
-			LongWritable[] solutionArray = { new LongWritable(-1L), new LongWritable(0), new LongWritable(1L), new LongWritable(3L) };
+			LongWritable[] solutionArray = { new LongWritable(-1L), new LongWritable(0L), new LongWritable(1L), new LongWritable(3L) };
 			try {
 				tester.test(new 
 						T1_

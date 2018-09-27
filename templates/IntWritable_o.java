@@ -40,7 +40,7 @@ T4
 					,
 				T4
 					>();
-			IntWritable[] solutionArray = { new IntWritable(-1), new IntWritable(0), new IntWritable(2), new IntWritable(3) };
+			IntWritable[] solutionArray = { new IntWritable(-1), new IntWritable(0), new IntWritable(1), new IntWritable(3) };
 			try {
 				tester.test(new 
 						T1_

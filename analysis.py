@@ -1,0 +1,191 @@
+#!/usr/bin/python2.7
+import os
+from subprocess import Popen, PIPE
+import time
+import sys
+
+Reducer = "reducer.java"
+Mvn = "mvn package -q -Dmaven.test.skip=true -B"
+TIMEOUT = 5
+
+def error_exit(path):
+    os.system("rm -rf " + path)
+    exit(1)
+
+def wait_timeout(proc, timeout):
+    start = time.time()
+    end = start + timeout
+    interval = .25
+    while True:
+        result = proc.poll()
+        if result is not None:
+            return True
+        if time.time() >= end:
+            proc.kill()
+            return False
+        time.sleep(interval)
+
+def parse_checker_output(log):
+    result = True
+    hasResult = False
+    for line in log.splitlines():
+        if "RESULT" in line:
+            hasResult = True
+            if "NOT" in line:
+                result = False
+            print line
+
+    if not hasResult:
+        print "j-ReCoVer returned no result"
+
+    return (hasResult & result)
+
+
+def parse_finder_output(log):
+    data = ""
+    full_log = ""
+    for line in log.splitlines():
+        if "The reducer is" in line:
+            if "NOT" in line:
+                print data
+                print line
+                return
+            else:
+                full_log = full_log + data
+                full_log = full_log + "--------\n"
+                data = ""
+        else:
+            data = data + line + "\n"
+    
+    print "Cannot find a counter example from these testcases:"
+    print full_log
+
+
+
+def compile(T1, T2, T3, T4, r_type, global_path, path):
+    wrapper = global_path + "templates/"
+    autoGenerator = path + "src/main/java/reduce_test/autoGenerator.java"
+    template_path = global_path + "templates/build"
+    os.system("cp -r " + template_path + " " + path)
+
+    if "IntWritable" in T2:
+        wrapper = wrapper + "IntWritable"
+    elif "DoubleWritable" in T2:
+        wrapper = wrapper + "DoubleWritable"
+    elif "LongWritable" in T2:
+        wrapper = wrapper + "LongWritable"
+        
+    if "Collector" in r_type:
+        wrapper = wrapper + "_o.java"
+    else:
+        wrapper = wrapper + "_c.java"
+
+    wrapper_f = open(wrapper, "r")
+    reducer_f = open(global_path + Reducer, "r")
+    generator_f = open(autoGenerator, "w")
+
+    for line in wrapper_f.readlines():
+        if "T1_" in line:
+            if "IntWritable" in T1:
+                generator_f.write("IntWritable(1)")
+            elif "Text" in T1:
+                generator_f.write("Text(\"1\")")
+        elif "T1" in line:
+            generator_f.write(T1)
+        elif "T3" in line:
+            generator_f.write(T3)
+        elif "T4" in line:
+            generator_f.write(T4)
+        elif "REDUCER" in line:
+            for line_r in reducer_f.readlines():
+                generator_f.write(line_r)
+        else:
+            generator_f.write(line)
+
+    wrapper_f.close()
+    reducer_f.close()
+    generator_f.close()
+
+    result = os.popen("cd " + path + " && " + Mvn).readlines()
+    if len(result) != 0:
+        print "Compile Error"
+        for line in result:
+            line = line.replace("\n", "")
+            if ("/home/" in line) and ("/fields/" in line):
+                parts = line.split(" ")
+                del parts[1]
+                line = ""
+                for part in parts:
+                    line = line + part + " "
+                print line
+            else:
+                print line
+        error_exit(path)
+
+def run_checker(global_path, path, p_name):
+    target = path + "target/New-1.0.jar"
+    cmd = ["java", "-jar", global_path + "j-recover.jar", target, "autoGenerator", p_name]
+    proc = Popen(cmd, stdout=PIPE)
+    result = wait_timeout(proc, TIMEOUT)
+    os.system("rm -rf z3_" + p_name + ".txt")
+
+    if result:
+        checker_result = parse_checker_output(proc.communicate()[0])
+        if not checker_result:
+            return False
+    else:
+        print "Checker timeout"
+        return False
+
+    return True
+
+
+def run_finder(global_path, path):
+    target = path + "target/New-1.0.jar"
+    cmd = ["java", "-jar", target]
+    proc = Popen(cmd, stdout=PIPE)
+    result = wait_timeout(proc, TIMEOUT)
+    if result:
+        parse_finder_output(proc.communicate()[0])
+    else:
+        print "Finder timeout"
+
+
+# argv[1]: T1
+# argv[2]: T2
+# argv[3]: T3
+# argv[4]: T4
+# argv[5]: r_type
+
+if __name__ == "__main__":
+    if (len(sys.argv) != 6):
+        print "Usage: ./__ T1 T2 T3 T4 reducer_type"
+        exit(1)
+
+    T1 = sys.argv[1]
+    T2 = sys.argv[2]
+    T3 = sys.argv[3]
+    T4 = sys.argv[4]
+    r_type = sys.argv[5]
+    global_path = os.path.dirname(os.path.abspath(__file__)) + "/"
+    p_name = str(int(time.time()) % 10000)
+    path = global_path + "fields/" + p_name + "/"
+
+    print "================================"
+    print "###         Compile          ###"
+    print "================================"
+    compile(T1, T2, T3, T4, r_type, global_path, path)
+    print "Success\n"
+
+
+    print "================================"
+    print "###        j-ReCoVer         ###"
+    print "================================"
+    checker_result = run_checker(global_path, path, p_name)
+    print "\n"
+
+    if not checker_result:
+        print "Trying to find a counter example"
+        run_finder(global_path, path)
+
+    os.system("rm -rf " + path)

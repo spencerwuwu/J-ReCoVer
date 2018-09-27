@@ -11,27 +11,27 @@ import org.apache.hadoop.io.LongWritable;
 
 public class autoGenerator implements ReducerC<
 T1
-, LongWritable>{
+, Double>{
 
 	public static void main(String[] args){
 		for(int i=0; i<Common.maxcount ; i++){  
 			ReducerC<
 				T1
-				, LongWritable> reducer=new autoGenerator();
+				, Double> reducer=new autoGenerator();
 			Tester<
 				T1
-				, LongWritable, 
+				, Double, 
 				T3
 					, 
 				T4
 					> tester=new Tester<
 				T1
-				, LongWritable, 
+				, Double, 
 				T3
 					,
 				T4
 					>();
-			LongWritable[] solutionArray = { new LongWritable(-1L), new LongWritable(0), new LongWritable(2L), new LongWritable(3L) };
+			Double[] solutionArray = {-1.5, 0, 2.5, 3.5 };
 			try {
 				tester.test(new 
 						T1_

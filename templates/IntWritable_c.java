@@ -3,6 +3,7 @@
 package reduce_test;
 
 import java.io.IOException;
+import java.util.Iterator;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.IntWritable;

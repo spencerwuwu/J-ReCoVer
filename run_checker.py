@@ -40,7 +40,7 @@ def wait_timeout(proc, seconds):
 
 def main():
     global_path = sys.argv[1]
-    cmd = ["java", "-jar", global_path + "jsr.jar", global_path + Path, "autoGenerator"]
+    cmd = ["java", "-jar", global_path + "j-recover.jar", global_path + Path, "autoGenerator"]
     run = Popen(cmd, stdout=PIPE)
     result = wait_timeout(run, Max_time)
 

@@ -40,7 +40,7 @@ T4
 					,
 				T4
 					>();
-			Integer solutionArray = { -1, 0, 2, 3 };
+			Integer solutionArray = { -1, 0, 1, 3 };
 			try {
 				tester.test(new 
 						T1_

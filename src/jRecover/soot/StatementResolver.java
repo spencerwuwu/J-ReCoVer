@@ -258,9 +258,9 @@ public class StatementResolver {
 		z3FormatBuilder z3Builder = new z3FormatBuilder(mVarsType, 
 				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), z3FileName, mUseNextBeforeLoop, mOutputRelated);
 		if (z3Builder.getResult()) {
-			System.out.println("RESULT: Prove your reducer to be communicative");
+			System.out.println("RESULT: Proved to be communicable");
 		} else {
-			System.out.println("RESULT: Prove your reducer to be NOT communicative");
+			System.out.println("RESULT: CANNOT prove to be communicable");
 		}
 
 	}

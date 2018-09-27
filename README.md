@@ -1,9 +1,9 @@
-# ReducerAnalysis 
+# j-ReCoVer 
 ## Installation
 Notice: Soot runs under JDK1.7
 ### Using Ant
 ```
-$ cd ReducerAnalysis/
+$ cd j-ReCoVer/
 $ ant
 ```
 ### Using eclipse
@@ -20,7 +20,7 @@ $ ant
     -s              Silence mode, only output Jimple code
     -g              Generate control flow graph
  * Example:
-     $ java -jar jsr.jar your_jar.jar reducer_classname
+     $ java -jar j-recover.jar your_jar.jar reducer_classname
    Slience mode 
-     $ java -jar jsr.jar your_jar.jar reducer_classname -s
+     $ java -jar j-recover.jar your_jar.jar reducer_classname -s
 ```

@@ -63,12 +63,12 @@ def parse_finder_output(log):
 
 
 def compile(T1, T2, T3, T4, r_type, global_path, path):
-    wrapper = global_path + "templates/"
+    wrapper = global_path + "templates/wrapper"
     autoGenerator = path + "src/main/java/reduce_test/autoGenerator.java"
     template_path = global_path + "templates/build"
     os.system("cp -r " + template_path + " " + path)
 
-    wrapper = wrapper + T2 
+    #wrapper = wrapper + T2 
         
     if "Collector" in r_type:
         wrapper = wrapper + "_o.java"
@@ -96,10 +96,25 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
                 generator_f.write("1L")
         elif "T1" in line:
             generator_f.write(T1)
+        elif "T2" in line:
+            generator_f.write(T2)
         elif "T3" in line:
             generator_f.write(T3)
         elif "T4" in line:
             generator_f.write(T4)
+        elif "INPUT" in line:
+            if "IntWritable" in T2:
+                generator_f.write("IntWritable[] solutionArray = { new IntWritable(-1), new IntWritable(0), new IntWritable(1), new IntWritable(3) };\n")
+            elif "LongWritable" in T2:
+                generator_f.write("LongWritable[] solutionArray = { new LongWritable(-1L), new LongWritable(0L), new LongWritable(1L), new LongWritable(3L) };\n")
+            elif "Integer" in T2:
+                generator_f.write("Integer[] solutionArray = { -1, 0, 1, 3};\n")
+            elif "Long" in T2:
+                generator_f.write("Long[] solutionArray = { -1L, 0L, 1L, 3L };\n")
+            elif "DoubleWritable" in T2:
+                generator_f.write("DoubleWritable[] solutionArray = { new DoubleWritable(-1.0), new DoubleWritable(0.0), new DoubleWritable(1.0), new DoubleWritable(3.0) };\n")
+            elif "Double" in T2:
+                generator_f.write("Double[] solutionArray = { -1.0, 0.0, 1.0, 3.0 };\n")
         elif "REDUCER" in line:
             for line_r in reducer_f.readlines():
                 generator_f.write(line_r)

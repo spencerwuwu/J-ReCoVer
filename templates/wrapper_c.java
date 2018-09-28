@@ -10,30 +10,41 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.FloatWritable;
+import java.util.HashMap;
+import java.util.Map;
 
 public class autoGenerator implements ReducerC<
 T1
-, IntWritable>{
+, 
+T2
+>{
 
 	public static void main(String[] args){
 		for(int i=0; i<Common.maxcount ; i++){  
 			ReducerC<
 				T1
-				, IntWritable> reducer=new autoGenerator();
+				, 
+				T2
+				> reducer=new autoGenerator();
 			Tester<
 				T1
-				, IntWritable, 
+				, 
+				T2
+				, 
 				T3
 					, 
 				T4
 					> tester=new Tester<
 				T1
-				, IntWritable, 
+				, 
+				T2
+				, 
 				T3
 					,
 				T4
 					>();
-			IntWritable[] solutionArray = { new IntWritable(-1), new IntWritable(0), new IntWritable(2), new IntWritable(3) };
+				INPUT
 			try {
 				tester.test(new 
 						T1_

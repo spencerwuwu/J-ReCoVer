@@ -11,10 +11,15 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.io.FloatWritable;
+import java.util.HashMap;
+import java.util.Map;
 
 public class autoGenerator implements ReducerO<
 T1
-, Double, 
+, 
+T2
+, 
 T3
 ,
 T4
@@ -24,24 +29,31 @@ T4
 		for(int i=0; i<Common.maxcount ; i++){  
 			ReducerO<
 				T1
-				, Double, 
+				, 
+				T2
+				, 
 			T3
 				,
 			T4
 				> reducer=new autoGenerator();
 			Tester<
 			T1
-			, Double, 
+			, 
+			T2
+			, 
 				T3
 					,
-				T4> tester=new Tester<
+				T4
+					> tester=new Tester<
 					T1
-					, Double, 
+					, 
+				T2
+				, 
 				T3
 					,
 				T4
 					>();
-			Double[] solutionArray = { -1.5, 0, 2.5, 3.5 };
+				INPUT
 			try {
 				tester.test(new 
 						T1_

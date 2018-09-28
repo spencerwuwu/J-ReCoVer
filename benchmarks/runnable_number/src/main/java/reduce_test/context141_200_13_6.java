@@ -13,7 +13,7 @@ public class context141_200_13_6 implements ReducerC<Text, LongWritable>{
 		for(int i=0; i<Common.maxcount ; i++){  
 			ReducerC<Text, LongWritable> reducer=new context141_200_13_6();
 			Tester<Text, LongWritable, Text, LongWritable> tester=new Tester<Text, LongWritable, Text, LongWritable>();
-			LongWritable[] solutionArray = { new LongWritable(0), new LongWritable(-1), new LongWritable(4)};
+			LongWritable[] solutionArray = { new LongWritable(0), new LongWritable(-1), new LongWritable(4) };
 			try {
 				tester.test(new Text("key"), solutionArray, reducer);
 			} catch (IOException | InterruptedException e1) {

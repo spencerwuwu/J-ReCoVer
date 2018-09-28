@@ -4,7 +4,7 @@
 
   <groupId>New</groupId>
   <artifactId>New</artifactId>
-  <version>1</version>
+  <version>1.0</version>
   <packaging>jar</packaging>
 
   <name>New</name>
@@ -84,7 +84,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <classpathPrefix>libs/</classpathPrefix>
-              TODO
+              <mainClass>reduce_test.Collector91_140_4_19</mainClass>
             </manifest>
           </archive>
         </configuration>
@@ -93,3 +93,4 @@
   </build>
 
 </project>
+

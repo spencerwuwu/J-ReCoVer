@@ -16,12 +16,8 @@ public class Tester<T1,T2,T3,T4> {
     ArrayList<T2> list_one = new ArrayList<T2>(Arrays.asList(solutionArray));
     ArrayList<T2> list_two = new ArrayList<T2>(Arrays.asList(solutionArray));
 
-    while (list_one.equals(solutionArray)) {
-    	Collections.shuffle(list_one);
-    }
-    while (list_two.equals(list_one)) {
-    	Collections.shuffle(list_two);
-    }
+    Collections.shuffle(list_one);
+    Collections.shuffle(list_two);
     System.out.println("Input1: " + list_one);
     System.out.println("Input2: " + list_two);
 
@@ -33,9 +29,9 @@ public class Tester<T1,T2,T3,T4> {
     System.out.println(oc2.getValueList());
 
     if (oc1.equals(oc2)) {
-      System.out.println("RESULT: The reducer is commutative");
+      System.out.println("The reducer is commutative");
     } else {
-      System.out.println("RESULT: The reducer is NOT commutative");
+      System.out.println("The reducer is Not commutative");
     }    
 
     return oc1.equals(oc2);
@@ -46,16 +42,12 @@ public class Tester<T1,T2,T3,T4> {
     OutputCollector<T3,T4> oc1 = new OutputCollector<T3,T4>();
     OutputCollector<T3,T4> oc2 = new OutputCollector<T3,T4>();
 
+
     ArrayList<T2> list_one = new ArrayList<T2>(Arrays.asList(solutionArray));
     ArrayList<T2> list_two = new ArrayList<T2>(Arrays.asList(solutionArray));
 
-    while (list_one.equals(solutionArray)) {
-    	Collections.shuffle(list_one);
-    }
-    while (list_two.equals(list_one)) {
-    	Collections.shuffle(list_two);
-    }
-
+    Collections.shuffle(list_one);
+    Collections.shuffle(list_two);
     System.out.println("Input1: " + list_one);
     System.out.println("Input2: " + list_two);
 
@@ -67,9 +59,9 @@ public class Tester<T1,T2,T3,T4> {
     System.out.println(oc2.getValueList());
 
     if (oc1.equals(oc2)) {
-      System.out.println("RESULT: The reducer is commutative");
+      System.out.println("Result: The reducer is commutative");
     } else {
-      System.out.println("RESULT: The reducer is NOT commutative");
+      System.out.println("Result: The reducer is Not commutative");
     }    
 
     return oc1.equals(oc2);

@@ -21,8 +21,7 @@ public class context0_90_27_19 implements ReducerC<Text, IntWritable>{
 		}
 	}
 
-	public void reduce(Text artist,
-			Iterable<IntWritable> values,
+	public void reduce(Text artist, Iterable<IntWritable> values,
 			Context context) throws IOException,
 	InterruptedException {
 		context.write(artist, new IntWritable(0));

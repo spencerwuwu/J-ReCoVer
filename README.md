@@ -1,4 +1,4 @@
-# j-ReCoVer 
+# J-ReCoVer 
 ## Installation
 Notice: Soot runs under JDK1.7
 ### Using Ant

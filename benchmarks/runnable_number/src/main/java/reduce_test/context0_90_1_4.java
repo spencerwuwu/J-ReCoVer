@@ -24,8 +24,7 @@ public class context0_90_1_4 implements ReducerC<Text, IntWritable>{
 	private IntWritable result = new IntWritable();
 
 	public void reduce(Text key, Iterable<IntWritable> values, 
-			Context context
-			) throws IOException, InterruptedException {
+            Context context) throws IOException, InterruptedException {
 		int sum = 0; // initialize the sum for each keyword
 		for (IntWritable val : values) {
 			sum += val.get();  

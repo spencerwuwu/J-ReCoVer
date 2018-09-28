@@ -23,8 +23,7 @@ public class collector0_90_10_5 implements ReducerO<Text, DoubleWritable, Text,D
 		}
 	} 
 
-	public void reduce(Text key,
-			Iterator<DoubleWritable> values,
+	public void reduce(Text key, Iterator<DoubleWritable> values,
 			OutputCollector<Text, DoubleWritable> output,
 			Reporter reporter) throws IOException {
 		//Key is label,word, value is the number of times we've seen this label word per local node.  Output is the same

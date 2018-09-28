@@ -21,8 +21,7 @@ public class context0_90_12_18 implements ReducerC<Text, DoubleWritable>{
 		}
 	}
 
-	public void reduce( final Text pCountryCode,
-			final Iterable<DoubleWritable> pValues,
+	public void reduce(Text pCountryCode, final Iterable<DoubleWritable> pValues,
 			final Context pContext )
 					throws IOException, InterruptedException{
 		double count = 0;

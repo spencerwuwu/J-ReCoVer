@@ -336,7 +336,15 @@ public class StatementResolver {
 						ass_s = ass_s.split("\\s+")[2].replace(">", "");
 					}
 					String ass[] = ass_s.split("\\s+");
-					if (ass.length < 1) continue;
+					if (ass.length <= 1) continue;
+					if (ass.length == 2) {
+						if (ass[0].equals("(long)")
+								|| ass[0].equals("(int)")
+								|| ass[0].equals("(float)")
+								||  ass[0].equals("(double)")) {
+							continue;
+						}
+					}
 					for (String value : ass) {
 						if (mOutputRelated.containsKey(value) && mOutputRelated.get(value)) {
 							mOutputRelated.put(var, true);

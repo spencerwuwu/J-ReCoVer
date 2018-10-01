@@ -27,7 +27,8 @@ public class ExecutionTreeNode {
 	}
 
 	public ExecutionTreeNode(List<String> constraintList, State newState, int newOrder, int newNextLine, boolean newReturnFlag) {
-		mConstraint = constraintList;
+		mConstraint = new ArrayList<String>();
+		if (constraintList != null && !constraintList.isEmpty()) mConstraint.addAll(constraintList);
 		mState = newState;
 		mExecutionOrder = newOrder;
 		mNextline = newNextLine;
@@ -51,7 +52,8 @@ public class ExecutionTreeNode {
 	}
 	
 	public void setConstraint(List<String> constraintList) {
-		mConstraint = constraintList;
+		mConstraint = new ArrayList<String>();
+		if (constraintList != null && !constraintList.isEmpty()) mConstraint.addAll(constraintList);
 	}
 	
 	public void addConstraint(String newConstraint) {

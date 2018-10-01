@@ -116,7 +116,7 @@ public class ExecutionTree {
 		if (!currentNode.getReturnFlag() && currentNode.getNextLine() < mUnits.size()) {
 			UnitSet us = mUnits.get(currentNode.getNextLine());
 			int determineUnitState = determineUnit(us.getUnit());
-			System.out.println( Color.ANSI_BLUE+"line '" + us.getUnit().toString() + "'" + Color.ANSI_RESET);
+			System.out.println(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'" + Color.ANSI_RESET);
 
 			if (determineUnitState == 1) {
 				Unit newUnit = us.getUnit();
@@ -129,6 +129,7 @@ public class ExecutionTree {
 								currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
 						currentNode.mChildren.add(newLeaf);
 					} else if (assignStates.size() == 2) {
+						System.out.println("Does not seriously implement beforeLoop multiple stage");
 						List<String> condition = new ArrayList<String>();
 						condition.addAll(currentNode.getConstraint());
 						ExecutionTreeNode endLeaf = new ExecutionTreeNode(condition, assignStates.get(0), 
@@ -153,6 +154,7 @@ public class ExecutionTree {
 			} else if (determineUnitState == 2) {
 				Unit newUnit=us.getUnit();
 				if (newUnit instanceof IfStmt) {
+					System.out.println("Split the tree here.");
 					State newState1 = new State(currentNode.getLocalVars(), currentNode.getExecutionOrder(),
 							          newUnit.toString(), us.getLine(), currentNode.getState().getInputUsedIndex());
 					State newState2 = new State(currentNode.getLocalVars(), currentNode.getExecutionOrder(), 
@@ -162,7 +164,6 @@ public class ExecutionTree {
 					for (ExecutionTreeNode node: newLeafNodes) {
 						currentNode.mChildren.add(node);
 					}
-					System.out.println("Split the tree here.");
 
 				} else if (newUnit instanceof GotoStmt) {
 					State newState = new State(currentNode.getLocalVars(), currentNode.getExecutionOrder(), 
@@ -172,6 +173,7 @@ public class ExecutionTree {
 					newLeaf.setExecutionOrder(currentNode.getExecutionOrder() + 1);
 					// 'nextLine' had been set in performGotoStmt
 					newLeaf.setReturnFlag(currentNode.getReturnFlag());
+					currentNode.mChildren.add(newLeaf);
 
 				} else {
 					System.out.println(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
@@ -395,9 +397,14 @@ public class ExecutionTree {
 			if(tmp.length == 3) ass_s = "(" + tmp[1] + " " + tmp[0] + " " + tmp[2] + " )";
 			*/
 			if(tmp.length == 3) {
-				if (!tmp[1].contains("cmp"))
+				if (!tmp[1].contains("cmp")) {
+					if (tmp[1].equals("%")) {
+						tmp[1] = "rem";
+					} else if (tmp[1].equals("/")) {
+						tmp[1] = "div";
+					}
 					ass_s = "(" + tmp[1] + " " + tmp[0] + " " + tmp[2] + " )";
-				else {
+				} else {
 					//ass_s = "(ite (= " + tmp[0] + " " + tmp[2] + " ) 0 ((ite (< " + tmp[0] + " " + tmp[2] + " ) -1 1)))";
 					ass_s = "(- " + tmp[0] + " " + tmp[2] + " )";
 				}

@@ -17,44 +17,51 @@ import java.util.Map;
 public class autoGenerator implements ReducerC<
 T1
 , 
-T2
->{
+    T2
+    >{
 
-	public static void main(String[] args){
-		for(int i=0; i<Common.maxcount ; i++){  
-			ReducerC<
-				T1
-				, 
-				T2
-				> reducer=new autoGenerator();
-			Tester<
-				T1
-				, 
-				T2
-				, 
-				T3
-					, 
-				T4
-					> tester=new Tester<
-				T1
-				, 
-				T2
-				, 
-				T3
-					,
-				T4
-					>();
-				INPUT
-			try {
-				tester.test(new 
-						T1_
-						, solutionArray, reducer);
-			} catch (IOException | InterruptedException e1) {
-				e1.printStackTrace();
-			}
-		}
-	}
+        public static void main(String[] args) {
+            int length = 5;
+            while (length < 15) {
+                for (int i = 0; i < Common.maxcount; i++){  
+                    INPUT0
+                    for (int j = 0; j < length; j++) {
+                        RANDOM
+                    }
+                    ReducerC<
+                        T1
+                        , 
+                    T2
+                        > reducer=new autoGenerator();
+                    Tester<
+                        T1
+                        , 
+                        T2
+                            , 
+                        T3
+                            , 
+                        T4
+                            > tester=new Tester<
+                            T1
+                            , 
+                        T2
+                            , 
+                        T3
+                            ,
+                        T4
+                            >();
+                    try {
+                        tester.test(new 
+                                T1_
+                                , solutionArray, reducer);
+                    } catch (IOException | InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
+                }
+            length += 2;
+            }
+        }
 
-	REDUCER
+        REDUCER
 
-}
+    }

@@ -2,6 +2,6 @@ package reduce_test;
 
 public class Common {
 
-	static int maxcount = 3;
+	static int maxcount = 100;
 	
 }

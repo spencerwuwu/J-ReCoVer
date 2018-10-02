@@ -3,6 +3,7 @@ import os
 from subprocess import Popen, PIPE
 import time
 import sys
+import subprocess, threading
 
 Reducer = "reducer.java"
 Mvn = "mvn package -q -Dmaven.test.skip=true -B"
@@ -41,11 +42,15 @@ def parse_checker_output(log):
     return (hasResult & result)
 
 
-def parse_finder_output(log):
+def parse_finder_output(filename):
+    log = open(filename, "r")
     data = ""
     full_log = ""
-    for line in log.splitlines():
+    count = 0
+    for line in log.readlines():
+        line = line.replace("\n", "")
         if "The reducer is" in line:
+            count += 1
             if "Not" in line:
                 print "Counter example found:"
                 print data
@@ -57,9 +62,13 @@ def parse_finder_output(log):
         else:
             data = data + line + "\n"
     
-    print "Cannot find a counter example from these testcases:"
-    print full_log
-
+    if count < 10:
+        print "Cannot find a counterexample from these testcases:"
+        print full_log
+    else:
+        print "Cannot find a counterexample in " + str(count) + " tests"
+        print "Testcases were generated randomly. Run several times to verify."
+    log.close()
 
 
 def compile(T1, T2, T3, T4, r_type, global_path, path):
@@ -102,19 +111,48 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
             generator_f.write(T3)
         elif "T4" in line:
             generator_f.write(T4)
-        elif "INPUT" in line:
+        elif "INPUT0" in line:
             if "IntWritable" in T2:
-                generator_f.write("IntWritable[] solutionArray = { new IntWritable(-1), new IntWritable(0), new IntWritable(5), new IntWritable(12) };\n")
+                generator_f.write("IntWritable[] solutionArray = new IntWritable[length];\n")
             elif "LongWritable" in T2:
-                generator_f.write("LongWritable[] solutionArray = { new LongWritable(-1L), new LongWritable(0L), new LongWritable(5L), new LongWritable(12L) };\n")
+                generator_f.write("LongWritable[] solutionArray = new LongWritable[length];\n")
             elif "Integer" in T2:
-                generator_f.write("Integer[] solutionArray = { -1, 0, 5, 12};\n")
+                generator_f.write("Integer[] solutionArray = new Integer[length];\n")
             elif "Long" in T2:
-                generator_f.write("Long[] solutionArray = { -1L, 0L, 5L, 12L };\n")
+                generator_f.write("Long[] solutionArray = new Long[length];\n")
             elif "DoubleWritable" in T2:
-                generator_f.write("DoubleWritable[] solutionArray = { new DoubleWritable(-1.3), new DoubleWritable(0.1), new DoubleWritable(5.8), new DoubleWritable(12.6) };\n")
+                generator_f.write("DoubleWritable[] solutionArray = new DoubleWritable[length];\n")
             elif "Double" in T2:
-                generator_f.write("Double[] solutionArray = { -1.3, 0.1, 5.8, 12.6 };\n")
+                generator_f.write("Double[] solutionArray = new Double[length];\n")
+            elif "FloatWritable" in T2:
+                generator_f.write("FloatWritable[] solutionArray = new FloatWritable[length];\n")
+            elif "Float" in T2:
+                generator_f.write("Float[] solutionArray = new Float[length];\n")
+        elif "RANDOM" in line:
+            if "IntWritable" in T2:
+                generator_f.write("int random = (int)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("solutionArray[j] = new IntWritable(random);\n")
+            elif "LongWritable" in T2:
+                generator_f.write("long random = (long)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("solutionArray[j] = new LongWritable(random);\n")
+            elif "Integer" in T2:
+                generator_f.write("int random = (int)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("solutionArray[j] = random;\n")
+            elif "Long" in T2:
+                generator_f.write("long random = (long)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("solutionArray[j] = random;\n")
+            elif "DoubleWritable" in T2:
+                generator_f.write("double random = (double)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("solutionArray[j] = new DoubleWritable(random);\n")
+            elif "Double" in T2:
+                generator_f.write("double random = (double)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("solutionArray[j] = random;\n")
+            elif "FloatWritable" in T2:
+                generator_f.write("float random = (float)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("solutionArray[j] = new FloatWritable(random);\n")
+            elif "Float" in T2:
+                generator_f.write("float random = (float)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("solutionArray[j] = random;\n")
         elif "REDUCER" in line:
             for line_r in reducer_f.readlines():
                 generator_f.write(line_r)
@@ -159,15 +197,26 @@ def run_checker(global_path, path, p_name):
     return True
 
 
-def run_finder(global_path, path):
-    target = path + "target/New-1.0.jar"
-    cmd = ["java", "-jar", target]
-    proc = Popen(cmd, stdout=PIPE)
-    result = wait_timeout(proc, TIMEOUT)
-    if result:
-        parse_finder_output(proc.communicate()[0])
-    else:
+def run_finder(global_path, path, p_name):
+    process = None
+    filename = global_path + ".fields/" + p_name + "_finder"
+    def target():
+        cmd = "java -jar " + path + "target/New-1.0.jar" + " > " + filename
+        process = subprocess.Popen(cmd, shell=True)
+        process.communicate()
+
+    thread = threading.Thread(target=target)
+    thread.start()
+    thread.join(TIMEOUT)
+
+    if thread.is_alive():
         print "Finder timeout"
+        process.terminate()
+        thread.join()
+    else:
+        parse_finder_output(filename)
+
+    os.system("rm " + filename)
 
 
 # argv[1]: T1
@@ -202,8 +251,8 @@ def main():
     print ""
 
     if not checker_result:
-        print "Trying to find a counter example..."
-        run_finder(global_path, path)
+        print "Trying to find a counterexample..."
+        run_finder(global_path, path, p_name)
 
     os.system("rm -rf " + path)
 

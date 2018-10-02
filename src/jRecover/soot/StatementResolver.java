@@ -287,7 +287,7 @@ public class StatementResolver {
 			}
 
 			if (unit instanceof AssignStmt) {
-				parseAssignment(unit);
+				parseAssignment(unit, index);
 
 			} else if (unit instanceof IfStmt) {
 				IfStmt if_st = (IfStmt) unit;
@@ -362,7 +362,7 @@ public class StatementResolver {
 		System.out.println("======================================");
 	}
 	
-	protected void parseAssignment(Unit unit) {
+	protected void parseAssignment(Unit unit, int currentLine) {
 		DefinitionStmt ds = (DefinitionStmt) unit;
 		String var = ds.getLeftOp().toString();
 		String ass_s = ds.getRightOp().toString();
@@ -372,13 +372,21 @@ public class StatementResolver {
 			// handle virtualinvoke, eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
 			if (ass_s.contains("virtualinvoke")) {
 				ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
-				if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, false);
+				if (currentLine < mOutLoopLine) {
+					if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, false);
+				} else {
+					if (mOutputRelated.containsKey(ass_s)) mOutputRelated.put(ass_s, true);
+				}
 				return;
 			}
 			// handle staticinvoke, eg: staticinvoke <java.lang.Long: java.lang.Long valueOf(long)>(l0) -> l0
 			if (ass_s.contains("staticinvoke")) {
 				ass_s = ass_s.split(">")[1].replace("(", "").replace(")", "");
-				mOutputRelated.put(var, false);
+				if (currentLine < mOutLoopLine) {
+					mOutputRelated.put(var, false);
+				} else {
+					if (mOutputRelated.containsKey(ass_s)) mOutputRelated.put(ass_s, true);
+				}
 				return;
 			}
 			

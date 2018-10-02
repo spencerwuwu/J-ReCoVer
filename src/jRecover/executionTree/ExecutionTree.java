@@ -73,7 +73,6 @@ public class ExecutionTree {
 					} else {
 						if (mUseNextBeforeLoop) {
 							node.addConstraint("beforeLoopDegree == " + mBeforeLoopDegree);
-							System.out.println("add");
 						}
 						endNodes.add(node);
 					}

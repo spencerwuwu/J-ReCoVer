@@ -1,5 +1,5 @@
 # J-ReCoVer   
-J-ReCoVer, short for "Java Reducer Commutative Verifier", is a verification tool for Map-Reduce program written in Java.
+J-ReCoVer, short for "Java Reducer Commutativity Verifier", is a verification tool for Map-Reduce program written in Java.
 J-ReCoVer symbolic executes the function body of a reducer and tries to prove that the order of the inputs will not
 affect the output.
 For more details please visit [our website](http://jrecover.iis.sinica.edu.tw/).

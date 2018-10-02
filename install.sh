@@ -36,7 +36,7 @@ function fetch_wrapper() {
 	mv sample_reducer.java reducer.java
 
 	echo ""
-	echo "Testing J-ReCoVer, the result should be commutable..."
+	echo "Testing J-ReCoVer, the result should be commutative..."
 	
 	if [ "$(./j-ReCoVer Text IntWritable Text IntWritable Collector | grep Proved)" = "" ]; then
 		echo "The result didn't correspond, something went wrong"

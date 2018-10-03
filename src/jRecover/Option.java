@@ -30,7 +30,7 @@ public class Option {
 		} else if (input.equals("-s")) {
 			this.silence_flag = true;
 		} else {
-			return "z3_" + input + ".txt";
+			return input + ".txt";
 		}
 		return "z3_.txt";
 	}

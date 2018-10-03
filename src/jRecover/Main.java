@@ -12,11 +12,11 @@ public class Main {
 		String z3FileName = "z3_.txt";
 		
 		// Parsing arguments
-		if (args.length >= 1) {
-			if (args.length > 1) {
+		if (args.length >= 2) {
+			if (args.length > 2) {
 				javaInput = args[0];
 				reducerClassname = args[1];
-				int i = 1;
+				int i = 2;
 				while (i < args.length) {
 					if (args[i].equals("-c")) {
 						i++;

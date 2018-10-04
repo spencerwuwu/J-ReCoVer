@@ -13,9 +13,9 @@ public class Main {
 		
 		// Parsing arguments
 		if (args.length >= 2) {
+			javaInput = args[0];
+			reducerClassname = args[1];
 			if (args.length > 2) {
-				javaInput = args[0];
-				reducerClassname = args[1];
 				int i = 2;
 				while (i < args.length) {
 					if (args[i].equals("-c")) {
@@ -39,7 +39,7 @@ public class Main {
 				return;
 			}
 		}
-			
+
 		if (javaInput.length() != 0 & reducerClassname.length() != 0) {
 			StatementResolver SR = new StatementResolver();
 			SR.run(javaInput, classPath, op, reducerClassname, z3FileName);

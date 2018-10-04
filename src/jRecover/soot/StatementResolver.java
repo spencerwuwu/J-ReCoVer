@@ -8,6 +8,7 @@ import jRecover.executionTree.ExecutionTree;
 import jRecover.executionTree.ExecutionTreeNode;
 import jRecover.state.State;
 import jRecover.state.UnitSet;
+import jRecover.z3FormatPipeline.Z3FormatPipeline;
 import jRecover.z3formatbuilder.*;
 import soot.Body;
 import soot.RefType;
@@ -36,6 +37,7 @@ import soot.toolkits.scalar.SimpleLiveLocals;
 import soot.util.cfgcmd.CFGToDotGraph;
 import soot.util.dot.DotGraph;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -144,8 +146,15 @@ public class StatementResolver {
 		}
 		
 		for (JimpleBody body : bodies) {
-			if (op.silence_flag) silenceAnalysis(body);
-			else completeAnalysis(body, z3FileName);
+			if (op.jimple_flag) jimpleAnalysis(body);
+			else {
+				try {
+					completeAnalysis(body, z3FileName);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 		}
 		
 		// TODO: Not really doing this tbh
@@ -165,11 +174,11 @@ public class StatementResolver {
 		
 	}
 
-	public void silenceAnalysis(JimpleBody body) {
+	public void jimpleAnalysis(JimpleBody body) {
 		System.out.println(body.toString());
 	}
 
-	public void completeAnalysis(JimpleBody body, String z3FileName) {
+	public void completeAnalysis(JimpleBody body, String z3FileName) throws IOException {
 		int command_line_no = 1;
 		UnitGraph graph = new ExceptionalUnitGraph(body);
 		Iterator gIt = graph.iterator();
@@ -183,13 +192,13 @@ public class StatementResolver {
 			unitIndexes.put(u, 0);				
 		}
 		
-		System.out.println(Color.ANSI_BLUE+body.toString()+Color.ANSI_RESET);
-		System.out.println("=======================================");			
+		log(Color.ANSI_BLUE + body.toString() + Color.ANSI_RESET);
+		log("=======================================");			
 
 		// Storing variables and detect main loop location
 		List<ValueBox> defBoxes = body.getDefBoxes();
 		generateVars(defBoxes);
-		System.out.println("=======================================");	
+		log("=======================================");	
 
 		while (gIt.hasNext()) {
 			Unit u = (Unit)gIt.next();	//getClass(): soot.jimple.internal.*Stmt		
@@ -215,7 +224,8 @@ public class StatementResolver {
 		checkOutputRelated(units);
 		
 		// Starting to analysis
-		System.out.println("Starting analysis");
+		log("Starting analysis");
+		
 	
 		//traverse tree to find leaves and doAnalysis
 		State initStateBefore = new State(mLocalVars, 0, null, 0, 0);
@@ -225,7 +235,7 @@ public class StatementResolver {
 		
 		ExecutionTree beforeLoopTree = new ExecutionTree(
 				new ExecutionTreeNode(initConstraintBefore, initStateBefore, 0, 0, false), units, 
-				unitIndexes, mEnterLoopLine, mOutLoopLine, mVarsType, true);
+				unitIndexes, mEnterLoopLine, mOutLoopLine, mVarsType, true, op);
 		beforeLoopTree.addRootConstraint("beforeLoop == 0");
 		beforeLoopTree.executeTree();
 		for (Map.Entry<String, String> entry : beforeLoopTree.getVarType().entrySet()) {
@@ -235,7 +245,7 @@ public class StatementResolver {
 
 		ExecutionTree interLoopTree = new ExecutionTree(
 				new ExecutionTreeNode(initConstraintInter, initStateInter, 0, mEnterLoopLine, false), units, 
-				unitIndexes, mEnterLoopLine, mOutLoopLine, mVarsType, false);
+				unitIndexes, mEnterLoopLine, mOutLoopLine, mVarsType, false, op);
 		interLoopTree.addRootConstraint("beforeLoop != 0");
 		interLoopTree.executeTree();
 		
@@ -249,14 +259,11 @@ public class StatementResolver {
         
 		List<ExecutionTreeNode> toWriteZ3 = new ArrayList<ExecutionTreeNode>();
 		toWriteZ3.addAll(beforeLoopTree.getEndNodes());
-		/*
-		if (interLoopTree.getEndNodes().size() > 0) {
-			interLoopTree.getEndNodes().remove(0);
-		}
-		*/
 		toWriteZ3.addAll(interLoopTree.getEndNodes());
-		z3FormatBuilder z3Builder = new z3FormatBuilder(mVarsType, 
-				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), z3FileName, mUseNextBeforeLoop, mOutputRelated);
+		Z3FormatPipeline z3Builder = new Z3FormatPipeline(mVarsType, 
+				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), mUseNextBeforeLoop, mOutputRelated);
+
+		System.out.println("\n");
 		if (z3Builder.getResult()) {
 			System.out.println("RESULT: Proved to be commutative");
 		} else {
@@ -355,11 +362,11 @@ public class StatementResolver {
 			}
 		}
 
-		System.out.println("====== Output/Condition Related ======");
+		log("====== Output/Condition Related ======");
 		for (String key : mOutputRelated.keySet()) {
-			System.out.println(key + ": \t" + mOutputRelated.get(key) + "/" + mConditionRelated.get(key));
+			log(key + ": \t" + mOutputRelated.get(key) + "/" + mConditionRelated.get(key));
 		}
-		System.out.println("======================================");
+		log("======================================");
 	}
 	
 	protected void parseAssignment(Unit unit, int currentLine) {
@@ -399,6 +406,11 @@ public class StatementResolver {
 			// Continue if assignment is being operated (exclude directly assignment of input)
 			if (ass.length <= 1) return;
 			if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, true);
+			if (currentLine > mOutLoopLine) {
+				for (String str : ass) {
+					if (mOutputRelated.containsKey(str)) mOutputRelated.put(str, true);
+				}
+			}
 		}
 	}
 	
@@ -434,15 +446,15 @@ public class StatementResolver {
 				Unit gotoTarget = gtStmt.getTarget();
 				//if(unitIndexes.get(gotoTarget) < currentLine) {
 				if(unitIndexes.get(gotoTarget) < currentLine && 
-				         (mEnterLoopLine == 0 || unitIndexes.get(gotoTarget) < mEnterLoopLine)) {
+				         (mEnterLoopLine == 0 || unitIndexes.get(gotoTarget) <= mEnterLoopLine)) {
 					mEnterLoopLine = unitIndexes.get(gotoTarget);
 					mOutLoopLine = currentLine;
 				}
 			}
 			currentLine++;
 		}
-		// System.out.println("loop from line: " + mEnterLoopLine + " to " + mOutLoopLine);
-		System.out.println("loop started from line: " + mEnterLoopLine);
+		System.out.println("loop from line: " + mEnterLoopLine + " to " + mOutLoopLine);
+		//System.out.println("loop started from line: " + mEnterLoopLine);
 		
 	}
 	
@@ -458,20 +470,20 @@ public class StatementResolver {
 			String localVar = valueName + "_v";
 			mVarsType.put(valueName, type);
 			mLocalVars.put(valueName, localVar);
-			System.out.println("Variable " + type + " " + localVar);
+			log("Variable " + type + " " + localVar);
 		}
 		// Insert some input (only one input now)
 		mLocalVars.put("output", "0");
 		mVarsType.put("output", "");
-		System.out.println("Variable output");
+		log("Variable output");
 
 		mLocalVars.put("beforeLoop", "bL_v");
 		mVarsType.put("beforeLoop", "beforeLoop");
-		System.out.println("Variable boolean beforeLoop");
+		log("Variable boolean beforeLoop");
 		
 		mLocalVars.put("beforeLoopDegree", "0");
 		mVarsType.put("beforeLoopDegree", "beforeLoopDegree");
-		System.out.println("Variable integer beforeLoopDegree");
+		log("Variable integer beforeLoopDegree");
 
 		mOutputRelated.put("beforeLoop", true);
 		mOutputRelated.put("beforeLoopDegree", true);
@@ -495,6 +507,9 @@ public class StatementResolver {
 		return bodies;
 	}
 	
+	public void log(String str) {
+		if (!op.silence_flag) System.out.println(str);
+	}
 
 	protected Set<JimpleBody> getCollectorSceneBodies(String reducerClassname) {
 		Set<JimpleBody> bodies = new LinkedHashSet<JimpleBody>();

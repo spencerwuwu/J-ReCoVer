@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import jRecover.Option;
 import jRecover.color.Color;
 import jRecover.state.State;
 import jRecover.state.UnitSet;
@@ -29,10 +30,11 @@ public class ExecutionTree {
 	private boolean mUseNextBeforeLoop = false;
 	private int mBeforeLoopDegree = 0;
 	private boolean mBefore = true;
+	Option mOption;
 	
 
 	public ExecutionTree(ExecutionTreeNode node, List<UnitSet> units, Map<Unit, Integer> unitIndexes, 
-			int enterLoopLine, int exitLoopLine, Map<String, String> varsType, boolean before) {
+			int enterLoopLine, int exitLoopLine, Map<String, String> varsType, boolean before, Option op) {
 		mRoot = node;
 		mUnits = units;
 		mUnitIndexes = unitIndexes;
@@ -40,6 +42,7 @@ public class ExecutionTree {
 		mExitLoopLine = exitLoopLine;
 		mBefore = before;
 		mVarsType = varsType;
+		mOption = op;
 	}
 	
 	public void addRootConstraint(String constraint) {
@@ -95,9 +98,9 @@ public class ExecutionTree {
 		int index = 0;
 		for (ExecutionTreeNode node : mEndNodes) {
 			if (mBefore) {
-				System.out.println("====== Before Loop" + String.valueOf(index + 1) + " ======");
+				log("====== Before Loop" + String.valueOf(index + 1) + " ======");
 			} else {
-				System.out.println("====== Inter Loop" + String.valueOf(index + 1) + " ======");
+				log("====== Inter Loop" + String.valueOf(index + 1) + " ======");
 			}
 			if (!mBefore) {
 				// detectOutput(node);
@@ -105,7 +108,7 @@ public class ExecutionTree {
 			} else {
 				node.getLocalVars().put("beforeLoop", "0");
 			}
-			node.print();
+			if (!mOption.silence_flag) node.print();
 			System.out.println("");
 			index += 1;
 		}
@@ -115,7 +118,10 @@ public class ExecutionTree {
 		if (!currentNode.getReturnFlag() && currentNode.getNextLine() < mUnits.size()) {
 			UnitSet us = mUnits.get(currentNode.getNextLine());
 			int determineUnitState = determineUnit(us.getUnit());
-			System.out.println(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'" + Color.ANSI_RESET);
+			//System.out.println(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'" + Color.ANSI_RESET);
+			log(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'" + Color.ANSI_RESET);
+			
+			boolean skip = false;
 
 			if (determineUnitState == 1) {
 				Unit newUnit = us.getUnit();
@@ -128,7 +134,7 @@ public class ExecutionTree {
 								currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
 						currentNode.mChildren.add(newLeaf);
 					} else if (assignStates.size() == 2) {
-						System.out.println("Does not seriously implement beforeLoop multiple stage");
+						log("Does not seriously implement beforeLoop multiple stage");
 						List<String> condition = new ArrayList<String>();
 						condition.addAll(currentNode.getConstraint());
 						ExecutionTreeNode endLeaf = new ExecutionTreeNode(condition, assignStates.get(0), 
@@ -146,14 +152,14 @@ public class ExecutionTree {
 					
 					currentNode.mChildren.add(newLeaf);
 				} else {
-					System.out.println(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
-					return;
+					log(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
+					skip = true;
 				}
 
 			} else if (determineUnitState == 2) {
 				Unit newUnit=us.getUnit();
 				if (newUnit instanceof IfStmt) {
-					System.out.println("Split the tree here.");
+					log("Split the tree here.");
 					State newState1 = new State(currentNode.getLocalVars(), currentNode.getExecutionOrder(),
 							          newUnit.toString(), us.getLine(), currentNode.getState().getInputUsedIndex());
 					State newState2 = new State(currentNode.getLocalVars(), currentNode.getExecutionOrder(), 
@@ -171,14 +177,14 @@ public class ExecutionTree {
 					newLeaf.setConstraint(currentNode.getConstraint());
 					newLeaf.setExecutionOrder(currentNode.getExecutionOrder() + 1);
 					// 'nextLine' had been set in performGotoStmt
-					newLeaf.setReturnFlag(currentNode.getReturnFlag());
 					currentNode.mChildren.add(newLeaf);
 
 				} else {
-					System.out.println(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
+					log(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
+					skip = true;
 				}
 			} else if (determineUnitState == 3) {
-				System.out.println(Color.ANSI_GREEN + "return" + Color.ANSI_RESET);
+				log(Color.ANSI_GREEN + "return" + Color.ANSI_RESET);
 				// Add this treenode to endNodes, waiting to print the result
 				endNodes.add(currentNode);
 				
@@ -198,18 +204,26 @@ public class ExecutionTree {
 					currentNode.mChildren.add(newLeaf); 
 
 				} else {
-					System.out.println(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
+					log(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
+					skip = true;
 				}
 
 			} else {
-				System.out.println(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
+				log(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
 				/*
 				ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), currentNode.getState(),
 						currentNode.getExecutionOrder(), currentNode.getNextLine() + 1, currentNode.getReturnFlag());
 				currentNode.mChildren.add(newLeaf);
 				*/
+				skip = true;
 			}
-			System.out.println("------------------------------------");
+			log("------------------------------------");
+
+			if (skip) {
+			    ExecutionTreeNode newNode = new ExecutionTreeNode(currentNode.getConstraint(), 
+			    		currentNode.getState(), currentNode.getExecutionOrder(), currentNode.getNextLine(), currentNode.getReturnFlag());
+			    currentNode.mChildren.add(newNode);
+			}
 		}
 	}
 
@@ -414,14 +428,14 @@ public class ExecutionTree {
 			// replace rhs with mLocalVars value
 			ass_s = valueReplace(ass_s, lastEnv);
 
-			System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
+			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
 			st.update(var.toString(), ass_s);
 			returnStates.add(st);
 		}
 		else { 
 			// Handling iterator relative assignments
 			if (ass_s.contains("hasNext()")) {
-				System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
+				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
 				st.update(var.toString(), "hasNext");
 				returnStates.add(st);
 			} else if (ass_s.contains("next()")) {
@@ -432,7 +446,7 @@ public class ExecutionTree {
 						mVarsType.put("input0", "input type");
 						st.update(var.toString(), "input0");
 						st.update("beforeLoopDegree", Integer.toString(mBeforeLoopDegree));
-						System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "input0");    
+						log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "input0");    
 						returnStates.add(st);
 					} else {
 						returnStates.add(st);
@@ -441,13 +455,13 @@ public class ExecutionTree {
 						for (String key : newState.getLocalVars().keySet()) {
 							if (newState.getLocalVars().get(key).equals("input0")) {
 								newState.update(key, replaceStr);
-								System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + replaceStr);    
+								log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + replaceStr);    
 							}
 						}
 						newState.update(var.toString(), "input0");
 						mVarsType.put(replaceStr, "bld");
 						newState.update("beforeLoopDegree", Integer.toString(mBeforeLoopDegree));
-						System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "input0");    
+						log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "input0");    
 						returnStates.add(newState);
 					}
 				} else {
@@ -457,7 +471,7 @@ public class ExecutionTree {
 					ass_s = "input" + st.getInputUsedIndex();
 					//st.addInputUsedIndex();
 					st.update(var.toString(), ass_s);
-					System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);    
+					log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);    
 					returnStates.add(st);
 				}
 		    }	
@@ -472,7 +486,7 @@ public class ExecutionTree {
 		// Preserve only org.apache.hadoop.io.'IntWritable and marked it as parameter'
 		String assignment_tail = "@parameter "+assignment.toString().split("\\.(?=[^\\.]+$)")[1]; 
 		
-		System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + assignment_tail);
+		log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + assignment_tail);
 		st.update(var.toString(), assignment_tail);
 		return st;
 	}
@@ -484,7 +498,7 @@ public class ExecutionTree {
 		Value condition = if_st.getCondition();
 		ConditionExpr conditionStmt = (ConditionExpr)condition;
 		
-		System.out.println(Color.ANSI_GREEN + "goto " + Color.ANSI_RESET + 
+		log(Color.ANSI_GREEN + "goto " + Color.ANSI_RESET + 
 				goto_target + Color.ANSI_GREEN + " when " + Color.ANSI_RESET + condition);
 		
 		//split the tree
@@ -514,7 +528,7 @@ public class ExecutionTree {
 			elseBranch.setBranchInfo("ELSE branch from" + parent.getState().getCommandLineNo() );
 			List<ExecutionTreeNode> returnList = new ArrayList<ExecutionTreeNode>();
 			returnList.add(elseBranch);
-			System.out.println("Actually we didn't");
+			log("Actually we didn't");
 			return returnList;
 		}
 		ifCondition.add( newIfCondition );
@@ -540,12 +554,14 @@ public class ExecutionTree {
 		ExecutionTreeNode node;
 		
 		if(unitIndexes.get(goto_target) > st.getCommandLineNo()) {
-		    System.out.println(Color.ANSI_GREEN + "goto " + Color.ANSI_RESET + goto_target);
+		    //System.out.println(Color.ANSI_GREEN + st.getCommandLineNo() + " goto " + Color.ANSI_RESET + goto_target);
+		    log(Color.ANSI_GREEN + st.getCommandLineNo() + " goto " + Color.ANSI_RESET + goto_target);
 		    node = new ExecutionTreeNode(null, st, 0, unitIndexes.get(goto_target), false);
 		}
 		else {
-			System.out.println(Color.ANSI_GREEN + "goto " + Color.ANSI_RESET + units.get(st.getCommandLineNo()).getUnit());
-			node = new ExecutionTreeNode(null, st, 0, st.getCommandLineNo(), false);
+			//System.out.println(Color.ANSI_GREEN +  st.getCommandLineNo() + " goto " + Color.ANSI_RESET + unitIndexes.get(goto_target) + " (Loop back, terminate)");
+			log(Color.ANSI_GREEN + st.getCommandLineNo() + " goto " + Color.ANSI_RESET + unitIndexes.get(goto_target) + " (Loop back, terminate)");
+			node = new ExecutionTreeNode(null, st, 0, st.getCommandLineNo(), true);
 		}
 		return node;
 	}
@@ -577,9 +593,9 @@ public class ExecutionTree {
 			value = valueReplace(value, lastEnv);
 
 			newState.update(key, value);
-			System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + value);
+			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + value);
 			newState.update("output", value);
-			System.out.println(Color.ANSI_GREEN + "output: " + value + Color.ANSI_RESET);
+			log(Color.ANSI_GREEN + "output: " + value + Color.ANSI_RESET);
 
 		} else {
 			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
@@ -589,7 +605,7 @@ public class ExecutionTree {
 
 			value = valueReplace(value, lastEnv);
 
-			System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + us.getUnit().toString() + " -> " + value);
+			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + us.getUnit().toString() + " -> " + value);
 			newState.update(key.toString() , value);
 		}
 		ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), newState, 
@@ -611,7 +627,7 @@ public class ExecutionTree {
 			}
 			
 			value = valueReplace(value, currentNode.getState().getLocalVars());
-			System.out.println(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + value);
+			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + value);
 			newLeaf.getState().update(key, value);
 			
 			return newLeaf;
@@ -663,6 +679,10 @@ public class ExecutionTree {
 
 	public List<ExecutionTreeNode> getEndNodes() {
 		return mEndNodes;
+	}
+	
+	public void log(String str) {
+		if (!mOption.silence_flag) System.out.println(str);
 	}
 
 }

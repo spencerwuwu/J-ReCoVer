@@ -1,5 +1,6 @@
 #!/usr/bin/python2.7
 import os
+import signal
 from subprocess import Popen, PIPE
 import time
 import sys
@@ -7,7 +8,7 @@ import subprocess, threading
 
 Reducer = "reducer.java"
 Mvn = "mvn package -q -Dmaven.test.skip=true -B"
-TIMEOUT = 7
+TIMEOUT = 15
 
 def error_exit(path):
     os.system("rm -rf " + path)
@@ -22,22 +23,27 @@ def wait_timeout(proc, timeout):
         if result is not None:
             return True
         if time.time() >= end:
-            proc.kill()
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
             return False
         time.sleep(interval)
 
-def parse_checker_output(log):
+def parse_checker_output(filename):
+    log = open(filename, "r")
     result = True
     hasResult = False
-    for line in log.splitlines():
+    for line in log.readlines():
+        line = line.replace("\n", "")
         if "RESULT" in line:
             hasResult = True
             if "NOT" in line:
                 result = False
             print line
+            break
 
     if not hasResult:
         print "j-ReCoVer returned no result"
+
+    log.close()
 
     return (hasResult & result)
 
@@ -67,7 +73,16 @@ def parse_finder_output(filename):
         print full_log
     else:
         print "Cannot find a counterexample in " + str(count) + " tests"
-        print "Testcases were generated randomly. Run several times to verify."
+        print "Testcases were generated randomly."
+        print ""
+        print "Following are the first 200 lines of testcases:"
+        i = 0
+        for line in full_log.splitlines():
+            if i >= 200:
+                break
+            else:
+                i += 1
+                print line
     log.close()
 
 
@@ -130,28 +145,28 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
                 generator_f.write("Float[] solutionArray = new Float[length];\n")
         elif "RANDOM" in line:
             if "IntWritable" in T2:
-                generator_f.write("int random = (int)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("int random = (int)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = new IntWritable(random);\n")
             elif "LongWritable" in T2:
-                generator_f.write("long random = (long)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("long random = (long)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = new LongWritable(random);\n")
             elif "Integer" in T2:
-                generator_f.write("int random = (int)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("int random = (int)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = random;\n")
             elif "Long" in T2:
-                generator_f.write("long random = (long)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("long random = (long)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = random;\n")
             elif "DoubleWritable" in T2:
-                generator_f.write("double random = (double)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("double random = (double)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = new DoubleWritable(random);\n")
             elif "Double" in T2:
-                generator_f.write("double random = (double)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("double random = (double)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = random;\n")
             elif "FloatWritable" in T2:
-                generator_f.write("float random = (float)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("float random = (float)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = new FloatWritable(random);\n")
             elif "Float" in T2:
-                generator_f.write("float random = (float)(Math.random() * 1000 + 1) - 500;\n")
+                generator_f.write("float random = (float)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = random;\n")
         elif "REDUCER" in line:
             for line_r in reducer_f.readlines():
@@ -181,42 +196,40 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
 
 def run_checker(global_path, path, p_name):
     target = path + "target/New-1.0.jar"
-    cmd = ["java", "-jar", global_path + "j-recover.jar", target, "autoGenerator", p_name]
-    proc = Popen(cmd, stdout=PIPE)
+    filename = global_path + ".fields/" + p_name + "_checker"
+    z3_file = global_path + ".fields/z3_" + p_name
+    cmd = "java -jar -Xms2G -Xmx2G " + global_path + "j-recover.jar " + target + " autoGenerator " + z3_file + " > " + filename 
+    proc = Popen(cmd, shell=True, stdout=PIPE, preexec_fn=os.setsid)
     result = wait_timeout(proc, TIMEOUT)
-    os.system("rm -rf z3_" + p_name + ".txt")
+    os.system("rm -rf " + z3_file)
 
     if result:
-        checker_result = parse_checker_output(proc.communicate()[0])
+        checker_result = parse_checker_output(filename)
         if not checker_result:
+            os.system("rm -rf " + filename)
             return False
     else:
         print "Checker timeout"
+        os.system("rm -rf " + filename)
         return False
 
+    os.system("rm -rf " + filename)
     return True
 
 
 def run_finder(global_path, path, p_name):
     process = None
     filename = global_path + ".fields/" + p_name + "_finder"
-    def target():
-        cmd = "java -jar " + path + "target/New-1.0.jar" + " > " + filename
-        process = subprocess.Popen(cmd, shell=True)
-        process.communicate()
+    cmd = "java -jar " + path + "target/New-1.0.jar" + " > " + filename
+    process = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
+    result = wait_timeout(process, TIMEOUT)
 
-    thread = threading.Thread(target=target)
-    thread.start()
-    thread.join(TIMEOUT)
-
-    if thread.is_alive():
+    if not result:
         print "Finder timeout"
-        process.terminate()
-        thread.join()
     else:
         parse_finder_output(filename)
 
-    os.system("rm " + filename)
+    os.system("rm -rf " + filename)
 
 
 # argv[1]: T1
@@ -248,10 +261,13 @@ def main():
     print "###        j-ReCoVer         ###"
     print "================================"
     checker_result = run_checker(global_path, path, p_name)
-    print ""
+    print "================================\n\n"
 
     if not checker_result:
-        print "Trying to find a counterexample..."
+        print "Trying to find a counterexample...\n"
+        run_finder(global_path, path, p_name)
+    else:
+        print "Trying to find a counterexample...\n"
         run_finder(global_path, path, p_name)
 
     os.system("rm -rf " + path)

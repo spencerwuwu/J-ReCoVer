@@ -60,11 +60,15 @@ public class ExecutionTree {
 		
 		currentNodes.add(mRoot);
 		while (!currentNodes.isEmpty()) {
+			int count = 0;
 			for (ExecutionTreeNode currentNode : currentNodes) {
-				executeNode(currentNode, endNodes);
+				//System.out.println(count++);
+				executeNode(currentNode, endNodes, newNodes);
+				/*
 				for(ExecutionTreeNode newNode: currentNode.mChildren) {
 					newNodes.add(newNode);
 				}
+				*/
 			}
 			
 			currentNodes.clear();
@@ -109,12 +113,12 @@ public class ExecutionTree {
 				node.getLocalVars().put("beforeLoop", "0");
 			}
 			if (!mOption.silence_flag) node.print();
-			System.out.println("");
+			log("");
 			index += 1;
 		}
 	}
 	
-	private void executeNode(ExecutionTreeNode currentNode, List<ExecutionTreeNode> endNodes) {
+	private void executeNode(ExecutionTreeNode currentNode, List<ExecutionTreeNode> endNodes, List<ExecutionTreeNode> newNodes) {
 		if (!currentNode.getReturnFlag() && currentNode.getNextLine() < mUnits.size()) {
 			UnitSet us = mUnits.get(currentNode.getNextLine());
 			int determineUnitState = determineUnit(us.getUnit());
@@ -132,7 +136,8 @@ public class ExecutionTree {
 					if (assignStates.size() == 1) {
 						ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), assignStates.get(0), 
 								currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
-						currentNode.mChildren.add(newLeaf);
+						//currentNode.mChildren.add(newLeaf);
+						newNodes.add(newLeaf);
 					} else if (assignStates.size() == 2) {
 						log("Does not seriously implement beforeLoop multiple stage");
 						List<String> condition = new ArrayList<String>();
@@ -143,14 +148,16 @@ public class ExecutionTree {
 						endNodes.add(endLeaf);
 						ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), assignStates.get(1), 
 								currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
-						currentNode.mChildren.add(newLeaf);
+						//currentNode.mChildren.add(newLeaf);
+						newNodes.add(newLeaf);
 					}
 				} else if (newUnit instanceof IdentityStmt){
 					newState = performIdentityStmt(newState, newUnit);
 					ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), newState, 
 							currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
 					
-					currentNode.mChildren.add(newLeaf);
+					//currentNode.mChildren.add(newLeaf);
+					newNodes.add(newLeaf);
 				} else {
 					log(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
 					skip = true;
@@ -167,7 +174,8 @@ public class ExecutionTree {
 					List<ExecutionTreeNode> newLeafNodes = performIfStmt(currentNode, currentNode.getConstraint(), 
 							newState1, newState2, newUnit, mUnitIndexes);
 					for (ExecutionTreeNode node: newLeafNodes) {
-						currentNode.mChildren.add(node);
+						//currentNode.mChildren.add(node);
+						newNodes.add(node);
 					}
 
 				} else if (newUnit instanceof GotoStmt) {
@@ -177,7 +185,8 @@ public class ExecutionTree {
 					newLeaf.setConstraint(currentNode.getConstraint());
 					newLeaf.setExecutionOrder(currentNode.getExecutionOrder() + 1);
 					// 'nextLine' had been set in performGotoStmt
-					currentNode.mChildren.add(newLeaf);
+					//currentNode.mChildren.add(newLeaf);
+					newNodes.add(newLeaf);
 
 				} else {
 					log(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
@@ -197,11 +206,13 @@ public class ExecutionTree {
 				// Deal with specialinvoke and vritualinvoke
 				if(us.getUnit().toString().contains("specialinvoke")) {
 				    ExecutionTreeNode newLeaf = performSpecialInvoke(currentNode, us);
-				    if (newLeaf != null) currentNode.mChildren.add(newLeaf);
+				    //if (newLeaf != null) currentNode.mChildren.add(newLeaf);
+				    if (newLeaf != null) newNodes.add(newLeaf);
 
 				} else if(us.getUnit().toString().contains("virtualinvoke") ) {
 					ExecutionTreeNode newLeaf = performVirtualInvoke(currentNode, us);
-					currentNode.mChildren.add(newLeaf); 
+					//currentNode.mChildren.add(newLeaf); 
+					newNodes.add(newLeaf);
 
 				} else {
 					log(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
@@ -222,7 +233,8 @@ public class ExecutionTree {
 			if (skip) {
 			    ExecutionTreeNode newNode = new ExecutionTreeNode(currentNode.getConstraint(), 
 			    		currentNode.getState(), currentNode.getExecutionOrder(), currentNode.getNextLine(), currentNode.getReturnFlag());
-			    currentNode.mChildren.add(newNode);
+			    //currentNode.mChildren.add(newNode);
+			    newNodes.add(newNode);
 			}
 		}
 	}

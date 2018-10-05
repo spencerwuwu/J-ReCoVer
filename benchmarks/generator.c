@@ -103,12 +103,12 @@ void init_vars() {
 void init_opers() {
     push_oper(Opers, "+", 1);
     push_oper(Opers, "-", 1);
-    push_oper(Opers, "*", 1);
+    //push_oper(Opers, "*", 1);
     //push_oper(Opers, "/", 1);
     //push_oper(Opers, "%", 1);
     push_oper(Opers, "+=", 0);
     push_oper(Opers, "-=", 0);
-    push_oper(Opers, "*=", 0);
+    //push_oper(Opers, "*=", 0);
     //push_oper(Opers, "/=", 0);
 }
 
@@ -124,6 +124,7 @@ void init_cmps() {
 void init_line_types() {
     Line_types = malloc(sizeof(int) * LINE);
     for (int i = 0; i < LINE; i++) Line_types[i] = 0;
+    if (IF_NUM <= 0) return;
 
     int if_else_end[3] = {IF_NUM, 0, 0};
     int hierachy_stack[IF_NUM];
@@ -304,6 +305,10 @@ int main(int argc, char** argv) {
         BASELINE = 200;
     }
 
+    assert(IF_NUM >= 0);
+    assert(VAR_NUM >= 0);
+    assert(BASELINE > 0);
+
     LINE = (BASELINE + IF_NUM * 3);
 
     srand(time(NULL));
@@ -312,6 +317,7 @@ int main(int argc, char** argv) {
     Opers = init_Array();
     Cmps = init_Array();
 
+    writeline("// Note: only +, - operations\n");
     writeline("// Parameters:\n");
     char *str;
     asprintf(&str, "//   Variables:   %d\n", VAR_NUM);
@@ -346,7 +352,7 @@ int main(int argc, char** argv) {
 
     write_init_vars();
 
-    writeline("while(iter.hasNext()) {\n");
+    writeline("while (iter.hasNext()) {\n");
     writeline("cur = iter.next().get();\n");
 
     write_body_lines();
@@ -360,9 +366,11 @@ int main(int argc, char** argv) {
      *
      */
 
-    writeline("double sum = 0;\n");
-    sum_up_vars();
-    writeline("output.collect(prefix, new DoubleWritable(sum));\n}\n");
+    //writeline("double sum = 0;\n");
+    // sum_up_vars();
+    writeline("output.collect(prefix, new DoubleWritable(");
+    writeline(Vars->elements[get_random(Vars->size)]);
+    writeline("));\n}\n");
 
     destroy_Array(Vars);
     destroy_Array(Opers);

@@ -8,7 +8,7 @@ import java.util.Map;
 import jRecover.state.State;
 
 public class ExecutionTreeNode {
-	public List<ExecutionTreeNode> mChildren = new ArrayList<ExecutionTreeNode>();
+	//public List<ExecutionTreeNode> mChildren = new ArrayList<ExecutionTreeNode>();
 
 	private List<String> mConstraint;
 	private State mState;

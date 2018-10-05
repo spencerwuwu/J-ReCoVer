@@ -1,5 +1,9 @@
 package jRecover.z3formatbuilder;
 
+/*
+ * Deprecated, use Z3FormatPipeline
+ */
+
 import java.util.HashMap;
 import java.util.Map;
 

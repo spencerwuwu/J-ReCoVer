@@ -23,7 +23,7 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 
 public class Z3FormatPipeline {
-	Map<String, String> typeTable;
+	Map<String, String> mTypeTable;
 	List<String> mGlobalVariables = new ArrayList<String>();
 	List<ExecutionTreeNode> mBeforeNodes = new ArrayList<ExecutionTreeNode>();
 	List<ExecutionTreeNode> mInnerNodes = new ArrayList<ExecutionTreeNode>();
@@ -40,19 +40,21 @@ public class Z3FormatPipeline {
 
 	public Z3FormatPipeline(Map<String, String> table, List<ExecutionTreeNode> beforeNodes, List<ExecutionTreeNode> interNodes, 
 			boolean useNextFlag, Map<String, Boolean> outputRelated) {
-		typeTable = table;
+		mTypeTable = table;
 		mBeforeNodes.addAll(beforeNodes);
 		mInnerNodes.addAll(interNodes);
 		mUsingNextBeforeLoop = useNextFlag;
 		mOutputRelated = outputRelated;
-		System.out.print("Using getNext before loop: ");
-		System.out.print(mUsingNextBeforeLoop);
-		System.out.print("\n");
+		log("Using getNext before loop: " + mUsingNextBeforeLoop);
+		log("");
 	}
 	
 	public boolean getResult() throws IOException {
+		log("Total nodes: " + (mBeforeNodes.size()+mInnerNodes.size()));
+		log("Total variables: " + mTypeTable.size());
 		writeZ3Format();
 		
+		log("Finished generating formula");
 		String result = "";
 		try {
 			Process process = Runtime.getRuntime().exec("z3 -in");
@@ -62,6 +64,7 @@ public class Z3FormatPipeline {
 			ex.printStackTrace();
 		}
 		
+		int seed = 0;
 		for (String formula : mPipeContent) {
 			byte[] bytes = formula.getBytes();
 			int read = 0;
@@ -86,6 +89,7 @@ public class Z3FormatPipeline {
 			return false;
 		}
 
+		System.out.println(result);
 		if (result.contains("unsat")) {
 			return true;
 		} else {
@@ -96,10 +100,12 @@ public class Z3FormatPipeline {
 	public void writeZ3Format() {
 		variableTypeDeclare();
 		
+		log("Finshed variableDeclartion");
 		int stage = 1;
 		while (stage <= 2) {
 			constructFormula(stage, 1);
 			constructFormula(stage, 2);
+			log("Finshed stage: " + stage);
 			stage += 1;
 		}
 		//mPipeContent.add("(assert (not (= input0_1 input0_2)))\n");
@@ -252,8 +258,8 @@ public class Z3FormatPipeline {
 		  initial version would be the same, but internal version(_1, _2) maybe not.
 		  result formula wouldn't take variable with '$' into account.
 		*/
-		for(String variable : typeTable.keySet()) {
-			String type = typeTable.get(variable);
+		for(String variable : mTypeTable.keySet()) {
+			String type = mTypeTable.get(variable);
 			String var = variable.replace("_v", "");
 
 			if (type == "int" || type == "byte" || type == "short" || type == "long"
@@ -281,11 +287,11 @@ public class Z3FormatPipeline {
 				mVariables.put(var, false);
 			} else if (type.contains("IntWritable") || type.contains("LongWritable")) {
 				type = "Int";
-			    System.out.println(variable + " " + Color.ANSI_RED + typeTable.get(variable) + " -> Int" + Color.ANSI_RESET);
+			    log(variable + " " + Color.ANSI_RED + mTypeTable.get(variable) + " -> Int" + Color.ANSI_RESET);
 				mVariables.put(var, false);
 			} else {
 				// Not supported in z3 Format
-			    System.out.println(variable + " " + Color.ANSI_RED + typeTable.get(variable) + Color.ANSI_RESET);
+			    log(variable + " " + Color.ANSI_RED + mTypeTable.get(variable) + Color.ANSI_RESET);
 			    continue;
 			}
 			int index = 0;
@@ -340,6 +346,10 @@ public class Z3FormatPipeline {
 				if (!mGlobalVariables.contains(element)) mGlobalVariables.add(element);
 			}
 		}
+	}
+	
+	public void log(String str) {
+		System.out.println("[ z3]  " + str);
 	}
 		
 	

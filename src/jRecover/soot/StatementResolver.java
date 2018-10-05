@@ -71,12 +71,12 @@ public class StatementResolver {
 		soot.G.reset();
 	}
 
-	public void run(String input, String classPath, Option option, String reducerClassname, String z3FileName) {
+	public void run(String input, String classPath, Option option, String reducerClassname) {
 		SootRunner runner = new SootRunner();
 		runner.run(input, classPath);
 		op = option;
 		// Main analysis starts from here
-		performAnalysis(reducerClassname, z3FileName);
+		performAnalysis(reducerClassname);
 	}
 
 	private void addDefaultInitializers(SootMethod constructor, SootClass containingClass) {
@@ -114,7 +114,7 @@ public class StatementResolver {
 		return Scene.v().getSootClass(SootRunner.assertionClassName);
 	}
 
-	public void performAnalysis(String reducerClassname, String z3FileName) {
+	public void performAnalysis(String reducerClassname) {
 		List<SootClass> classes = new LinkedList<SootClass>(Scene.v().getClasses());
 		for (SootClass sc : classes) {
 			if (sc == getAssertionClass()) {
@@ -149,7 +149,7 @@ public class StatementResolver {
 			if (op.jimple_flag) jimpleAnalysis(body);
 			else {
 				try {
-					completeAnalysis(body, z3FileName);
+					completeAnalysis(body);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -178,7 +178,7 @@ public class StatementResolver {
 		System.out.println(body.toString());
 	}
 
-	public void completeAnalysis(JimpleBody body, String z3FileName) throws IOException {
+	public void completeAnalysis(JimpleBody body) throws IOException {
 		int command_line_no = 1;
 		UnitGraph graph = new ExceptionalUnitGraph(body);
 		Iterator gIt = graph.iterator();
@@ -213,7 +213,8 @@ public class StatementResolver {
 		for(UnitSet us : units) {
 			String unit = us.getUnit().toString();
 			if (unit.contains("String")) {
-				System.err.print("Currently support no String operation or Assertion \n");
+				if (!op.silence_flag) System.err.print(Color.ANSI_RED + unit.toString() 
+				+ Color.ANSI_RESET + " contains string operations or assertions \n");
 				//return;
 			}
 		}
@@ -222,6 +223,12 @@ public class StatementResolver {
 		detectLoop(graph, unitIndexes);
 		
 		checkOutputRelated(units);
+
+		log("====== Output/Condition Related ======");
+		for (String key : mOutputRelated.keySet()) {
+			log(key + ": \t" + mOutputRelated.get(key) + "/" + mConditionRelated.get(key));
+		}
+		log("======================================");
 		
 		// Starting to analysis
 		log("Starting analysis");
@@ -262,8 +269,11 @@ public class StatementResolver {
 		toWriteZ3.addAll(interLoopTree.getEndNodes());
 		Z3FormatPipeline z3Builder = new Z3FormatPipeline(mVarsType, 
 				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), mUseNextBeforeLoop, mOutputRelated);
+		/*
+		z3FormatBuilder z3Builder = new z3FormatBuilder(mVarsType, 
+				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3", mUseNextBeforeLoop, mOutputRelated);
+				*/
 
-		System.out.println("\n");
 		if (z3Builder.getResult()) {
 			System.out.println("RESULT: Proved to be commutative");
 		} else {
@@ -326,6 +336,8 @@ public class StatementResolver {
 			}
 			index -= 1;
 		}
+		
+		if (emphsisTail) return;
 
 		List<Unit> unitList2 = new ArrayList<Unit>();
 		index = 0;
@@ -362,11 +374,6 @@ public class StatementResolver {
 			}
 		}
 
-		log("====== Output/Condition Related ======");
-		for (String key : mOutputRelated.keySet()) {
-			log(key + ": \t" + mOutputRelated.get(key) + "/" + mConditionRelated.get(key));
-		}
-		log("======================================");
 	}
 	
 	protected void parseAssignment(Unit unit, int currentLine) {
@@ -405,10 +412,11 @@ public class StatementResolver {
 			
 			// Continue if assignment is being operated (exclude directly assignment of input)
 			if (ass.length <= 1) return;
-			if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, true);
 			if (currentLine > mOutLoopLine) {
+				//if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, true);
 				for (String str : ass) {
-					if (mOutputRelated.containsKey(str)) mOutputRelated.put(str, true);
+					if (mOutputRelated.containsKey(var) && mOutputRelated.get(var))
+						if (mOutputRelated.containsKey(str)) mOutputRelated.put(str, true);
 				}
 			}
 		}

@@ -9,7 +9,6 @@ public class Main {
 		String classPath = "";
 		String reducerClassname = "";
 		Option op = new Option();
-		String z3FileName = "z3_.txt";
 		
 		// Parsing arguments
 		if (args.length >= 2) {
@@ -29,7 +28,7 @@ public class Main {
 							return;
 						}
 					} else {
-						z3FileName = op.parse(args[i]);
+						op.parse(args[i]);
 						i++;
 					}
 				}
@@ -42,7 +41,7 @@ public class Main {
 
 		if (javaInput.length() != 0 & reducerClassname.length() != 0) {
 			StatementResolver SR = new StatementResolver();
-			SR.run(javaInput, classPath, op, reducerClassname, z3FileName);
+			SR.run(javaInput, classPath, op, reducerClassname);
 		} else {
 			System.err.println(op.Warning);
 		}

@@ -10,11 +10,12 @@ public class Option {
 			+ "    -h              help\n"
 			+ "    -c classpath    Set classpath (Optional if you had packed all libs into the jar)\n"
 			+ "    -j              Jimple mode, only output Jimple code\n"
+			+ "    -s              Silence mode, print out less log\n"
 			+ "    -g              Generate control flow graph\n"
 			+ " * Example:\n"
-			+ "     $ java -jar jsr.jar your_jar.jar reducer_classname\n"
-			+ "   Slience mode \n"
-			+ "     $ java -jar jsr.jar your_jar.jar reducer_classname -j\n";
+			+ "     $ java -jar j-recover.jar your_jar.jar reducer_classname\n"
+			+ "   Jimple mode \n"
+			+ "     $ java -jar j-recover.jar your_jar.jar reducer_classname -j\n";
 	
 	public final static String Warning = "Invalid input, use -h for help";
 	public boolean cfg_flag;
@@ -27,17 +28,14 @@ public class Option {
 		jimple_flag = false;
 	}
 	
-	public String parse(String input) {
+	public void parse(String input) {
 		if (input.equals("-g")) {
 			this.cfg_flag = true;
 		} else if (input.equals("-j")) {
 			this.jimple_flag = true;
 		} else if (input.equals("-s")) {
 			this.silence_flag = true;
-		} else {
-			return input;
 		}
-		return "z3_.txt";
 	}
 	
 }

@@ -1,0 +1,279 @@
+#!/usr/bin/python2.7
+import os
+import signal
+from subprocess import Popen, PIPE
+import time
+import sys
+import subprocess, threading
+
+Reducer = "reducer.java"
+Mvn = "mvn package -q -Dmaven.test.skip=true -B"
+TIMEOUT = 15
+
+def error_exit(path):
+    os.system("rm -rf " + path)
+    exit(1)
+
+def wait_timeout(proc, timeout):
+    start = time.time()
+    end = start + timeout
+    interval = .25
+    while True:
+        result = proc.poll()
+        if result is not None:
+            return True
+        if time.time() >= end:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            return False
+        time.sleep(interval)
+
+def parse_checker_output(filename):
+    log = open(filename, "r")
+    result = True
+    hasResult = False
+    for line in log.readlines():
+        line = line.replace("\n", "")
+        if "RESULT" in line:
+            hasResult = True
+            if "NOT" in line:
+                result = False
+            print line
+            break
+
+    if not hasResult:
+        print "j-ReCoVer returned no result"
+
+    log.close()
+
+    return (hasResult & result)
+
+
+def parse_finder_output(filename):
+    log = open(filename, "r")
+    data = ""
+    full_log = ""
+    count = 0
+    for line in log.readlines():
+        line = line.replace("\n", "")
+        if "The reducer is" in line:
+            count += 1
+            if "Not" in line:
+                print "Counter example found:"
+                print data
+                return
+            else:
+                full_log = full_log + data
+                full_log = full_log + "--------\n"
+                data = ""
+        else:
+            data = data + line + "\n"
+    
+    if count < 10:
+        print "Cannot find a counterexample from these testcases:"
+        print full_log
+    else:
+        print "Cannot find a counterexample in " + str(count) + " tests"
+        print "Testcases were generated randomly."
+        print ""
+        print "Following are the first 200 lines of testcases:"
+        i = 0
+        for line in full_log.splitlines():
+            if i >= 200:
+                break
+            else:
+                i += 1
+                print line
+    log.close()
+
+
+def compile(T1, T2, T3, T4, r_type, global_path, path):
+    wrapper = global_path + "templates/wrapper"
+    autoGenerator = path + "src/main/java/reduce_test/autoGenerator.java"
+    template_path = global_path + "templates/build"
+    os.system("cp -r " + template_path + " " + path)
+
+    #wrapper = wrapper + T2 
+        
+    if "Collector" in r_type:
+        wrapper = wrapper + "_o.java"
+    else:
+        wrapper = wrapper + "_c.java"
+
+    wrapper_f = open(wrapper, "r")
+    if len(sys.argv) == 6:
+        reducer_f = open(global_path + Reducer, "r")
+    else:
+        reducer_f = open(global_path + sys.argv[6], "r")
+    generator_f = open(autoGenerator, "w")
+
+    for line in wrapper_f.readlines():
+        if "T1_" in line:
+            if "IntWritable" in T1:
+                generator_f.write("IntWritable(1)")
+            elif "Text" in T1:
+                generator_f.write("Text(\"1\")")
+            elif "LongWritable" in T1:
+                generator_f.write("LongWritable(1L)")
+            elif "Integer" in T1:
+                generator_f.write("1")
+            elif "Long" in T1:
+                generator_f.write("1L")
+        elif "T1" in line:
+            generator_f.write(T1)
+        elif "T2" in line:
+            generator_f.write(T2)
+        elif "T3" in line:
+            generator_f.write(T3)
+        elif "T4" in line:
+            generator_f.write(T4)
+        elif "INPUT0" in line:
+            if "IntWritable" in T2:
+                generator_f.write("IntWritable[] solutionArray = new IntWritable[length];\n")
+            elif "LongWritable" in T2:
+                generator_f.write("LongWritable[] solutionArray = new LongWritable[length];\n")
+            elif "Integer" in T2:
+                generator_f.write("Integer[] solutionArray = new Integer[length];\n")
+            elif "Long" in T2:
+                generator_f.write("Long[] solutionArray = new Long[length];\n")
+            elif "DoubleWritable" in T2:
+                generator_f.write("DoubleWritable[] solutionArray = new DoubleWritable[length];\n")
+            elif "Double" in T2:
+                generator_f.write("Double[] solutionArray = new Double[length];\n")
+            elif "FloatWritable" in T2:
+                generator_f.write("FloatWritable[] solutionArray = new FloatWritable[length];\n")
+            elif "Float" in T2:
+                generator_f.write("Float[] solutionArray = new Float[length];\n")
+        elif "RANDOM" in line:
+            if "IntWritable" in T2:
+                generator_f.write("int random = (int)(Math.random() * 10 + 1) - 5;\n")
+                generator_f.write("solutionArray[j] = new IntWritable(random);\n")
+            elif "LongWritable" in T2:
+                generator_f.write("long random = (long)(Math.random() * 10 + 1) - 5;\n")
+                generator_f.write("solutionArray[j] = new LongWritable(random);\n")
+            elif "Integer" in T2:
+                generator_f.write("int random = (int)(Math.random() * 10 + 1) - 5;\n")
+                generator_f.write("solutionArray[j] = random;\n")
+            elif "Long" in T2:
+                generator_f.write("long random = (long)(Math.random() * 10 + 1) - 5;\n")
+                generator_f.write("solutionArray[j] = random;\n")
+            elif "DoubleWritable" in T2:
+                generator_f.write("double random = (double)(Math.random() * 10 + 1) - 5;\n")
+                generator_f.write("solutionArray[j] = new DoubleWritable(random);\n")
+            elif "Double" in T2:
+                generator_f.write("double random = (double)(Math.random() * 10 + 1) - 5;\n")
+                generator_f.write("solutionArray[j] = random;\n")
+            elif "FloatWritable" in T2:
+                generator_f.write("float random = (float)(Math.random() * 10 + 1) - 5;\n")
+                generator_f.write("solutionArray[j] = new FloatWritable(random);\n")
+            elif "Float" in T2:
+                generator_f.write("float random = (float)(Math.random() * 10 + 1) - 5;\n")
+                generator_f.write("solutionArray[j] = random;\n")
+        elif "REDUCER" in line:
+            for line_r in reducer_f.readlines():
+                generator_f.write(line_r)
+        else:
+            generator_f.write(line)
+
+    wrapper_f.close()
+    reducer_f.close()
+    generator_f.close()
+
+    result = os.popen("cd " + path + " && " + Mvn).readlines()
+    if len(result) != 0:
+        print "Compile Error"
+        for line in result:
+            line = line.replace("\n", "")
+            if ("/home/" in line) and ("/.fields/" in line):
+                parts = line.split(" ")
+                del parts[1]
+                line = ""
+                for part in parts:
+                    line = line + part + " "
+                print line
+            else:
+                print line
+        error_exit(path)
+
+def run_checker(global_path, path, p_name):
+    target = path + "target/New-1.0.jar"
+    filename = global_path + ".fields/" + p_name + "_checker"
+    cmd = "java -jar -Xms2G -Xmx2G " + global_path + "j-recover.jar " + target + " autoGenerator -s > " + filename 
+    proc = Popen(cmd, shell=True, stdout=PIPE, preexec_fn=os.setsid)
+    result = wait_timeout(proc, TIMEOUT)
+
+    if result:
+        checker_result = parse_checker_output(filename)
+        if not checker_result:
+            os.system("rm -rf " + filename)
+            return False
+    else:
+        print "Checker timeout"
+        os.system("rm -rf " + filename)
+        return False
+
+    os.system("rm -rf " + filename)
+    return True
+
+
+def run_finder(global_path, path, p_name):
+    process = None
+    filename = global_path + ".fields/" + p_name + "_finder"
+    cmd = "java -jar " + path + "target/New-1.0.jar" + " > " + filename
+    process = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
+    result = wait_timeout(process, TIMEOUT)
+
+    if not result:
+        print "Finder timeout"
+    else:
+        parse_finder_output(filename)
+
+    os.system("rm -rf " + filename)
+
+
+# argv[1]: T1
+# argv[2]: T2
+# argv[3]: T3
+# argv[4]: T4
+# argv[5]: r_type
+# argv[6]: reducer file (optional)
+
+def main():
+    T1 = sys.argv[1]
+    T2 = sys.argv[2]
+    T3 = sys.argv[3]
+    T4 = sys.argv[4]
+    r_type = sys.argv[5]
+    global_path = os.path.dirname(os.path.abspath(__file__)) + "/"
+    p_name = str(int(time.time()) % 10000)
+    os.system("mkdir -p " + global_path + ".fields")
+    path = global_path + ".fields/" + p_name + "/"
+
+    print "================================"
+    print "###         Compile          ###"
+    print "================================"
+    compile(T1, T2, T3, T4, r_type, global_path, path)
+    print "Success\n"
+
+
+    print "================================"
+    print "###        j-ReCoVer         ###"
+    print "================================"
+    checker_result = run_checker(global_path, path, p_name)
+    print "\n________________________________\n\n"
+
+    if not checker_result:
+        print "Trying to find a counterexample...\n"
+        run_finder(global_path, path, p_name)
+    else:
+        print "Trying to find a counterexample...\n"
+        run_finder(global_path, path, p_name)
+
+    os.system("rm -rf " + path)
+
+if __name__ == "__main__":
+    if (len(sys.argv) != 6) and (len(sys.argv) != 7):
+        print "Usage: ./j-ReCoVer T1 T2 T3 T4 reducer_type [reducer file]"
+        exit(1)
+
+    main()
+

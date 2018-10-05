@@ -1,4 +1,6 @@
 bin/
-j-recover.jar
 .classpath
-BUILD/
+fields/
+.fields/
+j-recover.jar
+reducer.java

@@ -26,14 +26,7 @@ function build_jrecover() {
 
 function fetch_wrapper() {
 	echo "Building J-ReCoVer Wrapper..."
-	rm -rf BUILD
-	mkdir BUILD
-	cd BUILD
-	git init
-	git remote add origin "https://github.com/spencerwuwu/J-ReCoVer_wrapper.git"
-	git pull origin master --depth=1
-	cp ../j-recover.jar ./
-	mv sample_reducer.java reducer.java
+	cp sample_reducer.java reducer.java
 
 	echo ""
 	echo "Testing J-ReCoVer, the result should be commutative..."
@@ -42,7 +35,6 @@ function fetch_wrapper() {
 		echo "The result didn't correspond, something went wrong"
 		exit 1
 	fi
-	cd ../
 }
 
 dependencies=('git' 'java' 'mvn' 'ant' 'python2' 'z3')

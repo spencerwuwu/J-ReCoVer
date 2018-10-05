@@ -197,11 +197,9 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
 def run_checker(global_path, path, p_name):
     target = path + "target/New-1.0.jar"
     filename = global_path + ".fields/" + p_name + "_checker"
-    z3_file = global_path + ".fields/z3_" + p_name
-    cmd = "java -jar -Xms2G -Xmx2G " + global_path + "j-recover.jar " + target + " autoGenerator " + z3_file + " > " + filename 
+    cmd = "java -jar -Xms2G -Xmx2G " + global_path + "j-recover.jar " + target + " autoGenerator -s > " + filename 
     proc = Popen(cmd, shell=True, stdout=PIPE, preexec_fn=os.setsid)
     result = wait_timeout(proc, TIMEOUT)
-    os.system("rm -rf " + z3_file)
 
     if result:
         checker_result = parse_checker_output(filename)
@@ -261,7 +259,7 @@ def main():
     print "###        j-ReCoVer         ###"
     print "================================"
     checker_result = run_checker(global_path, path, p_name)
-    print "================================\n\n"
+    print "\n________________________________\n\n"
 
     if not checker_result:
         print "Trying to find a counterexample...\n"

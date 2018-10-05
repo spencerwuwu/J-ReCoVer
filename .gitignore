@@ -1,6 +1,5 @@
 bin/
 .classpath
-BUILD/
 fields/
 .fields/
 j-recover.jar

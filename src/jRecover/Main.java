@@ -11,6 +11,10 @@ public class Main {
 		Option op = new Option();
 		
 		// Parsing arguments
+		if(args[0].equals("-h")) {
+			System.out.println(op.Usage);
+			return;
+		}
 		if (args.length >= 2) {
 			javaInput = args[0];
 			reducerClassname = args[1];
@@ -32,10 +36,6 @@ public class Main {
 						i++;
 					}
 				}
-			}
-			else if(args[0].equals("-h")) {
-				System.out.println(op.Usage);
-				return;
 			}
 		}
 

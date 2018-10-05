@@ -28,12 +28,13 @@ $ java -jar j-recover.jar -h
  * Options:
     -h              help
     -c classpath    Set classpath (Optional if you had packed all libs into the jar)
-    -s              Silence mode, only output Jimple code
+    -j              Jimple mode, only output Jimple code
+    -s              Silence mode, print out less log
     -g              Generate control flow graph
  * Example:
      $ java -jar j-recover.jar your_jar.jar reducer_classname
-   Slience mode 
-     $ java -jar j-recover.jar your_jar.jar reducer_classname -s
+   Jimple mode 
+     $ java -jar j-recover.jar your_jar.jar reducer_classname -j
 ```
 
 

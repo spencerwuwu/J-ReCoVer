@@ -143,111 +143,120 @@ public class Z3FormatPipeline {
 	protected void constructFormula(int stage, int round) {
 		// Generate formula for each variable in each round
 		for (String key : mVariables.keySet()) {
-			String finalValue = "";
+			StringBuffer finalValue = new StringBuffer("");
 			for (ExecutionTreeNode node : mBeforeNodes) {
 				if (node.getLocalVars().get(key) == null) continue;
-				String value = combineValueCondition(node, key, stage, round);
+				StringBuffer value = combineValueCondition(node, key, stage, round);
 				if (value.length() == 0) continue;
 				
 				if (finalValue.length() == 0) {
-					finalValue = value;
+					finalValue.append(value);
 				} else {
-					finalValue = "(or " + finalValue + " " + value + ")\n";
+					finalValue.insert(0, "(or ").append(" ").append(value).append(")\n");
 				}
 			}
 			for (ExecutionTreeNode node : mInnerNodes) {
 				if (node.getLocalVars().get(key) == null) continue;
-				String value = combineValueCondition(node, key, stage, round);
+				StringBuffer value = combineValueCondition(node, key, stage, round);
 				if (value.length() == 0) continue;
 
 				if (finalValue.length() == 0) {
-					finalValue = value;
+					finalValue.append(value);
 				} else {
-					finalValue = "(or " + finalValue + " " + value + ")\n";
+					finalValue.insert(0, "(or ").append(" ").append(value).append(")\n");
 				}
 			}
 			if (finalValue.length() == 0) continue;
 			
 			//if (mOutputRelated.get(key)) {
-				if (finalValue.contains("hasNext")) {
+				if (finalValue.lastIndexOf("hasNext") >= 0) {
 					mOutputRelated.put(key, false);
 					continue;
 				}
-				finalValue = "(assert \n" + finalValue + ")";
+				finalValue.insert(0, "(assert \n").append(")");
 				mPipeContent.add(finalValue + "\n");
+				//System.out.println(finalValue);
 			//}
 		}
 		
 	}
 	
-	protected String combineValueCondition(ExecutionTreeNode node, String var, int stage, int round) {
-		String condition = generateConditions(node.getConstraint(), stage, round);
+	protected StringBuffer combineValueCondition(ExecutionTreeNode node, String var, int stage, int round) {
+		StringBuffer condition = generateConditions(node.getConstraint(), stage, round);
 		String valueTokens[] = node.getLocalVars().get(var).split("\\s+");
-		String value = "";
+		StringBuffer value = new StringBuffer("");
 		for (String token : valueTokens) {
 			if (token.contains("_v")) {
 				token = token.replace("_v", "_" + (stage - 1) + "_r" + round);
 			} else if (token.contains("input")) {
 				token = token + "_" + stage + "_r" + round;
 			}
-			if (value.length() == 0) value = token;
-			else value = value + " " + token;
+			if (value.length() == 0) value.append(token);
+			else value.append(" ").append(token);
 		}
-		if (value.length() == 0) return "";
+		if (value.length() == 0) return value;
 
-		value = "(= " + var + "_" + stage + "_r" + round + " " + value + ")";
-		return "(and " + condition + " " + value + ")\n";
+
+		StringBuffer tmp = new StringBuffer("");
+		tmp.append("(and ").append(condition).append(' ');
+		tmp.append("(= ").append(var).append("_").append(stage).append("_r").append(round).append(' ').append(value).append(')');
+		tmp.append(")\n");
+		return tmp;
+		//value = "(= " + var + "_" + stage + "_r" + round + " " + value + ")";
+		//return "(and " + condition + " " + value + ")\n";
 	}
 	
-	protected String generateConditions(List<String> constraints, int stage, int round) {
-		String conditions = "";
+	protected StringBuffer generateConditions(List<String> constraints, int stage, int round) {
+		StringBuffer conditions = new StringBuffer("");
 		for (String constraint : constraints) {
 			String tokens[] = constraint.split("\\s+");
 			String operation = "";
-			String lhs = "";
-			String rhs = "";
-			String condition = "";
+			StringBuffer lhs = new StringBuffer("");
+			StringBuffer rhs = new StringBuffer("");
+			StringBuffer condition = new StringBuffer("");
 			boolean negative = false;
 			if (tokens.length == 4 && tokens[0].equals("!")) {
-				lhs = tokens[1];
+				lhs.append(tokens[1]);
 				operation = tokens[2];
-				rhs = tokens[3];
+				rhs.append(tokens[3]);
 				negative = true;
 			} else {
-				lhs = tokens[0];
+				lhs.append(tokens[0]);
 				operation = tokens[1];
-				rhs = tokens[2];
+				rhs.append(tokens[2]);
 			}
 			
-			if (lhs.equals("beforeLoopDegree")) continue;
+			if (lhs.toString().equals("beforeLoopDegree")) continue;
 			
 			for (String key : mVariables.keySet()) {
-				if (lhs.equals(key)) {
-					lhs = lhs + "_" + stage + "_r" + round;
+				if (lhs.toString().equals(key)) {
+					lhs.append('_').append(stage).append("_r").append(round);
 					break;
 				}
 			}
 			for (String key : mVariables.keySet()) {
-				if (rhs.equals(key)) {
-					rhs = rhs + "_" + stage + "_r" + round;
+				if (rhs.toString().equals(key)) {
+					rhs.append("_").append(stage).append("_r").append(round);
 					break;
 				}
 			}
 
 			if (operation.equals("!=")) {
-				condition = "(not (= " + lhs + " " + rhs + "))";
+				condition.append("(not (= ").append(lhs).append(" ").append(rhs).append("))");
 			} else if (operation.equals("==")) {
-				condition = "(= " + lhs + " " + rhs + ")";
+				condition.append("(= ").append(lhs).append(" ").append(rhs).append(")");
 			} else {
-				condition = "(" + operation + " " + lhs + " " + rhs + ")";
+				condition.append("(").append(operation).append(" ").append(lhs).append(" ").append(rhs).append(")");
 			}
 			
 			if (negative) {
-				condition = "(not " + condition + ")";
+				condition.insert(0, "(not ").append(")");
 			}
 			
 			if (conditions.length() == 0) conditions = condition;
-			else conditions = "(and " + conditions + " " + condition + ")";
+			else {
+				conditions.insert(0, "(and ").append(condition).append(")");
+			}
 		}
 		return conditions;
 	}

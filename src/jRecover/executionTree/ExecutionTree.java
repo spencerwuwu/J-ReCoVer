@@ -232,7 +232,7 @@ public class ExecutionTree {
 
 			if (skip) {
 			    ExecutionTreeNode newNode = new ExecutionTreeNode(currentNode.getConstraint(), 
-			    		currentNode.getState(), currentNode.getExecutionOrder(), currentNode.getNextLine(), currentNode.getReturnFlag());
+			    		currentNode.getState(), currentNode.getExecutionOrder(), currentNode.getNextLine() + 1, currentNode.getReturnFlag());
 			    //currentNode.mChildren.add(newNode);
 			    newNodes.add(newNode);
 			}

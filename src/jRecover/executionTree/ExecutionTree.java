@@ -95,7 +95,6 @@ public class ExecutionTree {
 			newNodes.clear();
 		}
 		mEndNodes = endNodes;
-		
 	}
 	
 	public void print() {
@@ -691,6 +690,11 @@ public class ExecutionTree {
 
 	public List<ExecutionTreeNode> getEndNodes() {
 		return mEndNodes;
+	}
+	
+	public void logAll(String str) {
+		if (mOption.silence_flag) System.out.println("[  ETree]  " + str);
+		else System.out.println("[  ETree]  " + str);
 	}
 	
 	public void log(String str) {

@@ -59,7 +59,7 @@ public class StatementResolver {
 	
 
 	private final List<String> resolvedClassNames;
-	Option op = new Option();
+	Option mOption = new Option();
 
 	public StatementResolver() {
 		this(new ArrayList<String>());
@@ -74,7 +74,7 @@ public class StatementResolver {
 	public void run(String input, String classPath, Option option, String reducerClassname) {
 		SootRunner runner = new SootRunner();
 		runner.run(input, classPath);
-		op = option;
+		mOption = option;
 		// Main analysis starts from here
 		performAnalysis(reducerClassname);
 	}
@@ -146,7 +146,7 @@ public class StatementResolver {
 		}
 		
 		for (JimpleBody body : bodies) {
-			if (op.jimple_flag) jimpleAnalysis(body);
+			if (mOption.jimple_flag) jimpleAnalysis(body);
 			else {
 				try {
 					completeAnalysis(body);
@@ -158,7 +158,7 @@ public class StatementResolver {
 		}
 		
 		// TODO: Not really doing this tbh
-		if (op.cfg_flag) {
+		if (mOption.cfg_flag) {
 			// BlockGraph blockGraph = new BriefBlockGraph(body);
 			//     System.out.println(blockGraph);
 			// }
@@ -179,6 +179,8 @@ public class StatementResolver {
 	}
 
 	public void completeAnalysis(JimpleBody body) throws IOException {
+		logAll("Initializing..");
+
 		int command_line_no = 1;
 		UnitGraph graph = new ExceptionalUnitGraph(body);
 		Iterator gIt = graph.iterator();
@@ -213,7 +215,7 @@ public class StatementResolver {
 		for(UnitSet us : units) {
 			String unit = us.getUnit().toString();
 			if (unit.contains("String")) {
-				if (!op.silence_flag) System.err.print(Color.ANSI_RED + unit.toString() 
+				if (!mOption.silence_flag) System.err.print(Color.ANSI_RED + unit.toString() 
 				+ Color.ANSI_RESET + " contains string operations or assertions \n");
 				//return;
 			}
@@ -231,7 +233,7 @@ public class StatementResolver {
 		log("======================================");
 		
 		// Starting to analysis
-		log("Starting analysis");
+		logAll("Start analyzing");
 		
 	
 		//traverse tree to find leaves and doAnalysis
@@ -242,33 +244,36 @@ public class StatementResolver {
 		
 		ExecutionTree beforeLoopTree = new ExecutionTree(
 				new ExecutionTreeNode(initConstraintBefore, initStateBefore, 0, 0, false), units, 
-				unitIndexes, mEnterLoopLine, mOutLoopLine, mVarsType, true, op);
+				unitIndexes, mEnterLoopLine, mOutLoopLine, mVarsType, true, mOption);
 		beforeLoopTree.addRootConstraint("beforeLoop == 0");
 		beforeLoopTree.executeTree();
 		for (Map.Entry<String, String> entry : beforeLoopTree.getVarType().entrySet()) {
 			mVarsType.put(entry.getKey(), entry.getValue());
 		}
 		mUseNextBeforeLoop = beforeLoopTree.useNextBeforeLoop();
+		logAll("beforeLoop finished");
 
-		ExecutionTree interLoopTree = new ExecutionTree(
+		ExecutionTree innerLoopTree = new ExecutionTree(
 				new ExecutionTreeNode(initConstraintInter, initStateInter, 0, mEnterLoopLine, false), units, 
-				unitIndexes, mEnterLoopLine, mOutLoopLine, mVarsType, false, op);
-		interLoopTree.addRootConstraint("beforeLoop != 0");
-		interLoopTree.executeTree();
+				unitIndexes, mEnterLoopLine, mOutLoopLine, mVarsType, false, mOption);
+		innerLoopTree.addRootConstraint("beforeLoop != 0");
+		innerLoopTree.executeTree();
 		
 		beforeLoopTree.print();
-		interLoopTree.print();
+		innerLoopTree.print();
+		logAll("innerLoop finished");
 		
-		for (Map.Entry<String, String> entry : interLoopTree.getVarType().entrySet()) {
+		for (Map.Entry<String, String> entry : innerLoopTree.getVarType().entrySet()) {
 			mVarsType.put(entry.getKey(), entry.getValue());
 		}
 		
+		logAll("Starting z3 builder...\n");
         
 		List<ExecutionTreeNode> toWriteZ3 = new ArrayList<ExecutionTreeNode>();
 		toWriteZ3.addAll(beforeLoopTree.getEndNodes());
-		toWriteZ3.addAll(interLoopTree.getEndNodes());
+		toWriteZ3.addAll(innerLoopTree.getEndNodes());
 		Z3FormatPipeline z3Builder = new Z3FormatPipeline(mVarsType, 
-				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), mUseNextBeforeLoop, mOutputRelated);
+				beforeLoopTree.getEndNodes(), innerLoopTree.getEndNodes(), mUseNextBeforeLoop, mOutputRelated, mOption);
 		/*
 		z3FormatBuilder z3Builder = new z3FormatBuilder(mVarsType, 
 				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3", mUseNextBeforeLoop, mOutputRelated);
@@ -461,8 +466,7 @@ public class StatementResolver {
 			}
 			currentLine++;
 		}
-		System.out.println("loop from line: " + mEnterLoopLine + " to " + mOutLoopLine);
-		//System.out.println("loop started from line: " + mEnterLoopLine);
+		log("loop from line: " + mEnterLoopLine + " to " + mOutLoopLine);
 		
 	}
 	
@@ -514,9 +518,14 @@ public class StatementResolver {
 		}
 		return bodies;
 	}
+
+	public void logAll(String str) {
+		if (!mOption.silence_flag) System.out.println(str);
+		else System.out.println("[  StatR]  " + str);
+	}
 	
 	public void log(String str) {
-		if (!op.silence_flag) System.out.println(str);
+		if (!mOption.silence_flag) System.out.println(str);
 	}
 
 	protected Set<JimpleBody> getCollectorSceneBodies(String reducerClassname) {

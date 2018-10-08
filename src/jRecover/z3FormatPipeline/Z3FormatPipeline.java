@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
+import jRecover.Option;
 import jRecover.color.Color;
 import jRecover.executionTree.ExecutionTreeNode;
 
@@ -36,25 +37,29 @@ public class Z3FormatPipeline {
 	InputStream mZt2pipe = null;
 	PipedOutputStream mOutput2str = new PipedOutputStream();
 	List<String> mPipeContent = new LinkedList<String>();
+	Option mOption = new Option();
 	
 
 	public Z3FormatPipeline(Map<String, String> table, List<ExecutionTreeNode> beforeNodes, List<ExecutionTreeNode> interNodes, 
-			boolean useNextFlag, Map<String, Boolean> outputRelated) {
+			boolean useNextFlag, Map<String, Boolean> outputRelated, Option op) {
 		mTypeTable = table;
 		mBeforeNodes.addAll(beforeNodes);
 		mInnerNodes.addAll(interNodes);
 		mUsingNextBeforeLoop = useNextFlag;
 		mOutputRelated = outputRelated;
-		log("Using getNext before loop: " + mUsingNextBeforeLoop);
-		log("");
+		mOption = op;
+		logAll("Use .next().get() before loop: " + mUsingNextBeforeLoop);
 	}
 	
 	public boolean getResult() throws IOException {
-		log("Total nodes: " + (mBeforeNodes.size()+mInnerNodes.size()));
-		log("Total variables: " + mTypeTable.size());
+		logAll("Total nodes: " + (mBeforeNodes.size()+mInnerNodes.size()));
+		logAll("Total variables: " + mTypeTable.size());
+		logAll("");
+
+		logAll("Generating formula...");
 		writeZ3Format();
 		
-		log("Finished generating formula");
+		logAll("Starting z3...");
 		String result = "";
 		try {
 			Process process = Runtime.getRuntime().exec("z3 -in");
@@ -64,7 +69,6 @@ public class Z3FormatPipeline {
 			ex.printStackTrace();
 		}
 		
-		int seed = 0;
 		for (String formula : mPipeContent) {
 			byte[] bytes = formula.getBytes();
 			int read = 0;
@@ -97,15 +101,15 @@ public class Z3FormatPipeline {
 		}
 	}
 	
-	public void writeZ3Format() {
+	protected void writeZ3Format() {
 		variableTypeDeclare();
 		
-		log("Finshed variableDeclartion");
+		logAll("Finshed variableDeclartion");
 		int stage = 1;
 		while (stage <= 2) {
 			constructFormula(stage, 1);
 			constructFormula(stage, 2);
-			log("Finshed stage: " + stage);
+			logAll("Finshed stage: " + stage);
 			stage += 1;
 		}
 		//mPipeContent.add("(assert (not (= input0_1 input0_2)))\n");
@@ -261,7 +265,7 @@ public class Z3FormatPipeline {
 		return conditions;
 	}
 	
-	public void variableTypeDeclare() {
+	protected void variableTypeDeclare() {
 		/*
 		  initialize variable
 		  initial version would be the same, but internal version(_1, _2) maybe not.
@@ -357,8 +361,13 @@ public class Z3FormatPipeline {
 		}
 	}
 	
-	public void log(String str) {
-		System.out.println("[ z3]  " + str);
+	protected void logAll(String str) {
+		if (!mOption.silence_flag) System.out.println(str);
+		else System.out.println("[ z3Pipe]  " + str);
+	}
+	
+	protected void log(String str) {
+		if (!mOption.silence_flag) System.out.println(str);
 	}
 		
 	

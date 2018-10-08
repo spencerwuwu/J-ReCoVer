@@ -93,9 +93,9 @@ public class ExecutionTreeNode {
 	}
 	
 	public void printConstraint() {
-		System.out.println("++++++ Constraints +++++++");
+		log("++++++ Constraints +++++++");
 		for (String cons: mConstraint){
-			System.out.println("| " + cons);
+			log("| " + cons);
 		}
 	}
 	
@@ -105,7 +105,7 @@ public class ExecutionTreeNode {
 		while (it.hasNext()) {
 			String key = (String) it.next();
 			String value = vars.get(key);
-			System.out.println("'" + value + "'");
+			log("'" + value + "'");
 			if (value == null || value.length() == 0) vars.put(key, "0");
 		}
 	}
@@ -113,6 +113,10 @@ public class ExecutionTreeNode {
 	public void print() {
 		printConstraint();
 		getState().printForm();
+	}
+
+	protected void log(String str) {
+		System.out.println(str);
 	}
 
 }

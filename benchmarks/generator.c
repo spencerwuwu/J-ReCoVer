@@ -7,6 +7,15 @@
 #include <time.h>
 #include <assert.h>
 
+/*
+ * Generate random reudcer based on the
+ * the following three params:
+ * variable number, line number, if-else
+ * numbers. The variable passed to the 
+ * Outputcollector or Context is selected
+ * randomly.
+ */
+
 /* 
  * Structs 
  */

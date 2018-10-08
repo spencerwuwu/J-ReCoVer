@@ -8,7 +8,7 @@ For more details please visit [our website](http://jrecover.iis.sinica.edu.tw/).
 
 Run ```./install.sh``` to build and test J-ReCoVer.
 
-```j-ReCover``` performs the same fuction as our [online version](http://jrecover.iis.sinica.edu.tw/editor/1).
+```j-ReCover``` performs the same function as our [online version](http://jrecover.iis.sinica.edu.tw/editor/1).
 Place your code in ```reducer.java``` then execute, the script will try to compile your reducer, determine commutativity,
 and find counterexamples.
 

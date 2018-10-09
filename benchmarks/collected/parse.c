@@ -24,10 +24,16 @@ void print(char *buff) {
 }
 
 int main(int argc, char** argv) {
+    if (argc < 2) {
+        fprintf(stderr, "./parse filename\n");
+        exit(1);
+    }
+
     FILE *file = fopen(argv[1], "r");
     char *buff = NULL;
     size_t size;
     int start = 0;
+    int end_brace = 0;
     setbuf(stdout, NULL);
     while (getline(&buff, &size, file) > 0) {
         if ((strstr(buff, "public void reduce(") != NULL)
@@ -54,11 +60,16 @@ int main(int argc, char** argv) {
         }
         if (start != 0 && strstr(buff, "}") != NULL) {
             start -= 1;
+            if (start == 1) end_brace = 1;
         }
         if (start != 0) {
             char *tmp = strdup(buff);
             print(tmp);
             free(tmp);
+        }
+        if (end_brace == 1) {
+            start = 0;
+            end_brace = 0;
         }
     }
     //fflush(stdout);

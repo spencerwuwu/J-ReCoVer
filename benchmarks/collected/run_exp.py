@@ -1,4 +1,4 @@
-#!/bin/python2.7
+#!/usr/bin/python2.7
 import sys
 import os
 from subprocess import Popen, PIPE

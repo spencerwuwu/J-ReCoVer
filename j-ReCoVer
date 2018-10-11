@@ -99,9 +99,11 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
             elif "Text" in T1:
                 generator_f.write("Text(\"1\")")
             elif "BytesWritable" in T1:
-                generator_f.write("Text(\"1\")")
+                generator_f.write("BytesWritable(\"1\")")
             elif "LongWritable" in T1:
                 generator_f.write("LongWritable(1L)")
+            elif "BooleanWritable" in T1:
+                generator_f.write("BooleanWritable(true)")
             elif "Integer" in T1:
                 generator_f.write("1")
             elif "Long" in T1:

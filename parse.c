@@ -44,7 +44,10 @@ int main(int argc, char** argv) {
     while (getline(&buff, &size, file) > 0) {
         if (strstr(buff, "@Override") != NULL) {
             continue;
+        } else if (strstr(buff, "fail(") != NULL) {
+            continue;
         }
+
         if (strstr(buff, "implements Reducer") != NULL) {
             printf("++++++++\n");
             start = 1;
@@ -94,6 +97,7 @@ int main(int argc, char** argv) {
 
 
         int doprint = 0;
+        /*
         if (ignore_start != 0) {
             if (ignore_start_brace == 1) {
                 ignore_start_brace = 0;
@@ -101,6 +105,7 @@ int main(int argc, char** argv) {
             }
             continue;
         }
+        */
         if (start != 0) {
             if (start_brace == 1) {
                 start_brace = 2;

@@ -3,6 +3,7 @@ import sys
 import os
 from subprocess import Popen, PIPE
 
+types = {"IntWritable", "LongWritable", "DoubleWritable", "FloatWritable", "Integer", "Long", "Double", "Float"}
 
 def main():
     global_path = os.path.dirname(os.path.abspath(__file__)) + "/"
@@ -38,6 +39,33 @@ def main():
             
             output_f.close()
 
+def parse_param2(target):
+    return target.split("<")[1].split(">")[0]
+
+
+def filter_reducer():
+    global_path = os.path.dirname(os.path.abspath(__file__)) + "/"
+    extracted_path = global_path + "extracted/"
+    files = os.listdir(extracted_path)
+
+    for java in files:
+        target = extracted_path + java
+        target_f = open(target, "r")
+        lines = target_f.read().replace("\r", "").replace("\n", "").replace("\t", "")
+        if "public void reduce" not in lines:
+            os.system("rm -f " + target)
+            continue
+
+        lines = lines.split("public void reduce")[1]
+        params = lines.split("(")[1].split(")")[0].split(",")
+        t2 = parse_param2(params[1])
+        target_f.close()
+
+        if t2 not in types:
+            os.system("rm -f " + target)
+
+
 
 if __name__ == "__main__":
     main()
+    filter_reducer()

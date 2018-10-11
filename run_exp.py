@@ -28,6 +28,7 @@ def main():
             scount += 1
         else:
             flog.write(java + ":\n")
+            print "failded"
 
 
     slog.close()

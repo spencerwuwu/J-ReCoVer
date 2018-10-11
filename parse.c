@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
         if (strstr(buff, "implements Reducer") != NULL) {
             printf("++++++++\n");
             start = 1;
-            start_brace = 1;
+            start_brace = 0;
         /*
         } else if (strstr(buff, "public") != NULL && 
                 !(strstr(buff, "main") != NULL || strstr(buff, "class") != NULL)) {
@@ -62,11 +62,14 @@ int main(int argc, char** argv) {
         */
         }
         if (start != 0 && strstr(buff, "{") != NULL) {
-            start += 1;
+            if (start_brace == 0) {
+                start_brace = 1;
+            } else if  (start_brace == 2) {
+                start += 1;
+            }
         }
         if (start != 0 && strstr(buff, "}") != NULL) {
             start -= 1;
-            if (start == 1) end_brace = 1;
         }
 
 
@@ -76,7 +79,7 @@ int main(int argc, char** argv) {
                 continue;
             }
             ignore_start = 1;
-            ignore_start_brace = 1;
+            ignore_start_brace = 0;
         }
         if (ignore_start != 0 && strstr(buff, "{") != NULL) {
             ignore_start += 1;
@@ -87,26 +90,26 @@ int main(int argc, char** argv) {
         }
 
 
+        int doprint = 0;
+        if (ignore_start != 0) {
+            if (ignore_start_brace == 1) {
+                ignore_start_brace = 0;
+                ignore_start = 0;
+            }
+            continue;
+        }
         if (start != 0) {
             if (start_brace == 1) {
-                start_brace = 0;
-            } else if (end_brace == 1) {
-                start = 0;
-                end_brace = 0;
-            } else {
-                if (ignore_start != 0) {
-                    if (ignore_start_brace == 1) {
-                        ignore_start_brace = 0;
-                    } else if (ignore_end_brace == 1) {
-                        ignore_start = 0;
-                        ignore_end_brace = 0;
-                    }
-                    continue;
-                }
-                char *tmp = strdup(buff);
-                print(tmp);
-                free(tmp);
+                start_brace = 2;
+            } else if (start_brace == 2) {
+                doprint = 1;
             }
+        }
+
+        if (doprint != 0) {
+            char *tmp = strdup(buff);
+            print(tmp);
+            free(tmp);
         }
     }
     //fflush(stdout);

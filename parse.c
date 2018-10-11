@@ -42,6 +42,9 @@ int main(int argc, char** argv) {
     int ignore_start_brace = 0;
     setbuf(stdout, NULL);
     while (getline(&buff, &size, file) > 0) {
+        if (strstr(buff, "@Override") != NULL) {
+            continue;
+        }
         if (strstr(buff, "implements Reducer") != NULL) {
             printf("++++++++\n");
             start = 1;

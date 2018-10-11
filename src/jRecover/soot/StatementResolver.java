@@ -429,11 +429,13 @@ public class StatementResolver {
 	
 	protected boolean parseVirtualinvoke(Unit unit, int currentLine) {
 		if(unit.toString().contains("OutputCollector") || unit.toString().contains("Context")) {
-			String key = (unit.toString().split("\\s+")[1]).split("\\.")[0];
+			String key = (unit.toString().split(">")[1]).split(",")[0];
 			String value = (unit.toString().split(">")[1]).split(",")[1];
+			key = key.replace("(", "");
 			value = value.replace(")", "");
 			value = value.replace(" ", "");
 			mOutputRelated.put(value, true);
+			mOutputRelated.put(key, true);
 			if (currentLine > mOutLoopLine) return true;
 			else return false;
 		} else {

@@ -84,12 +84,12 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
         wrapper = wrapper + "_c.java"
 
     wrapper_f = open(wrapper, "r")
-    if len(sys.argv) == 6:
-        reducer_f = open(global_path + Reducer, "r")
-    elif len(sys.argv) == 2:
+    if len(sys.argv) == 2:
         reducer_f = open(sys.argv[1], "r")
-    else:
+    elif len(sys.argv) == 7:
         reducer_f = open(sys.argv[6], "r")
+    else:
+        reducer_f = open(global_path + Reducer, "r")
     generator_f = open(autoGenerator, "w")
 
     for line in wrapper_f.readlines():
@@ -98,8 +98,12 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
                 generator_f.write("IntWritable(1)")
             elif "Text" in T1:
                 generator_f.write("Text(\"1\")")
+            elif "BytesWritable" in T1:
+                generator_f.write("BytesWritable(\"1\")")
             elif "LongWritable" in T1:
                 generator_f.write("LongWritable(1L)")
+            elif "BooleanWritable" in T1:
+                generator_f.write("BooleanWritable(true)")
             elif "Integer" in T1:
                 generator_f.write("1")
             elif "Long" in T1:

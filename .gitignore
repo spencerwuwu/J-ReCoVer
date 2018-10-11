@@ -4,3 +4,7 @@ fields/
 .fields/
 j-recover.jar
 reducer.java
+
+benchmarks/collected/base/
+benchmarks/collected/parse
+benchmarks/collected/*.log

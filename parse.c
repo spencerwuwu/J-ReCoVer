@@ -35,6 +35,11 @@ int main(int argc, char** argv) {
     int start = 0;
     int end_brace = 0;
     int start_brace = 0;
+
+
+    int ignore_start = 0;
+    int ignore_end_brace = 0;
+    int ignore_start_brace = 0;
     setbuf(stdout, NULL);
     while (getline(&buff, &size, file) > 0) {
         if (strstr(buff, "implements Reducer") != NULL) {
@@ -56,7 +61,6 @@ int main(int argc, char** argv) {
             //printf("\\n\n");
         */
         }
-
         if (start != 0 && strstr(buff, "{") != NULL) {
             start += 1;
         }
@@ -64,6 +68,25 @@ int main(int argc, char** argv) {
             start -= 1;
             if (start == 1) end_brace = 1;
         }
+
+
+        // Ignore JobConf
+        if (ignore_start == 0 && strstr(buff, "JobConf") != NULL) {
+            if (strstr(buff, ";") != NULL) {
+                continue;
+            }
+            ignore_start = 1;
+            ignore_start_brace = 1;
+        }
+        if (ignore_start != 0 && strstr(buff, "{") != NULL) {
+            ignore_start += 1;
+        }
+        if (ignore_start != 0 && strstr(buff, "}") != NULL) {
+            ignore_start -= 1;
+            if (ignore_start == 1) ignore_end_brace = 1;
+        }
+
+
         if (start != 0) {
             if (start_brace == 1) {
                 start_brace = 0;
@@ -71,6 +94,15 @@ int main(int argc, char** argv) {
                 start = 0;
                 end_brace = 0;
             } else {
+                if (ignore_start != 0) {
+                    if (ignore_start_brace == 1) {
+                        ignore_start_brace = 0;
+                    } else if (ignore_end_brace == 1) {
+                        ignore_start = 0;
+                        ignore_end_brace = 0;
+                    }
+                    continue;
+                }
                 char *tmp = strdup(buff);
                 print(tmp);
                 free(tmp);

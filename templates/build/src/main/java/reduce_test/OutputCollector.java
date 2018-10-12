@@ -28,11 +28,11 @@ public class OutputCollector<T1, T2> {
         if(o instanceof OutputCollector){
             OutputCollector other =(OutputCollector) o;
 
+            // valueList
             if (valueList.size() != other.valueList.size()){
                 return false;
             }
             if (valueList.size() == 0) return true;
-
             for(int i = 0; i < valueList.size(); i++){
 
                 if (valueList.get(i) != null && other.valueList.get(i) == null){
@@ -43,6 +43,24 @@ public class OutputCollector<T1, T2> {
                         && !valueList.get(i).equals(other.valueList.get(i)))
                     return false;
             }
+
+            // keyList
+            if (keyList.size() != other.keyList.size()){
+                return false;
+            }
+            if (keyList.size() == 0) return true;
+            for(int i = 0; i < keyList.size(); i++){
+
+                if (keyList.get(i) != null && other.keyList.get(i) == null){
+                    return false;
+                } else if (keyList.get(i) == null && other.keyList.get(i) != null) {
+                    return false;
+                } else if (keyList.get(i) != null && other.keyList.get(i)!= null
+                        && !keyList.get(i).equals(other.keyList.get(i)))
+                    return false;
+            }
+
+
             return true;
         } else {
             return false;

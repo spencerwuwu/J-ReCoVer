@@ -30,6 +30,7 @@ public class ExecutionTree {
 	private boolean mUseNextBeforeLoop = false;
 	private int mBeforeLoopDegree = 0;
 	private boolean mBefore = true;
+	private boolean mNoLoop = false;
 	Option mOption;
 	
 
@@ -43,6 +44,9 @@ public class ExecutionTree {
 		mBefore = before;
 		mVarsType = varsType;
 		mOption = op;
+		if (mEnterLoopLine == 0 && mExitLoopLine == 0) {
+			mNoLoop = true;
+		}
 	}
 	
 	public void addRootConstraint(String constraint) {
@@ -75,7 +79,7 @@ public class ExecutionTree {
 			
 			for (ExecutionTreeNode node : newNodes) {
 				if (mBefore) {
-					if (!node.getReturnFlag() && node.getNextLine() < mEnterLoopLine) {
+					if (!node.getReturnFlag() && (mNoLoop || node.getNextLine() < mEnterLoopLine)) {
 						currentNodes.add(node);
 					} else {
 						if (mUseNextBeforeLoop) {
@@ -694,7 +698,7 @@ public class ExecutionTree {
 	
 	public void logAll(String str) {
 		if (mOption.silence_flag) System.out.println("[  ETree]  " + str);
-		else System.out.println("[  ETree]  " + str);
+		else System.out.println(str);
 	}
 	
 	public void log(String str) {

@@ -56,6 +56,7 @@ public class StatementResolver {
 	private int mEnterLoopLine = 0;
 	private int mOutLoopLine = 0;
 	private boolean mUseNextBeforeLoop = false;
+	private boolean mNoLoop = false;
 	
 
 	private final List<String> resolvedClassNames;
@@ -469,6 +470,11 @@ public class StatementResolver {
 			currentLine++;
 		}
 		log("loop from line: " + mEnterLoopLine + " to " + mOutLoopLine);
+		if (mEnterLoopLine == 0 && mOutLoopLine == 0) {
+			logAll("No Loop Detected!");
+			logAll("");
+			mNoLoop = true;
+		}
 		
 	}
 	

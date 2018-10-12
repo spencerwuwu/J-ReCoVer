@@ -217,7 +217,7 @@ def run_checker(global_path, path, p_name):
             os.system("rm -rf " + filename)
             return False
     else:
-        print "Checker timeout"
+        print "RESULT: Checker timeout"
         os.system("rm -rf " + filename)
         return False
 
@@ -235,7 +235,7 @@ def parse_finder_output(filename):
         if "The reducer is" in line:
             count += 1
             if "Not" in line:
-                print "Counter example found:"
+                print "RESULT: Counter example found:"
                 print data
                 return
             else:
@@ -246,10 +246,10 @@ def parse_finder_output(filename):
             data = data + line + "\n"
     
     if count < 10:
-        print "Cannot find a counterexample from these testcases:"
+        print "RESULT: Cannot find a counterexample from these testcases:"
         print full_log
     else:
-        print "Cannot find a counterexample in " + str(count) + " tests"
+        print "RESULT: Cannot find a counterexample in " + str(count) + " tests"
         print "Testcases were generated randomly."
         print ""
         print "Following are the first 200 lines of testcases:"
@@ -270,7 +270,7 @@ def run_finder(global_path, path, p_name):
     result = wait_timeout(process, TIMEOUT)
 
     if not result:
-        print "Finder timeout"
+        print "RESULT: Finder timeout"
     else:
         parse_finder_output(filename)
 

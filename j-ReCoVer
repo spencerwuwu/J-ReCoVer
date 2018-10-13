@@ -147,16 +147,16 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
                 generator_f.write("long random = (long)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = random;\n")
             elif "DoubleWritable" in T2:
-                generator_f.write("double random = (double)(Math.random() * 10 + 1) - 5;\n")
+                generator_f.write("double random = (int)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = new DoubleWritable(random);\n")
             elif "Double" in T2:
-                generator_f.write("double random = (double)(Math.random() * 10 + 1) - 5;\n")
+                generator_f.write("double random = (int)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = random;\n")
             elif "FloatWritable" in T2:
-                generator_f.write("float random = (float)(Math.random() * 10 + 1) - 5;\n")
+                generator_f.write("float random = (int)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = new FloatWritable(random);\n")
             elif "Float" in T2:
-                generator_f.write("float random = (float)(Math.random() * 10 + 1) - 5;\n")
+                generator_f.write("float random = (int)(Math.random() * 10 + 1) - 5;\n")
                 generator_f.write("solutionArray[j] = random;\n")
         elif "REDUCER" in line:
             for line_r in reducer_f.readlines():

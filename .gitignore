@@ -6,4 +6,5 @@ reducer.java
 
 benchmarks/collected/base/
 benchmarks/collected/parse
+benchmarks/collected/convert
 benchmarks/collected/*.log

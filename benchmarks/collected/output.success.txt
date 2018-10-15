@@ -563,3 +563,13 @@ RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
+github_50-250_661_p0.java:
+RESULT: Proved to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+github_50-250_94_p0.java:
+RESULT: Proved to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+

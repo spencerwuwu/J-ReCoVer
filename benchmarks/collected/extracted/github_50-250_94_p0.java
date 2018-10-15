@@ -9,7 +9,7 @@
       
     }
 
-    public void reduce(Text key, Iterator<IntWritable> values,OutputCollector<TextBytes, IntWritable> output, Reporter reporter)
+    public void reduce(Text key, Iterator<IntWritable> values,OutputCollector<Text, IntWritable> output, Reporter reporter)
         throws IOException {
       int count = 0;
       while (values.hasNext()) 

@@ -1,4 +1,4 @@
-// Standard Deviation
+// basic - Standard Deviation
 
 public void reduce(Text key, Iterator<DoubleWritable> values, 
         OutputCollector<Text, DoubleWritable> output, Reporter reporter) throws IOException {

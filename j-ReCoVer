@@ -95,19 +95,19 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
     for line in wrapper_f.readlines():
         if "T1_" in line:
             if "IntWritable" in T1:
-                generator_f.write("IntWritable(1)")
+                generator_f.write("IntWritable(key)")
             elif "Text" in T1:
-                generator_f.write("Text(\"1\")")
+                generator_f.write("Text(key)")
             elif "BytesWritable" in T1:
-                generator_f.write("BytesWritable(\"1\")")
+                generator_f.write("BytesWritable(key)")
             elif "LongWritable" in T1:
-                generator_f.write("LongWritable(1L)")
+                generator_f.write("LongWritable(key)")
             elif "BooleanWritable" in T1:
-                generator_f.write("BooleanWritable(true)")
+                generator_f.write("BooleanWritable(key)")
             elif "Integer" in T1:
-                generator_f.write("1")
+                generator_f.write("key")
             elif "Long" in T1:
-                generator_f.write("1L")
+                generator_f.write("key")
         elif "T1" in line:
             generator_f.write(T1)
         elif "T2" in line:
@@ -133,6 +133,21 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
                 generator_f.write("FloatWritable[] solutionArray = new FloatWritable[length];\n")
             elif "Float" in T2:
                 generator_f.write("Float[] solutionArray = new Float[length];\n")
+        elif "KEYGEN" in line:
+            if "IntWritable" in T1:
+                generator_f.write("int key = (int)(Math.random() * 10 + 1) - 5;\n")
+            elif "Text" in T1:
+                generator_f.write("byte[] key = new byte[1];key[0] = (byte)('a' + (int)(Math.random() * 26));")
+            elif "BytesWritable" in T1:
+                generator_f.write("byte[] key = new byte[1];key[0] = (byte)('a' + (int)(Math.random() * 26));")
+            elif "LongWritable" in T1:
+                generator_f.write("long key = (long)(Math.random() * 10 + 1) - 5;\n")
+            elif "BooleanWritable" in T1:
+                generator_f.write("boolean key = (int)(Math.random()*10+1)-5 > 0 ? true:false;")
+            elif "Integer" in T1:
+                generator_f.write("int key = (int)(Math.random() * 10 + 1) - 5;\n")
+            elif "Long" in T1:
+                generator_f.write("long key = (long)(Math.random() * 10 + 1) - 5;\n")
         elif "RANDOM" in line:
             if "IntWritable" in T2:
                 generator_f.write("int random = (int)(Math.random() * 10 + 1) - 5;\n")
@@ -235,7 +250,7 @@ def parse_finder_output(filename):
         if "The reducer is" in line:
             count += 1
             if "Not" in line:
-                print "RESULT: Counter example found:"
+                print "RESULT: Counterexample found:"
                 print data
                 return
             else:

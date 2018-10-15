@@ -1,6 +1,6 @@
 github_650-850_4_p0.java:
 RESULT: CANNOT prove to be commutative
-RESULT: Counter example found:
+RESULT: Counterexample found:
 ---------
 
 github_450-650_1_p2.java:
@@ -80,7 +80,7 @@ RESULT: Cannot find a counterexample in 500 tests
 
 bitbucket_650-850_5_p0.java:
 RESULT: CANNOT prove to be commutative
-RESULT: Counter example found:
+RESULT: Counterexample found:
 ---------
 
 github_50-250_60_p0.java:
@@ -155,7 +155,7 @@ RESULT: Cannot find a counterexample in 500 tests
 
 bitbucket_650-850_0_p0.java:
 RESULT: CANNOT prove to be commutative
-RESULT: Counter example found:
+RESULT: Counterexample found:
 ---------
 
 github_50-250_211_p0.java:
@@ -180,7 +180,7 @@ RESULT: Cannot find a counterexample in 500 tests
 
 googleCode_50-250_0_p0.java:
 RESULT: CANNOT prove to be commutative
-RESULT: Counter example found:
+RESULT: Counterexample found:
 ---------
 
 bitbucket_250-450_50_p0.java:
@@ -280,7 +280,7 @@ RESULT: Cannot find a counterexample in 500 tests
 
 github_250-450_44_p1.java:
 RESULT: CANNOT prove to be commutative
-RESULT: Counter example found:
+RESULT: Counterexample found:
 ---------
 
 github_50-250_69_p0.java:
@@ -335,7 +335,7 @@ RESULT: Cannot find a counterexample in 500 tests
 
 github_650-850_0_p0.java:
 RESULT: CANNOT prove to be commutative
-RESULT: Counter example found:
+RESULT: Counterexample found:
 ---------
 
 github_450-650_30_p0.java:
@@ -355,7 +355,7 @@ RESULT: Cannot find a counterexample in 500 tests
 
 github_1250-1450_0_p0.java:
 RESULT: CANNOT prove to be commutative
-RESULT: Counter example found:
+RESULT: Counterexample found:
 ---------
 
 bitbucket_450-650_1_p2.java:
@@ -405,7 +405,7 @@ RESULT: Cannot find a counterexample in 500 tests
 
 github_650-850_1_p0.java:
 RESULT: CANNOT prove to be commutative
-RESULT: Counter example found:
+RESULT: Counterexample found:
 ---------
 
 github_50-250_666_p0.java:
@@ -475,7 +475,7 @@ RESULT: Cannot find a counterexample in 500 tests
 
 github_250-450_30_p1.java:
 RESULT: CANNOT prove to be commutative
-RESULT: Counter example found:
+RESULT: Counterexample found:
 ---------
 
 github_50-250_246_p0.java:

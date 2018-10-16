@@ -48,7 +48,8 @@ int main(int argc, char** argv) {
             continue;
         }
 
-        if (strstr(buff, "implements Reducer") != NULL) {
+        if ((strstr(buff, "implements Reducer") != NULL)
+                || (strstr(buff, "extends Reducer") != NULL)) {
             printf("++++++++\n");
             start = 1;
             start_brace = 0;

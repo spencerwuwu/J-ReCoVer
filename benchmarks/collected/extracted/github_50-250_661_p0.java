@@ -1,5 +1,5 @@
 
-  // private static final Logger log = LoggerFactory.getLogger(CBayesNormalizedWeightReducer.class);      
+  //private static final Logger log = LoggerFactory.getLogger(CBayesNormalizedWeightReducer.class);      
 
   public void reduce(Text key,
                      Iterator<DoubleWritable> values,
@@ -11,7 +11,7 @@
     while (values.hasNext()) {
       weight += values.next().get();
     }
-    if(token.equalsIgnoreCase("rec.motorcycles,miller"))
+    //if(token.equalsIgnoreCase("rec.motorcycles,miller"))
       //log.info("{}=>{}", token, weight);
     output.collect(key, new DoubleWritable(weight));
   }

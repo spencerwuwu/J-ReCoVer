@@ -16,18 +16,10 @@ The following benchmarks are modified a little to fix compile errors.
 
 github_50-250_94_p0.java   
 github_50-250_211_p0.java   
-bitbucket_450-650_54_p0.java   
 bitbucket_250-450_50_p0.java   
 bitbucket_250-450_64_p0.java   
-bitbucket_50-250_195_p0.java   
 github_250-450_44_p1.java    
 github_250-450_44_p0.java   
-github_450-650_30_p0.java   
 github_50-250_549_p0.java   
 github_50-250_666_p0.java    
-github_50-250_714_p0.java   
-bitbucket_250-450_0_p0.java   
-bitbucket_450-650_52_p0.java   
-bitbucket_450-650_47_p0.java   
 github_50-250_663_p0.java    
-github_50-250_517_p0.java   

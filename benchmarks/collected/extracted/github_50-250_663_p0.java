@@ -14,7 +14,8 @@
       numberofValues ++;
     }    
     if(numberofValues < 2) return;    
-    //if(weight <= 0.0) log.info("{}=>{}", token, weight);
+    //if(weight <= 0.0)
+      //log.info("{}=>{}", token, weight);
     output.collect(key, new DoubleWritable(weight));
   }
 

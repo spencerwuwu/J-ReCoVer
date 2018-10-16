@@ -35,6 +35,8 @@ def main():
                         output_f = open(output + "_p" + str(count) + ".java", "w")
                         count += 1
                 else:
+                    if "protected void reduce" in line:
+                        line = line.replace("protected void reduce", "public void reduce")
                     output_f.write(line + "\n")
             
             output_f.close()
@@ -64,8 +66,30 @@ def filter_reducer():
         if t2 not in types:
             os.system("rm -f " + target)
 
+def delete_dup():
+    global_path = os.path.dirname(os.path.abspath(__file__)) + "/"
+    extracted_path = global_path + "extracted/"
+    files = os.listdir(extracted_path)
+
+    shas = []
+
+    for java in files:
+        cmd = "sha1sum extracted/" + java
+        proc = Popen(cmd, shell=True, stdout=PIPE)
+        result = proc.communicate()[0].split(" ")[0]
+        if result in shas:
+            os.system("rm extracted/" + java) 
+            continue
+        shas.append(result)
 
 
 if __name__ == "__main__":
     main()
+
+    print "extracting..."
     filter_reducer()
+    os.system("ls extracted/ | wc")
+
+    print "deleting files with same hash value..."
+    delete_dup()
+    os.system("ls extracted/ | wc")

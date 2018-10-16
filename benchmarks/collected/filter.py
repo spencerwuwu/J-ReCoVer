@@ -20,8 +20,11 @@ def main():
             input_f = open(f, "r")
             keep = False
             has_reduce = False
+            has_hadoop = False
             for line in input_f.readlines():
-                if "implements Reducer" in line:
+                if "hadoop" in line:
+                    has_hadoop = True
+                if "implements Reducer" in line or "extends Reducer" in line:
                     has_reduce = True
 
                 if "Iterator<" in line:
@@ -40,7 +43,7 @@ def main():
             input_f.close()
             input_f = open(f, "r")
 
-            if has_reduce and keep:
+            if has_hadoop and has_reduce and keep:
                 output_f = open(filtered_path + output, "w")
                 for line in input_f.readlines():
                     output_f.write(line)

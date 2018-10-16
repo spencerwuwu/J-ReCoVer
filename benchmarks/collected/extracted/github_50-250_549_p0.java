@@ -1,32 +1,32 @@
-
-// private NcdcStationMetadata metadata;
-
+    
 /*
-public void configure(JobConf conf) {
-    metadata = new NcdcStationMetadata();
-    try {
+    private NcdcStationMetadata metadata;
+    
+    public void configure(JobConf conf) {
+      metadata = new NcdcStationMetadata();
+      try {
         Path[] localPaths = DistributedCache.getLocalCacheFiles(conf);
         if (localPaths.length == 0) {
-            throw new FileNotFoundException("Distributed cache file not found.");
+          throw new FileNotFoundException("Distributed cache file not found.");
         }
         File localFile = new File(localPaths[0].toString());
         metadata.initialize(localFile);
-    } catch (IOException e) {
+      } catch (IOException e) {
         throw new RuntimeException(e);
+      }
     }
-}
-*/
 
-public void reduce(Text key, Iterator<IntWritable> values,
+    */
+    public void reduce(Text key, Iterator<IntWritable> values,
         OutputCollector<Text, IntWritable> output, Reporter reporter)
-    throws IOException {
-
-    //String stationName = metadata.getStationName(key.toString());
-    String stationName = key.toString();
-
-    int maxValue = Integer.MIN_VALUE;
-    while (values.hasNext()) {
+        throws IOException {
+      
+      //String stationName = metadata.getStationName(key.toString());
+      String stationName = key.toString();
+      
+      int maxValue = Integer.MIN_VALUE;
+      while (values.hasNext()) {
         maxValue = Math.max(maxValue, values.next().get());
+      }
+      output.collect(new Text(stationName), new IntWritable(maxValue));
     }
-    output.collect(new Text(stationName), new IntWritable(maxValue));
-}

@@ -1,5 +1,6 @@
 #!/usr/bin/python2.7
 import os
+import sys
 
 type1 = "Proved to be commutative"
 type2 = "CANNOT prove to be commutative. Counterexample found"
@@ -29,6 +30,7 @@ def get_type(target):
     r_type = ""
     lines = target_f.read().replace("\r", "").replace("\n", "").replace("\t", "").split("public void reduce")[1]
     params = lines.split("(")[1].split(")")[0].split(",")
+    print params
 
     if (len(params) == 3):
         r_type = "Context"
@@ -42,7 +44,7 @@ def get_type(target):
         t2 = parse_param2(params[1])
         t3, t4 = parse_param_o(params[2] + "," +  params[3])
     target_f.close()
-    #print t1 + " " + t2 + " " + t3 + " " + t4 + " " + r_type
+    print t1 + " " + t2 + " " + t3 + " " + t4 + " " + r_type
     return t1, t2, t3, t4, r_type
 
 def write2seed(java):
@@ -65,4 +67,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    #main()
+    get_type(sys.argv[1])

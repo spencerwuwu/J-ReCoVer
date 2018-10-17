@@ -602,16 +602,32 @@ public class ExecutionTree {
 		// handling OutputCollector
 		if(us.getUnit().toString().contains("OutputCollector") || us.getUnit().toString().contains("Context")) {
 			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
-			String value = (us.getUnit().toString().split(">")[1]).split(",")[1];
-			value = value.replace(")", "");
+			String valueV = (us.getUnit().toString().split(">")[1]).split(",")[1];
+			valueV = valueV.replace(")", "");
 			
-			value = valueReplace(value, lastEnv);
+			String value = valueReplace(valueV, lastEnv);
 
 			newState.update(key, value);
 			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + value);
 			newState.update("output", value);
 			log(Color.ANSI_GREEN + "output: " + value + Color.ANSI_RESET);
 
+			// Assign valueK and value from output.collect(valueK, value) to individual variables
+			String valueK = (us.getUnit().toString().split(">")[1]).split(",")[0];
+			valueK = valueK.replace("(", "");
+
+			String var = "outV" + currentNode.getNextLine();
+			newState.update(var, value);
+			mVarsType.put(var, "double");
+			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var + " -> " + value);
+
+			if (mVarsType.containsKey(valueK)) {
+				String varK = "outK" + currentNode.getNextLine();
+				value = valueReplace(valueK, lastEnv);
+				newState.update(varK, value);
+				mVarsType.put(varK, mVarsType.get(valueK));
+				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + varK + " -> " + value);
+			}
 		} else {
 			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
 			String value = us.getUnit().toString().split(">")[1];

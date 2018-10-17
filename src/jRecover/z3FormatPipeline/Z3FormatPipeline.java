@@ -124,21 +124,32 @@ public class Z3FormatPipeline {
 		mPipeContent.add("(assert (= beforeLoop_2_r1 1))\n");
 		mPipeContent.add("(assert (= beforeLoop_2_r2 1))\n");
 
-		String finalAssertion = "";
+		StringBuffer finalAssertion = new StringBuffer("");
 		boolean noVariable = true;
 		for (String key : mVariables.keySet()) {
 			if (key.contains("input")) continue;
-			if (!mOutputRelated.get(key)) continue;
+			else if (key.contains("outK") || key.contains("outV")) {
+				noVariable = false;
+				if (finalAssertion.length() == 0) {
+					finalAssertion.append("(or (not (= ").append(key).append("_1_r1 ")
+					.append(key).append("_1_r2)) (not (= ").append(key).append("_2_r1 ").append(key).append("_2_r2)))\n"); 
+				} else {
+					finalAssertion.insert(0, "(or ").append("(or (not (= ").append(key).append("_1_r1 ")
+					.append(key).append("_1_r2)) (not (= ").append(key).append("_2_r1 ").append(key).append("_2_r2))))\n"); 
+				}
+				continue;
+			} else if (!mOutputRelated.get(key)) continue;
+
 			noVariable = false;
 			//if (mConditionRelated.get(key)) continue;
 			if (finalAssertion.length() == 0) {
-				finalAssertion = "(not (= " + key + "_2_r1 " + key + "_2_r2))\n"; 
+				finalAssertion.append("(not (= ").append(key).append("_2_r1 ").append(key).append("_2_r2))\n"); 
 			} else {
-				finalAssertion = "(or " + finalAssertion + "(not (= " + key + "_2_r1 " + key + "_2_r2)))\n"; 
+				finalAssertion.insert(0, "(or ").append("(not (= ").append(key).append("_2_r1 ").append(key).append("_2_r2)))\n"); 
 			}
 		}
-		if (noVariable) finalAssertion = "(not (= 1 1))";
-		mPipeContent.add("(assert " + finalAssertion + ")\n");
+		if (noVariable) finalAssertion.append("(not (= 1 1))");
+		mPipeContent.add(finalAssertion.insert(0, "(assert ").append(")\n").toString());
 
 		mPipeContent.add("(check-sat)\n");
 

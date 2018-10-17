@@ -42,7 +42,16 @@ T1
                         T3
                             ,
                         T4
-                            > reducer=new autoGenerator();
+                            > reducer1=new autoGenerator();
+                    ReducerO<
+                        T1
+                        , 
+                        T2
+                            , 
+                        T3
+                            ,
+                        T4
+                            > reducer2=new autoGenerator();
                     Tester<
                         T1
                         , 
@@ -64,7 +73,7 @@ T1
                     try {
                         tester.test(
                                 T1_
-                                , solutionArray, reducer);
+                                , solutionArray, reducer1, reducer2);
                     } catch (IOException | InterruptedException e1) {
                         e1.printStackTrace();
                     }

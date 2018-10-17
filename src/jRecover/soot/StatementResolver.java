@@ -275,7 +275,7 @@ public class StatementResolver {
 		toWriteZ3.addAll(beforeLoopTree.getEndNodes());
 		toWriteZ3.addAll(innerLoopTree.getEndNodes());
 		Z3FormatPipeline z3Builder = new Z3FormatPipeline(mVarsType, 
-				beforeLoopTree.getEndNodes(), innerLoopTree.getEndNodes(), mUseNextBeforeLoop, mOutputRelated, mOption);
+				beforeLoopTree.getEndNodes(), innerLoopTree.getEndNodes(), mUseNextBeforeLoop, mOutputRelated, mOption, mNoLoop);
 		/*
 		z3FormatBuilder z3Builder = new z3FormatBuilder(mVarsType, 
 				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3", mUseNextBeforeLoop, mOutputRelated);
@@ -333,7 +333,10 @@ public class StatementResolver {
 					String value = unit.toString().split(">")[2];
 					value = value.replace(")", "");
 					value = value.replace("(", "");
-					if (value.length() == 0) continue;
+					if (value.length() == 0) {
+						index -= 1;
+						continue;
+					}
 					
 					if (mOutputRelated.containsKey(var) && mOutputRelated.get(var)) {
 						mOutputRelated.put(value, true);

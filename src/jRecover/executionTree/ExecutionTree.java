@@ -198,7 +198,7 @@ public class ExecutionTree {
 			} else if (determineUnitState == 3) {
 				log(Color.ANSI_GREEN + "return" + Color.ANSI_RESET);
 				// Add this treenode to endNodes, waiting to print the result
-				endNodes.add(currentNode);
+				//endNodes.add(currentNode);
 				
 				boolean newReturnFlag = true;
 			    ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), 

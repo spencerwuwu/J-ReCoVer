@@ -1,5 +1,5 @@
 			    
-		float marginal = 0.0f;
+		float marginal = 1.0f;
 		int need_to_cover = 0;
 		FloatWritable prob = new FloatWritable(0.0f);
 			  

@@ -71,7 +71,9 @@ def write2seed(seed_f, java, result):
     seed_f.write(":source => \"2018\", ")
     seed_f.write(":comment => \"\", ")
 
-    if type1 in result:
+    if type4 in result:
+        seed_f.write(":result_type => 3, ")
+    elif type1 in result:
         result = "Proved to be commutative."
         seed_f.write(":result_type => 1, ")
     elif type2 in result:

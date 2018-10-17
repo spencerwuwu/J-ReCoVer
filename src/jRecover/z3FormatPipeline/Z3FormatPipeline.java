@@ -38,16 +38,18 @@ public class Z3FormatPipeline {
 	PipedOutputStream mOutput2str = new PipedOutputStream();
 	List<String> mPipeContent = new LinkedList<String>();
 	Option mOption = new Option();
+	Boolean mNoLoop = false;
 	
 
 	public Z3FormatPipeline(Map<String, String> table, List<ExecutionTreeNode> beforeNodes, List<ExecutionTreeNode> interNodes, 
-			boolean useNextFlag, Map<String, Boolean> outputRelated, Option op) {
+			boolean useNextFlag, Map<String, Boolean> outputRelated, Option op, Boolean noLoop) {
 		mTypeTable = table;
 		mBeforeNodes.addAll(beforeNodes);
 		mInnerNodes.addAll(interNodes);
 		mUsingNextBeforeLoop = useNextFlag;
 		mOutputRelated = outputRelated;
 		mOption = op;
+		mNoLoop = noLoop;
 		logAll("Use .next().get() before loop: " + mUsingNextBeforeLoop);
 	}
 	
@@ -117,12 +119,18 @@ public class Z3FormatPipeline {
 		mPipeContent.add("(assert (= input0_1_r1 input0_2_r2))\n");
 		mPipeContent.add("(assert (= input0_2_r1 input0_1_r2))\n");
 		
-		if (!mUsingNextBeforeLoop) {
-			mPipeContent.add("(assert (= beforeLoop_1_r1 1))\n");
-		}
 		mPipeContent.add("(assert (= beforeLoop_1_r1 beforeLoop_1_r2))\n");
-		mPipeContent.add("(assert (= beforeLoop_2_r1 1))\n");
-		mPipeContent.add("(assert (= beforeLoop_2_r2 1))\n");
+		mPipeContent.add("(assert (= beforeLoop_2_r1 beforeLoop_2_r2))\n");
+		
+		if (mNoLoop) {
+			mPipeContent.add("(assert (= beforeLoop_1_r1 0))\n");
+			mPipeContent.add("(assert (= beforeLoop_2_r1 0))\n");
+		} else {
+			if (!mUsingNextBeforeLoop) {
+				mPipeContent.add("(assert (= beforeLoop_1_r1 1))\n");
+			}
+			mPipeContent.add("(assert (= beforeLoop_2_r1 1))\n");
+		}
 
 		StringBuffer finalAssertion = new StringBuffer("");
 		boolean noVariable = true;
@@ -170,15 +178,17 @@ public class Z3FormatPipeline {
 					finalValue.insert(0, "(or ").append(" ").append(value).append(")\n");
 				}
 			}
-			for (ExecutionTreeNode node : mInnerNodes) {
-				if (node.getLocalVars().get(key) == null) continue;
-				StringBuffer value = combineValueCondition(node, key, stage, round);
-				if (value.length() == 0) continue;
+			if (!mNoLoop) {
+				for (ExecutionTreeNode node : mInnerNodes) {
+					if (node.getLocalVars().get(key) == null) continue;
+					StringBuffer value = combineValueCondition(node, key, stage, round);
+					if (value.length() == 0) continue;
 
-				if (finalValue.length() == 0) {
-					finalValue.append(value);
-				} else {
-					finalValue.insert(0, "(or ").append(" ").append(value).append(")\n");
+					if (finalValue.length() == 0) {
+						finalValue.append(value);
+					} else {
+						finalValue.insert(0, "(or ").append(" ").append(value).append(")\n");
+					}
 				}
 			}
 			if (finalValue.length() == 0) continue;

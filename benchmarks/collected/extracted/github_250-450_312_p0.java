@@ -1,5 +1,5 @@
         private Text current = new Text();
-        private int marginalCount;
+        private int marginalCount = 2;
 
         public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException
         {

@@ -23,9 +23,12 @@ public class Tester<T1,T2,T3,T4> {
 
     System.out.println("Output1: ");
     reducer.reduce(key, list_one, oc1);
+    System.out.println("");
     System.out.println("  Key: " + oc1.getKeyList());
     System.out.println("  Val: " + oc1.getValueList());
+    System.out.println("--");
     System.out.println("Output2: ");
+    System.out.println("");
     reducer.reduce(key, list_two, oc2);
     System.out.println("  Key: " + oc2.getKeyList());
     System.out.println("  Val: " + oc2.getValueList());
@@ -33,7 +36,7 @@ public class Tester<T1,T2,T3,T4> {
     if (oc1.equals(oc2)) {
       System.out.println("The reducer is commutative");
     } else {
-      System.out.println("The reducer is not commutative");
+      System.out.println("The reducer is Not commutative");
     }    
 
     return oc1.equals(oc2);
@@ -54,10 +57,13 @@ public class Tester<T1,T2,T3,T4> {
     System.out.println("Input2: " + list_two);
 
     System.out.println("Output1: ");
+    System.out.println("");
     reducer.reduce(key, list_one.iterator(), oc1, null);
     System.out.println("  Key: " + oc1.getKeyList());
     System.out.println("  Val: " + oc1.getValueList());
+    System.out.println("--");
     System.out.println("Output2: ");
+    System.out.println("");
     reducer.reduce(key,list_two.iterator(), oc2, null);
     System.out.println("  Key: " + oc2.getKeyList());
     System.out.println("  Val: " + oc2.getValueList());

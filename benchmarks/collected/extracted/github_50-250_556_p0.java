@@ -12,7 +12,7 @@
         throws IOException {
       Iterator<FloatWritable> iter = iterable.iterator();
       //queue.add(nid.get(), iter.next().get());
-      FloatWritable f = iter.next().get();
+      float f = iter.next().get();
 
       // Shouldn't happen. Throw an exception.
       if (iter.hasNext()) {

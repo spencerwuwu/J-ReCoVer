@@ -2,8 +2,9 @@
         Context context) throws IOException, InterruptedException {
       int keyint = key.get();
       int total = 0;
-      while (it.hasNext()) {
-        total += it.next().get();
+      Iterator<IntWritable> iter = it.iterator();
+      while (iter.hasNext()) {
+        total += iter.next().get();
       }
       context.write(new IntWritable(keyint), new IntWritable(total));
     }

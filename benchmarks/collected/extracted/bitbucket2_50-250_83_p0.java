@@ -11,7 +11,7 @@
   }
   */
 
-  public void reduce(NullWritable key, Iterable<DoubleWritable> values, Context context)
+  public void reduce(Text key, Iterable<DoubleWritable> values, Context context)
       throws IOException, InterruptedException {
     double entropy = 0.0;
     for (DoubleWritable value : values) {

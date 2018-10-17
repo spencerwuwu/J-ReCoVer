@@ -2,8 +2,8 @@
                 Context context)
                 throws IOException, InterruptedException {
             int sum = 0;
-            while (values.hasNext()) {
-                sum += values.next().get();
+	    for(IntWritable value : values) {
+                sum += value.get();
             }
             context.write(key, new IntWritable(sum));
         }

@@ -52,7 +52,7 @@ T1
                             >();
                     KEYGEN
                     try {
-                        tester.test(new 
+                        tester.test(
                                 T1_
                                 , solutionArray, reducer);
                     } catch (IOException | InterruptedException e1) {

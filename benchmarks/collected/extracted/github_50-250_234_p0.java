@@ -9,5 +9,5 @@
       }
       result.set(sum);
       context.write(key, result);
-      context.progress();
+      //context.progress();
     }

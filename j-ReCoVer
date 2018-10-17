@@ -53,7 +53,16 @@ def get_type():
     t3 = ""
     t4 = ""
     r_type = ""
-    lines = target_f.read().replace("\r", "").replace("\n", "").replace("\t", "").split("public void reduce")[1]
+    lines = target_f.read()
+    if "public void reduce" in lines:
+        lines = lines.replace("\r", "").replace("\n", "").replace("\t", "").split("public void reduce")[1]
+    elif "protected void reduce" in lines:
+        lines = lines.replace("\r", "").replace("\n", "").replace("\t", "").split("protected void reduce")[1]
+    else:
+        print "No reduce found"
+        exit(1)
+
+
     params = lines.split("(")[1].split(")")[0].split(",")
 
     if (len(params) == 3):
@@ -95,18 +104,28 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
     for line in wrapper_f.readlines():
         if "T1_" in line:
             if "IntWritable" in T1:
-                generator_f.write("IntWritable(key)")
+                generator_f.write("new IntWritable(key)")
+            elif "NullWritable" in T1:
+                generator_f.write("new NullWritable()")
             elif "Text" in T1:
-                generator_f.write("Text(key)")
+                generator_f.write("new Text(key)")
             elif "BytesWritable" in T1:
-                generator_f.write("BytesWritable(key)")
+                generator_f.write("new BytesWritable(key)")
             elif "LongWritable" in T1:
-                generator_f.write("LongWritable(key)")
+                generator_f.write("new LongWritable(key)")
+            elif "DoubleWritable" in T1:
+                generator_f.write("new DoubleWritable(key)")
+            elif "FloatWritable" in T1:
+                generator_f.write("new FloatWritable(key)")
             elif "BooleanWritable" in T1:
-                generator_f.write("BooleanWritable(key)")
+                generator_f.write("new BooleanWritable(key)")
             elif "Integer" in T1:
                 generator_f.write("key")
             elif "Long" in T1:
+                generator_f.write("key")
+            elif "Double" in T1:
+                generator_f.write("key")
+            elif "Float" in T1:
                 generator_f.write("key")
         elif "T1" in line:
             generator_f.write(T1)
@@ -142,6 +161,14 @@ def compile(T1, T2, T3, T4, r_type, global_path, path):
                 generator_f.write("byte[] key = new byte[1];key[0] = (byte)('a' + (int)(Math.random() * 26));")
             elif "LongWritable" in T1:
                 generator_f.write("long key = (long)(Math.random() * 10 + 1) - 5;\n")
+            elif "DoubleWritable" in T1:
+                generator_f.write("double key = (double)(Math.random() * 10 + 1) - 5;\n")
+            elif "FloatWritable" in T1:
+                generator_f.write("float key = (float)(Math.random() * 10 + 1) - 5;\n")
+            elif "Double" in T1:
+                generator_f.write("double key = (double)(Math.random() * 10 + 1) - 5;\n")
+            elif "Float" in T1:
+                generator_f.write("float key = (float)(Math.random() * 10 + 1) - 5;\n")
             elif "BooleanWritable" in T1:
                 generator_f.write("boolean key = (int)(Math.random()*10+1)-5 > 0 ? true:false;")
             elif "Integer" in T1:
@@ -329,6 +356,6 @@ if __name__ == "__main__":
     if (len(sys.argv) == 6) or (len(sys.argv) == 7): 
         main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
     else:
-        print "Try to determine tags"
+        print "Try to determine parameters"
         main(*get_type())
 

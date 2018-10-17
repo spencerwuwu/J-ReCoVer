@@ -1,6 +1,7 @@
         public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
             //int delay = context.getConfiguration().getInt(DELAY, DEFAULT_DELAY);
             int sum = 0;
+	    int j = 0;
             for (IntWritable i: values){
                 sum += i.get();
 		/*

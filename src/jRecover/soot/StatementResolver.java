@@ -227,9 +227,10 @@ public class StatementResolver {
 		
 		checkOutputRelated(units);
 
-		log("====== Output/Condition Related ======");
+		log("====== Output Related ======");
 		for (String key : mOutputRelated.keySet()) {
-			log(key + ": \t" + mOutputRelated.get(key) + "/" + mConditionRelated.get(key));
+			//log(key + ": \t" + mOutputRelated.get(key) + "/" + mConditionRelated.get(key));
+			log(key + ": \t" + mOutputRelated.get(key));
 		}
 		log("======================================");
 		

@@ -68,3 +68,13 @@ RESULT: CANNOT prove to be commutative
 RESULT: Counterexample found:
 ---------
 
+sum_even_odd.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+initial_variable.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+

@@ -61,7 +61,7 @@ def write2seed(seed_f, java, result):
     seed_f.write(":t3 => \"" + t3 + "\", ")
     seed_f.write(":t4 => \"" + t4 + "\", ")
     seed_f.write(":r_type => \"" + r_type + "\", ")
-    seed_f.write(":source => \"2018\", ")
+    seed_f.write(":source => \"Self\", ")
     seed_f.write(":comment => \"\", ")
 
     if type4 in result:

@@ -12,7 +12,7 @@ def main():
     count = 0
 
     for java in files:
-        if ".java" not in java:
+        if "sum_even_odd.java" not in java:
             continue
         print java
         count += 1

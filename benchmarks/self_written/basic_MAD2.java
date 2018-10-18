@@ -10,8 +10,9 @@ public void reduce(Text key, Iterator<IntWritable> iter,
     while(iter.hasNext()) {
         int cur = iter.next().get();
 
-        if (cur < avg) mad += ret - cur;
+        if (cur < avg) mad += avg - cur;
         else mad += cur - avg;
+	cnt += 1;
     }
 
     output.collect(key, new DoubleWritable(mad / cnt));

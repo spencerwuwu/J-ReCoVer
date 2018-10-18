@@ -1,7 +1,7 @@
 // basic - rangesum
 
 public void reduce(Text key, Iterator<IntWritable> iter,
-        OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {
+        OutputCollector<Text, DoubleWritable> output, Reporter reporter) throws IOException {
     int ret = 0;
     int cnt = 0;
 

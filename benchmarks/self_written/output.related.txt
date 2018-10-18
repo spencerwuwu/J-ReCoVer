@@ -1,0 +1,70 @@
+basic_MAD1.java:
+RESULT: Proved to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+basic_sep.java:
+RESULT: Proved to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+basic_max.java:
+RESULT: Proved to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+range.java:
+RESULT: Proved to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+basic_avg.java:
+RESULT: Proved to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+tricky_avg.java:
+RESULT: Proved to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+basic_MAD2.java:
+RESULT: Proved to be commutative
+RESULT: Cannot find a counterexample from these testcases:
+---------
+
+max_even_odd.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Counterexample found:
+---------
+
+basic_dis.java:
+RESULT: Proved to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+basic_sum.java:
+RESULT: Proved to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+tcp_waittime.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Counterexample found:
+---------
+
+basic_SD.java:
+RESULT: Proved to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+deep_branches.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Counterexample found:
+---------
+
+basic_rangesum.java:
+RESULT: Proved to be commutative
+RESULT: Counterexample found:
+---------
+

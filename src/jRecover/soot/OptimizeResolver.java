@@ -4,12 +4,9 @@ import com.google.common.base.Preconditions;
 
 import jRecover.Option;
 import jRecover.color.Color;
-import jRecover.executionTree.ExecutionTree;
-import jRecover.executionTree.ExecutionTreeNode;
+import jRecover.optimize.state.Variable;
 import jRecover.state.State;
 import jRecover.state.UnitSet;
-import jRecover.z3FormatPipeline.Z3FormatPipeline;
-import jRecover.z3formatbuilder.*;
 import soot.Body;
 import soot.RefType;
 import soot.Scene;
@@ -49,10 +46,9 @@ import java.util.Set;
 
 public class OptimizeResolver {
 
-	private LinkedHashMap<String, String> mLocalVars = new LinkedHashMap<String, String>();
+	private LinkedHashMap<String, Variable> mLocalVars = new LinkedHashMap<String, Variable>();
 	private LinkedHashMap<String, String> mVarsType = new LinkedHashMap<String, String>();
 	Map<String, Boolean>mOutputRelated = new LinkedHashMap<String, Boolean>();
-	Map<String, Boolean>mConditionRelated = new LinkedHashMap<String, Boolean>();
 	private int mEnterLoopLine = 0;
 	private int mOutLoopLine = 0;
 	private boolean mUseNextBeforeLoop = false;
@@ -229,7 +225,6 @@ public class OptimizeResolver {
 
 		log("====== Output Related ======");
 		for (String key : mOutputRelated.keySet()) {
-			//log(key + ": \t" + mOutputRelated.get(key) + "/" + mConditionRelated.get(key));
 			log(key + ": \t" + mOutputRelated.get(key));
 		}
 		log("======================================");
@@ -239,53 +234,6 @@ public class OptimizeResolver {
 		
 	
 		//traverse tree to find leaves and doAnalysis
-		State initStateBefore = new State(mLocalVars, 0, null, 0, 0);
-		State initStateInter = new State(mLocalVars, 0, null, mEnterLoopLine, 0);
-		List<String> initConstraintBefore = new ArrayList<String>();
-		List<String> initConstraintInter = new ArrayList<String>();
-		
-		ExecutionTree beforeLoopTree = new ExecutionTree(
-				new ExecutionTreeNode(initConstraintBefore, initStateBefore, 0, 0, false), units, 
-				unitIndexes, mEnterLoopLine, mOutLoopLine, mVarsType, true, mOption);
-		beforeLoopTree.addRootConstraint("beforeLoop == 0");
-		beforeLoopTree.executeTree();
-		for (Map.Entry<String, String> entry : beforeLoopTree.getVarType().entrySet()) {
-			mVarsType.put(entry.getKey(), entry.getValue());
-		}
-		mUseNextBeforeLoop = beforeLoopTree.useNextBeforeLoop();
-		logAll("beforeLoop finished");
-
-		ExecutionTree innerLoopTree = new ExecutionTree(
-				new ExecutionTreeNode(initConstraintInter, initStateInter, 0, mEnterLoopLine, false), units, 
-				unitIndexes, mEnterLoopLine, mOutLoopLine, mVarsType, false, mOption);
-		innerLoopTree.addRootConstraint("beforeLoop != 0");
-		innerLoopTree.executeTree();
-		
-		beforeLoopTree.print();
-		innerLoopTree.print();
-		logAll("innerLoop finished");
-		
-		for (Map.Entry<String, String> entry : innerLoopTree.getVarType().entrySet()) {
-			mVarsType.put(entry.getKey(), entry.getValue());
-		}
-		
-		logAll("Starting z3 builder...\n");
-        
-		List<ExecutionTreeNode> toWriteZ3 = new ArrayList<ExecutionTreeNode>();
-		toWriteZ3.addAll(beforeLoopTree.getEndNodes());
-		toWriteZ3.addAll(innerLoopTree.getEndNodes());
-		Z3FormatPipeline z3Builder = new Z3FormatPipeline(mVarsType, 
-				beforeLoopTree.getEndNodes(), innerLoopTree.getEndNodes(), mUseNextBeforeLoop, mOutputRelated, mOption, mNoLoop);
-		/*
-		z3FormatBuilder z3Builder = new z3FormatBuilder(mVarsType, 
-				beforeLoopTree.getEndNodes(), interLoopTree.getEndNodes(), "z3", mUseNextBeforeLoop, mOutputRelated);
-				*/
-
-		if (z3Builder.getResult()) {
-			System.out.println("RESULT: Proved to be commutative");
-		} else {
-			System.out.println("RESULT: CANNOT prove to be commutative");
-		}
 
 	}
 	
@@ -294,7 +242,6 @@ public class OptimizeResolver {
 
 		for (String key : mLocalVars.keySet()) {
 			mOutputRelated.put(key, false);
-			mConditionRelated.put(key, false);
 		}
 		if (mNoLoop) return;
 		int index = units.size() - 1;
@@ -316,7 +263,6 @@ public class OptimizeResolver {
 				for (String var : vars) {
 					if (mOutputRelated.containsKey(var)) {
 						mOutputRelated.put(var, true);
-						mConditionRelated.put(var, true);
 					}
 				}
 
@@ -342,45 +288,6 @@ public class OptimizeResolver {
 			}
 			index -= 1;
 		}
-		
-		/*
-		if (emphsisTail) return;
-
-		List<Unit> unitList2 = new ArrayList<Unit>();
-		index = 0;
-		while (index < units.size()) {
-			unitList2.add(units.get(index).getUnit());
-			index += 1;
-		}
-		for (Unit unit : unitList2) {
-			if (unit instanceof AssignStmt) {
-				DefinitionStmt ds = (DefinitionStmt) unit;
-				String var = ds.getLeftOp().toString();
-				String ass_s = ds.getRightOp().toString();
-				if (!ass_s.contains("Iterator") && !ass_s.contains("invoke")) {
-					if (ass_s.contains("<")) {
-						ass_s = ass_s.split("\\s+")[2].replace(">", "");
-					}
-					String ass[] = ass_s.split("\\s+");
-					if (ass.length <= 1) continue;
-					if (ass.length == 2) {
-						if (ass[0].equals("(long)")
-								|| ass[0].equals("(int)")
-								|| ass[0].equals("(float)")
-								||  ass[0].equals("(double)")) {
-							continue;
-						}
-					}
-					for (String value : ass) {
-						if (mOutputRelated.containsKey(value) && mOutputRelated.get(value)) {
-							mOutputRelated.put(var, true);
-							break;
-						}
-					}
-				}
-			}
-		}
-		*/
 
 	}
 	
@@ -481,28 +388,22 @@ public class OptimizeResolver {
 			String type = value.getType().toString();
 			String localVar = valueName + "_v";
 			mVarsType.put(valueName, type);
-			mLocalVars.put(valueName, localVar);
+			mLocalVars.put(valueName, new Variable(valueName, localVar));
 			log("Variable " + type + " " + localVar);
 		}
 		// Insert some input (only one input now)
-		mLocalVars.put("output", "0");
-		mVarsType.put("output", "");
-		log("Variable output");
+		//mLocalVars.put("output", "0");
+		//mVarsType.put("output", "");
+		//log("Variable output");
 
-		mLocalVars.put("beforeLoop", "bL_v");
+		mLocalVars.put("beforeLoop", new Variable("beforeLoop", "bL_v"));
 		mVarsType.put("beforeLoop", "beforeLoop");
 		log("Variable boolean beforeLoop");
 		
-		mLocalVars.put("beforeLoopDegree", "0");
-		mVarsType.put("beforeLoopDegree", "beforeLoopDegree");
-		log("Variable integer beforeLoopDegree");
-
 		mVarsType.put("input0", "input type");
 
 		mOutputRelated.put("beforeLoop", true);
 		mOutputRelated.put("beforeLoopDegree", true);
-		mConditionRelated.put("beforeLoop", true);
-		mConditionRelated.put("beforeLoopDegree", true);
 	 }
     
 	protected Set<JimpleBody> getSceneBodies() {

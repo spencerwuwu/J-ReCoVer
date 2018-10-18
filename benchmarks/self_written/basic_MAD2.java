@@ -1,5 +1,5 @@
-// basic - Mean Absolute Deviation
-// Not a real MAD, use random value as avg
+// basic - Mean Absolute Deviation part2
+// Avarge calculated in part1, use random value here
 
 public void reduce(Text key, Iterator<IntWritable> iter,
         OutputCollector<Text, DoubleWritable> output, Reporter reporter) throws IOException {

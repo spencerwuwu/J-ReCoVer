@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class StatementResolver {
+public class OptimizeResolver {
 
 	private LinkedHashMap<String, String> mLocalVars = new LinkedHashMap<String, String>();
 	private LinkedHashMap<String, String> mVarsType = new LinkedHashMap<String, String>();
@@ -62,11 +62,11 @@ public class StatementResolver {
 	private final List<String> resolvedClassNames;
 	Option mOption = new Option();
 
-	public StatementResolver() {
+	public OptimizeResolver() {
 		this(new ArrayList<String>());
 	}
 	
-	public StatementResolver(List<String> resolvedClassNames) {
+	public OptimizeResolver(List<String> resolvedClassNames) {
 		this.resolvedClassNames = resolvedClassNames;
 		// first reset everything:
 		soot.G.reset();
@@ -342,6 +342,45 @@ public class StatementResolver {
 			}
 			index -= 1;
 		}
+		
+		/*
+		if (emphsisTail) return;
+
+		List<Unit> unitList2 = new ArrayList<Unit>();
+		index = 0;
+		while (index < units.size()) {
+			unitList2.add(units.get(index).getUnit());
+			index += 1;
+		}
+		for (Unit unit : unitList2) {
+			if (unit instanceof AssignStmt) {
+				DefinitionStmt ds = (DefinitionStmt) unit;
+				String var = ds.getLeftOp().toString();
+				String ass_s = ds.getRightOp().toString();
+				if (!ass_s.contains("Iterator") && !ass_s.contains("invoke")) {
+					if (ass_s.contains("<")) {
+						ass_s = ass_s.split("\\s+")[2].replace(">", "");
+					}
+					String ass[] = ass_s.split("\\s+");
+					if (ass.length <= 1) continue;
+					if (ass.length == 2) {
+						if (ass[0].equals("(long)")
+								|| ass[0].equals("(int)")
+								|| ass[0].equals("(float)")
+								||  ass[0].equals("(double)")) {
+							continue;
+						}
+					}
+					for (String value : ass) {
+						if (mOutputRelated.containsKey(value) && mOutputRelated.get(value)) {
+							mOutputRelated.put(var, true);
+							break;
+						}
+					}
+				}
+			}
+		}
+		*/
 
 	}
 	

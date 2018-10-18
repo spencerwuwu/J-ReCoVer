@@ -5,7 +5,8 @@
 
 			for (FloatWritable val : values) {
 
-				outValue.set(val.toString());
-				context.write(key, outValue);
+				//outValue.set(val.toString());
+				//context.write(key, outValue);
+				context.write(key, val);
 			}
 		}

@@ -16,7 +16,8 @@
 
       // Shouldn't happen. Throw an exception.
       if (iter.hasNext()) {
-        throw new RuntimeException();
+        //throw new RuntimeException();
+        return;
       }
     }
 

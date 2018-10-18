@@ -1,6 +1,7 @@
 package jRecover;
 
 import jRecover.Option;
+import jRecover.soot.OptimizeResolver;
 import jRecover.soot.StatementResolver;
 
 public class Main {
@@ -40,8 +41,13 @@ public class Main {
 		}
 
 		if (javaInput.length() != 0 & reducerClassname.length() != 0) {
-			StatementResolver SR = new StatementResolver();
-			SR.run(javaInput, classPath, op, reducerClassname);
+			if (!op.optimize_flag) {
+				StatementResolver SR = new StatementResolver();
+				SR.run(javaInput, classPath, op, reducerClassname);
+			} else {
+				OptimizeResolver SR = new OptimizeResolver();
+				SR.run(javaInput, classPath, op, reducerClassname);
+			}
 		} else {
 			System.err.println(op.Warning);
 		}

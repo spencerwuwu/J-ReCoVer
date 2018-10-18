@@ -458,7 +458,6 @@ public class ExecutionTree {
 					mBeforeLoopDegree += 1;
 					if (!mUseNextBeforeLoop) {
 						mUseNextBeforeLoop = true;
-						mVarsType.put("input0", "input type");
 						st.update(var.toString(), "input0");
 						st.update("beforeLoopDegree", Integer.toString(mBeforeLoopDegree));
 						log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "input0");    

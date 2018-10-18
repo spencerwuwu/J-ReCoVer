@@ -12,6 +12,7 @@ public class Option {
 			+ "    -j              Jimple mode, only output Jimple code\n"
 			+ "    -s              Silence mode, print out less log\n"
 			+ "    -g              Generate control flow graph\n"
+			+ "    -o              Optimize mode for formula generation\n"
 			+ " * Example:\n"
 			+ "     $ java -jar j-recover.jar your_jar.jar reducer_classname\n"
 			+ "   Jimple mode \n"
@@ -21,6 +22,7 @@ public class Option {
 	public boolean cfg_flag;
 	public boolean silence_flag;
 	public boolean jimple_flag;
+	public boolean optimize_flag;
 	
 	public Option() {
 		cfg_flag = false;
@@ -35,6 +37,8 @@ public class Option {
 			this.jimple_flag = true;
 		} else if (input.equals("-s")) {
 			this.silence_flag = true;
+		} else if (input.equals("-o")) {
+			this.optimize_flag = true;
 		}
 	}
 	

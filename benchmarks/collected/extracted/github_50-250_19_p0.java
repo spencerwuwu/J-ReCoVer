@@ -1,5 +1,5 @@
 		
-		public static IntWritable index=new IntWritable(1);
+		public IntWritable index=new IntWritable(1);
 		
 		public void reduce(IntWritable key,Iterable<IntWritable> values,Context context) throws IOException, InterruptedException{
 			

@@ -4,9 +4,11 @@ import com.google.common.base.Preconditions;
 
 import jRecover.Option;
 import jRecover.color.Color;
+import jRecover.optimize.executionTree.ExecutionTree;
+import jRecover.optimize.executionTree.ExecutionTreeNode;
 import jRecover.optimize.state.Variable;
-import jRecover.state.State;
-import jRecover.state.UnitSet;
+import jRecover.optimize.state.State;
+import jRecover.optimize.state.UnitSet;
 import soot.Body;
 import soot.RefType;
 import soot.Scene;
@@ -234,6 +236,32 @@ public class OptimizeResolver {
 		
 	
 		//traverse tree to find leaves and doAnalysis
+		ExecutionTreeNode beforeNode = new ExecutionTreeNode(null, null, mLocalVars, 0, 0, false); 
+		ExecutionTreeNode innerNode = new ExecutionTreeNode(null, null, mLocalVars, mEnterLoopLine, 0, false); 
+
+		ExecutionTree beforeLoopTree = new ExecutionTree(beforeNode, units, unitIndexes, 
+				mEnterLoopLine, mOutLoopLine, mVarsType, true, mOption);
+
+		beforeLoopTree.executeTree();
+		for (Map.Entry<String, String> entry : beforeLoopTree.getVarType().entrySet()) {
+			mVarsType.put(entry.getKey(), entry.getValue());
+		}
+		mUseNextBeforeLoop = beforeLoopTree.useNextBeforeLoop();
+		logAll("beforeLoop finished");
+
+		ExecutionTree innerLoopTree = new ExecutionTree(innerNode, units, unitIndexes, 
+				mEnterLoopLine, mOutLoopLine, mVarsType, false, mOption);
+		innerLoopTree.executeTree();
+		
+		beforeLoopTree.print();
+		innerLoopTree.print();
+		logAll("innerLoop finished");
+		
+		for (Map.Entry<String, String> entry : innerLoopTree.getVarType().entrySet()) {
+			mVarsType.put(entry.getKey(), entry.getValue());
+		}
+
+		logAll("Starting z3 builder...\n");
 
 	}
 	
@@ -388,7 +416,7 @@ public class OptimizeResolver {
 			String type = value.getType().toString();
 			String localVar = valueName + "_v";
 			mVarsType.put(valueName, type);
-			mLocalVars.put(valueName, new Variable(valueName, localVar));
+			mLocalVars.put(valueName, new Variable(localVar));
 			log("Variable " + type + " " + localVar);
 		}
 		// Insert some input (only one input now)
@@ -396,14 +424,13 @@ public class OptimizeResolver {
 		//mVarsType.put("output", "");
 		//log("Variable output");
 
-		mLocalVars.put("beforeLoop", new Variable("beforeLoop", "bL_v"));
-		mVarsType.put("beforeLoop", "beforeLoop");
+		mLocalVars.put("beforeLoop", new Variable("beforeLoop_v"));
+		mVarsType.put("beforeLoop", "int");
 		log("Variable boolean beforeLoop");
 		
 		mVarsType.put("input0", "input type");
 
 		mOutputRelated.put("beforeLoop", true);
-		mOutputRelated.put("beforeLoopDegree", true);
 	 }
     
 	protected Set<JimpleBody> getSceneBodies() {

@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Variable {
-	// Reference name of this variable
-	protected String mName;	
 	// Value of this variable
 	protected Map<String, Integer> mValue = new HashMap<String, Integer>();
 	// Exists when 'mIsBinary := true'
@@ -21,21 +19,18 @@ public class Variable {
 	protected boolean mIsBinary;
 	protected String mOperator = "";
 	
-	public Variable(String name, String initValue) {
-		mName = new String(name);
+	public Variable(String initValue) {
 		mIsBinary = false;
-		mValue.put(initValue, 0);
+		mValue.put(initValue, 1);
 	}
 	
-	public Variable(String name, boolean isBinary, String operator, Map<String, Integer> list) {
-		mName = new String(name);
+	public Variable(boolean isBinary, String operator, Map<String, Integer> list) {
 		mIsBinary = isBinary;
 		mOperator = new String(operator);
 		mValue.putAll(list);
 	}
 	
-	public Variable(String name, boolean isBinary, String operator, Map<String, Integer> list, Map<String, Integer> listSub) {
-		mName = new String(name);
+	public Variable(boolean isBinary, String operator, Map<String, Integer> list, Map<String, Integer> listSub) {
 		mIsBinary = isBinary;
 		mOperator = new String(operator);
 		mValue.putAll(list);
@@ -43,59 +38,54 @@ public class Variable {
 	}
 	
 	public Variable(Variable v) {
-		mName = new String(v.getName());
 		mValue.putAll(v.getValue());
 		mValueSub.putAll(v.getValueSub());
 		mIsBinary = v.isBinary();
 		if (mIsBinary) mOperator = new String(v.getOperator());
 	}
 	
-	public Variable clone(String name) {
-		Variable v = new Variable(mName, mIsBinary, mOperator, mValue);
-		return v;
-	}
 	
-	public Variable add(String vname, Variable v1, Variable v2) {
-		Variable result = new Variable(vname, false, "+", 
+	public Variable addVariable(Variable v1, Variable v2) {
+		Variable result = new Variable(false, "+", 
 				addOrSubList(false, v1.getValue(), v2.getValue()));
 		return result;
 	}
 	
-	public Variable subtract(String vname, Variable v1, Variable v2) {
-		Variable result = new Variable(vname, false, "+", 
+	public Variable subtractVariable(Variable v1, Variable v2) {
+		Variable result = new Variable(false, "+", 
 				addOrSubList(true, v1.getValue(), v2.getValue()));
 		return result;
 	}
 	
-	public Variable multiple(String vname, Variable v1, Variable v2) {
-		Variable result = new Variable(vname, true, "mul", v1.getValue(), v2.getValue());
+	public Variable multipleVariable(Variable v1, Variable v2) {
+		Variable result = new Variable(true, "mul", v1.getValue(), v2.getValue());
 		return result;
 	}
 	
-	public Variable divide(String vname, Variable v1, Variable v2) {
-		Variable result = new Variable(vname, true, "div", v1.getValue(), v2.getValue());
+	public Variable divideVariable(Variable v1, Variable v2) {
+		Variable result = new Variable(true, "div", v1.getValue(), v2.getValue());
 		return result;
 	}
 	
-	public Variable remainder(String vname, Variable v1, Variable v2) {
-		Variable result = new Variable(vname, true, "rem", v1.getValue(), v2.getValue());
+	public Variable remainderVariable(Variable v1, Variable v2) {
+		Variable result = new Variable(true, "rem", v1.getValue(), v2.getValue());
 		return result;
 	}
 	
 	public Map<String, Integer> addOrSubList(boolean isMinus, 
 			Map<String, Integer> addend, Map<String, Integer> augend) {
-		Map<String, Integer> list = new HashMap<String, Integer>(addend);
+		Map<String, Integer> result = new HashMap<String, Integer>(addend);
 		for (String augendKey : augend.keySet()) {
 			int value = augend.get(augendKey);
 			if (isMinus) value = value * -1;
 			
-			if (addend.containsKey(augendKey)) {
-				addend.put(augendKey, addend.get(augendKey) + value);
+			if (result.containsKey(augendKey)) {
+				result.put(augendKey, addend.get(augendKey) + value);
 			} else  {
-				addend.put(augendKey, value);
+				result.put(augendKey, value);
 			}
 		}
-		return list;
+		return result;
 	}
 
 	public Map<String, Integer> getValue() {
@@ -104,10 +94,6 @@ public class Variable {
 
 	public Map<String, Integer> getValueSub() {
 		return mValueSub;
-	}
-	
-	public String getName() {
-		return mName;
 	}
 	
 	public boolean isBinary() {
@@ -121,13 +107,18 @@ public class Variable {
 	
 	public String toString() {
 		StringBuffer result = new StringBuffer("{") ;
-		result.append("Name: " + mName + ", ");
 		if (mIsBinary) result.append("Operator: \t" + mOperator + ", ");
 		result.append("[");
 		for (String vname : mValue.keySet()) {
 			result.append(vname + ": " + mValue.get(vname) + ",");
 		}
-		result.append("]}\n");
+		if (mIsBinary) {
+		result.append("[");
+			for (String vname : mValueSub.keySet()) {
+				result.append(vname + ": " + mValueSub.get(vname) + ",");
+			}
+		}
+		result.append("]}");
 
 		return result.toString();
 	}

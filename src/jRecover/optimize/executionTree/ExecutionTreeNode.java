@@ -1,6 +1,7 @@
 package jRecover.optimize.executionTree;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +12,9 @@ import jRecover.optimize.state.Variable;
 
 public class ExecutionTreeNode {
 	private List<Condition> mConditions;
-	private State mState;
+	private List<String> mConstraints;
+	protected Map<String, Variable> mLocalVars;
+	//private State mState;
 	private String mBranchInfo;
 	private int mExecutionOrder;
 	private int mNextline;
@@ -19,45 +22,52 @@ public class ExecutionTreeNode {
 	public boolean mHaveFirstLoop = false;
 
 	public ExecutionTreeNode() {
-		mState = null;
+		//mState = null;
 		mExecutionOrder = 0;
 		mNextline = 0;
 		mConditions = new ArrayList<Condition>();
+		mConstraints = new ArrayList<String>();
+		mLocalVars = new HashMap<String, Variable>();
 		mReturnFlag = false;
 	}
 
-	public ExecutionTreeNode(List<Condition> conditions, State newState, int newOrder, int newNextLine, boolean newReturnFlag) {
+	public ExecutionTreeNode(List<Condition> conditions, List<String> constraints, Map<String, Variable> vars, int newOrder, int newNextLine, boolean newReturnFlag) {
 		mConditions = new ArrayList<Condition>();
 		if (conditions != null && !conditions.isEmpty()) mConditions.addAll(conditions);
-		mState = new State(newState);
+		
+		mConstraints = new ArrayList<String>();
+		if (constraints != null && !constraints.isEmpty()) mConstraints.addAll(constraints);
+		//mState = new State(newState);
+		mLocalVars = new HashMap<String, Variable>(vars);
+
 		mExecutionOrder = newOrder;
 		mNextline = newNextLine;
 		mReturnFlag = newReturnFlag;
 	}
 
-	public void setState(State state) {
-		mState = new State(state);
-	}
-	
-	public State getState() {
-		return mState;
-	}
-	
 	public Map<String, Variable> getLocalVars(){
-		return getState().getLocalVars();
+		return mLocalVars;
+	}
+	
+	public void setVar(String name, Variable var) {
+		mLocalVars.put(name, var);
 	}
 	
 	public List<Condition> getConditions(){
 		return mConditions;
 	}
 	
-	public void setConditions(List<String> constraintList) {
+	public void setConditions(List<Condition> constraintList) {
 		mConditions = new ArrayList<Condition>();
 		if (constraintList != null && !constraintList.isEmpty()) mConditions.addAll(constraintList);
 	}
 	
-	public void addConstraint(Condition newConstraint) {
+	public void addCondition(Condition newConstraint) {
 		mConditions.add(newConstraint);
+	}
+
+	public void addConstraint(String constraint) {
+		mConstraints.add(constraint);
 	}
 	
 	public boolean getReturnFlag() {
@@ -94,14 +104,22 @@ public class ExecutionTreeNode {
 	
 	public void printConstraint() {
 		log("++++++ Constraints +++++++");
-		for (String cons: mConstraint){
+		for (String cons: mConstraints){
 			log("| " + cons);
 		}
 	}
 	
 	public void print() {
 		printConstraint();
-		getState().printForm();
+		printForm();
+	}
+
+	public void printForm() {
+		log("+++++++++++++++++++++++");
+		for (String var : mLocalVars.keySet()) {
+			log("| " + var + ":\t" + mLocalVars.get(var).toString());
+		}
+		log("+++++++++++++++++++++++");
 	}
 
 	protected void log(String str) {

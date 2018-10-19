@@ -47,6 +47,10 @@ public class State {
 		mLocalVars.putAll(localVars);
 	}
 	
+	public void setVar(String name, Variable var) {
+		mLocalVars.put(name, var);
+	}
+	
 	public int getNum() {
 		return mNum;
 	}

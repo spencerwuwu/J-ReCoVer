@@ -10,15 +10,12 @@ import java.util.regex.Pattern;
 import jRecover.Option;
 import jRecover.color.Color;
 import jRecover.optimize.state.Condition;
-import jRecover.optimize.state.State;
 import jRecover.optimize.state.UnitSet;
 import jRecover.optimize.state.Variable;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.*;
 import soot.jimple.internal.*;
-import soot.toolkits.graph.ExceptionalUnitGraph;
-import soot.toolkits.graph.UnitGraph;
 
 public class ExecutionTree {
 	private ExecutionTreeNode mRoot;
@@ -30,12 +27,11 @@ public class ExecutionTree {
 	private Map<String, String> mVarsType;
 
 	private boolean mUseNextBeforeLoop = false;
-	private int mBeforeLoopDegree = 0;
 	private boolean mBefore = true;
 	private boolean mNoLoop = false;
 	private static int mTempIndex = 0;
-	private static int mCondIndex = 0;
 	Option mOption;
+	//private int mBeforeLoopDegree = 0;
 	
 
 	public ExecutionTree(ExecutionTreeNode node, List<UnitSet> units, Map<Unit, Integer> unitIndexes, 
@@ -90,7 +86,6 @@ public class ExecutionTree {
 					}
 				} else {
 					if (!node.getReturnFlag() && node.getNextLine() < mExitLoopLine) {
-					//if (!node.getReturnFlag()) {
 						currentNodes.add(node);
 					} else {
 						endNodes.add(node);
@@ -120,47 +115,17 @@ public class ExecutionTree {
 		if (!currentNode.getReturnFlag() && currentNode.getNextLine() < mUnits.size()) {
 			UnitSet us = mUnits.get(currentNode.getNextLine());
 			int determineUnitState = determineUnit(us.getUnit());
-			//System.out.println(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'" + Color.ANSI_RESET);
 			log(Color.ANSI_BLUE + "line '" + us.getUnit().toString() + "'" + Color.ANSI_RESET);
 			
 			boolean skip = false;
 
 			if (determineUnitState == 1) {
 				Unit newUnit = us.getUnit();
-				//State newState = new State(currentNode.getLocalVars(), currentNode.getExecutionOrder(), newUnit.toString(), us.getLine(), currentNode.getState().getInputUsedIndex());
 				if (newUnit instanceof AssignStmt) {
 					ExecutionTreeNode newNode = performAssignStmt(currentNode, newUnit);
 					newNode.setNextLine(currentNode.getNextLine() + 1);
 					newNodes.add(newNode);
-						/*
-					List<State> assignStates = performAssignStmt(currentNode, newUnit);
-					if (assignStates.size() == 1) {
-						ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), assignStates.get(0), 
-								currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
-						//currentNode.mChildren.add(newLeaf);
-					/newNodes.add(newLeaf);
-					} else if (assignStates.size() == 2) {
-						log("Does not seriously implementing beforeLoop multiple stage");
-						List<String> condition = new ArrayList<String>();
-						condition.addAll(currentNode.getConstraint());
-						ExecutionTreeNode endLeaf = new ExecutionTreeNode(condition, assignStates.get(0), 
-								currentNode.getExecutionOrder(), currentNode.getNextLine(), currentNode.getReturnFlag());
-						endLeaf.addConstraint("beforeLoopDegree == " + (mBeforeLoopDegree - 1));
-						endNodes.add(endLeaf);
-						ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), assignStates.get(1), 
-								currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
-						//currentNode.mChildren.add(newLeaf);
-						newNodes.add(newLeaf);
-					}
-						*/
 				} else if (newUnit instanceof IdentityStmt){
-					/*
-					newState = performIdentityStmt(newState, newUnit);
-					ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), newState, 
-							currentNode.getExecutionOrder() + 1, currentNode.getNextLine() + 1, currentNode.getReturnFlag());
-					
-					//currentNode.mChildren.add(newLeaf);
-					 */
 					ExecutionTreeNode newNode = performIdentityStmt(currentNode, newUnit);
 					newNode.setNextLine(currentNode.getNextLine() + 1);
 					newNodes.add(newNode);
@@ -168,31 +133,18 @@ public class ExecutionTree {
 					log(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
 					skip = true;
 				}
-			/*
 			} else if (determineUnitState == 2) {
 				Unit newUnit=us.getUnit();
 				if (newUnit instanceof IfStmt) {
 					log("Split the tree here.");
-					State newState1 = new State(currentNode.getLocalVars(), currentNode.getExecutionOrder(),
-							          newUnit.toString(), us.getLine(), currentNode.getState().getInputUsedIndex());
-					State newState2 = new State(currentNode.getLocalVars(), currentNode.getExecutionOrder(), 
-							          newUnit.toString(), us.getLine(), currentNode.getState().getInputUsedIndex());
-					List<ExecutionTreeNode> newLeafNodes = performIfStmt(currentNode, currentNode.getConstraint(), 
-							newState1, newState2, newUnit, mUnitIndexes);
+					List<ExecutionTreeNode> newLeafNodes = performIfStmt(currentNode, newUnit, mUnitIndexes);
 					for (ExecutionTreeNode node: newLeafNodes) {
 						//currentNode.mChildren.add(node);
 						newNodes.add(node);
 					}
 
 				} else if (newUnit instanceof GotoStmt) {
-					State newState = new State(currentNode.getLocalVars(), currentNode.getExecutionOrder(), 
-							         newUnit.toString(), us.getLine(),currentNode.getState().getInputUsedIndex());
-					ExecutionTreeNode newLeaf = performGotoStmt(newState, newUnit, mUnitIndexes, mUnits);
-					newLeaf.setConstraint(currentNode.getConstraint());
-					newLeaf.setExecutionOrder(currentNode.getExecutionOrder() + 1);
-					// 'nextLine' had been set in performGotoStmt
-					//currentNode.mChildren.add(newLeaf);
-					newNodes.add(newLeaf);
+					newNodes.add(performGotoStmt(currentNode, newUnit, mUnitIndexes));
 
 				} else {
 					log(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
@@ -201,23 +153,17 @@ public class ExecutionTree {
 			} else if (determineUnitState == 3) {
 				log(Color.ANSI_GREEN + "return" + Color.ANSI_RESET);
 				// Add this treenode to endNodes, waiting to print the result
-				//endNodes.add(currentNode);
-				
-				boolean newReturnFlag = true;
-			    ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), 
-			    		currentNode.getState(), currentNode.getExecutionOrder(), currentNode.getNextLine(), newReturnFlag);
-			    endNodes.add(newLeaf);
+			    currentNode.setReturnFlag(true);
+			    endNodes.add(currentNode);
 
 			} else if (determineUnitState == 4) {
 				// Deal with specialinvoke and vritualinvoke
 				if(us.getUnit().toString().contains("specialinvoke")) {
 				    ExecutionTreeNode newLeaf = performSpecialInvoke(currentNode, us);
-				    //if (newLeaf != null) currentNode.mChildren.add(newLeaf);
 				    if (newLeaf != null) newNodes.add(newLeaf);
 
 				} else if(us.getUnit().toString().contains("virtualinvoke") ) {
 					ExecutionTreeNode newLeaf = performVirtualInvoke(currentNode, us);
-					//currentNode.mChildren.add(newLeaf); 
 					newNodes.add(newLeaf);
 
 				} else {
@@ -225,20 +171,13 @@ public class ExecutionTree {
 					skip = true;
 				}
 
-			*/
 			} else {
 				log(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
-				/*
-				ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), currentNode.getState(),
-						currentNode.getExecutionOrder(), currentNode.getNextLine() + 1, currentNode.getReturnFlag());
-				currentNode.mChildren.add(newLeaf);
-				*/
 				skip = true;
 			}
 			log("------------------------------------");
 
 			if (skip) {
-			    //currentNode.mChildren.add(newNode);
 				currentNode.setNextLine(currentNode.getNextLine() + 1);
 			    newNodes.add(currentNode);
 			}
@@ -312,7 +251,7 @@ public class ExecutionTree {
 		String values[] = value.split("\\s+");
 
 		// parse long 123L -> 123
-		Pattern p = Pattern.compile("^[0-9]+L$");
+		Pattern p = Pattern.compile("^-?[0-9]+L$");
 		int i = 0;
 		while (i < values.length) {
 			Matcher m = p.matcher(values[i]);
@@ -332,13 +271,13 @@ public class ExecutionTree {
 	protected String parseFloat(String value){
 		String values[] = value.split("\\s+");
 
-		// parse long 123L -> 123
-		Pattern p = Pattern.compile("^[0-9]+.[0-9]+L$");
+		// parse float -123.2F -> 123
+		Pattern p = Pattern.compile("^-?[0-9]+.[0-9]+F$");
 		int i = 0;
 		while (i < values.length) {
 			Matcher m = p.matcher(values[i]);
 			if (m.find()) {
-				values[i] = values[i].split("L")[0];
+				values[i] = values[i].split("F")[0];
 			}
 			i += 1;
 		}
@@ -351,54 +290,32 @@ public class ExecutionTree {
 		return result;
 	}
 	
-	/*
-	protected String valueReplace(String value, Map<String, String>lastEnv){
+	protected boolean checkNumber(String value) {
 		String values[] = value.split("\\s+");
 
 		// parse long 123L -> 123
-		Pattern p = Pattern.compile("^[0-9]+L$");
+		Pattern p = Pattern.compile("-?[0-9]*(\\.[0-9]*)?");
 		int i = 0;
 		while (i < values.length) {
 			Matcher m = p.matcher(values[i]);
 			if (m.find()) {
-				values[i] = values[i].split("L")[0];
+				return true;
 			}
 			i += 1;
 		}
-
-		boolean endFlag = false;
-		while (!endFlag) {
-			endFlag = true;
-			for (String var: lastEnv.keySet()) {
-				int index = 0;
-				while (index < values.length) {
-					if (values[index].equals(var) && !lastEnv.get(var).contains("hasNext")) {
-						values[index] = lastEnv.get(var);
-						endFlag = false;
-					}
-					index += 1;
-				}
-			}
-		}
 		
-		String newValue = values[0];
-		int index = 1;
-		while (index < values.length) {
-			newValue = newValue + " " + values[index];
-			index += 1;
-		}
-		
-		return newValue;
+		return false;
 	}
-	*/
 	
 	protected Variable str2Var(String value, Map<String, Variable> vList) {
 		value = parseLong(value);
 		value = parseFloat(value);
 		if (vList.containsKey(value)) {
 			return new Variable(vList.get(value));
+		} else if (!checkNumber(value)) {
+			vList.put(value, new Variable(value));
 		}
-		else return new Variable(value);
+		return new Variable(value);
 	}
 
 	protected ExecutionTreeNode performAssignStmt(ExecutionTreeNode node, Unit u) {
@@ -465,17 +382,17 @@ public class ExecutionTree {
 					} else if (tmp[1].contains("cmp") || tmp[1].contains("-")) {
 						node.setVar(target, a.subtractVariable(a, b));
 					} else if (tmp[1].contains("*")) {
-						String newVar = "tmp_" + (mTempIndex++) + "_t";
+						String newVar = "_" + (mTempIndex++) + "_t";
 						node.setVar(newVar, a.multipleVariable(a, b));
 						node.setVar(target, new Variable(newVar));
 						mVarsType.put(newVar, "double");
 					} else if (tmp[1].contains("/")) {
-						String newVar = "tmp_" + (mTempIndex++) + "_t";
+						String newVar = "_" + (mTempIndex++) + "_t";
 						node.setVar(newVar, a.divideVariable(a, b));
 						node.setVar(target, new Variable(newVar));
 						mVarsType.put(newVar, "double");
 					} else if (tmp[1].contains("%")) {
-						String newVar = "tmp_" + (mTempIndex++) + "_t";
+						String newVar = "_" + (mTempIndex++) + "_t";
 						node.setVar(newVar, a.remainderVariable(a, b));
 						node.setVar(target, new Variable(newVar));
 						mVarsType.put(newVar, "double");
@@ -503,17 +420,16 @@ public class ExecutionTree {
 			//ass_s = valueReplace(ass_s, lastEnv);
 
 			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
-			//st.update(var.toString(), ass_s);
 		}
 		else { 
 			// Handling iterator relative assignments
 			if (ass_s.contains("hasNext()")) {
-				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
+				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "hasNext");
 				//st.update(var.toString(), "hasNext");
 				node.setVar(var.toString(), new Variable("hasNext"));
 			} else if (ass_s.contains("next()")) {
 				if (mBefore) {
-					mBeforeLoopDegree += 1;
+					//mBeforeLoopDegree += 1;
 					if (!mUseNextBeforeLoop) {
 						mUseNextBeforeLoop = true;
 						//st.update(var.toString(), "input0");
@@ -521,22 +437,6 @@ public class ExecutionTree {
 						log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "input0");    
 					} else {
 						logAll("Does not support multiple input in one function body yet.");
-						/*
-						returnStates.add(st);
-						State newState = st.clone();
-						String replaceStr = "bld_" + (mBeforeLoopDegree - 1) + "_v";
-						for (String key : newState.getLocalVars().keySet()) {
-							if (newState.getLocalVars().get(key).equals("input0")) {
-								newState.update(key, replaceStr);
-								log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + replaceStr);    
-							}
-						}
-						newState.update(var.toString(), "input0");
-						mVarsType.put(replaceStr, "bld");
-						newState.update("beforeLoopDegree", Integer.toString(mBeforeLoopDegree));
-						log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "input0");    
-						returnStates.add(newState);
-						*/
 					}
 				} else {
 					//use a new input
@@ -565,9 +465,7 @@ public class ExecutionTree {
 		return node;
 	}
 
-	/*
-	protected List<ExecutionTreeNode> performIfStmt(ExecutionTreeNode parent, List<String> conditionBefore, 
-			State ifBranchState, State elseBranchState, Unit u, Map<Unit,Integer> unitIndexes) {
+	protected List<ExecutionTreeNode> performIfStmt(ExecutionTreeNode parent, Unit u, Map<Unit,Integer> unitIndexes) {
 		IfStmt if_st = (IfStmt) u;
 		Unit goto_target = if_st.getTargetBox().getUnit();
 		Value condition = if_st.getCondition();
@@ -575,75 +473,54 @@ public class ExecutionTree {
 		
 		log(Color.ANSI_GREEN + "goto " + Color.ANSI_RESET + 
 				goto_target + Color.ANSI_GREEN + " when " + Color.ANSI_RESET + condition);
-		
-		//split the tree
-		List<String> ifCondition = new ArrayList<String>();
-		List<String> elseCondition = new ArrayList<String>();
-		for (String s: conditionBefore) {
-			ifCondition.add(s);
-			elseCondition.add(s);
-		}
-		
-		String newIfCondition = condition.toString();
-		String newElseCondition = "! " + condition.toString();
-		
-		// replace with mLocalVars value
-		Map<String, String> lastEnv = parent.getLocalVars();
-		
-		// Won't set new branch for hasNext, automatically set as true
-		//newIfCondition = valueReplace(newIfCondition, lastEnv).replace("_v", "");
-		//newElseCondition = valueReplace(newElseCondition, lastEnv).replace("_v", "");
-		newIfCondition = parseLong(newIfCondition).replace("_v", "");
-		newElseCondition = parseLong(newElseCondition).replace("_v", "");
 
-		if(parent.getLocalVars().get(conditionStmt.getOp1().toString()) == "hasNext" ) {
-			ExecutionTreeNode elseBranch = new ExecutionTreeNode(elseCondition, elseBranchState, 
-					parent.getExecutionOrder() + 1, parent.getNextLine() + 1, parent.getReturnFlag());
-			//elseBranch.getLocalVars().put(conditionStmt.getOp1().toString(), "1");
-			elseBranch.setBranchInfo("ELSE branch from" + parent.getState().getCommandLineNo() );
-			List<ExecutionTreeNode> returnList = new ArrayList<ExecutionTreeNode>();
-			returnList.add(elseBranch);
-			log("Actually we didn't");
-			return returnList;
-		}
-		ifCondition.add( newIfCondition );
-		elseCondition.add( newElseCondition );
-				
-		ExecutionTreeNode ifBranch = new ExecutionTreeNode(ifCondition, ifBranchState, 
-				parent.getExecutionOrder() + 1, unitIndexes.get(goto_target), parent.getReturnFlag());
-		ExecutionTreeNode elseBranch = new ExecutionTreeNode(elseCondition, elseBranchState, 
-				parent.getExecutionOrder() + 1, parent.getNextLine() + 1, parent.getReturnFlag());
-		
-		ifBranch.setBranchInfo("IF branch from" + parent.getState().getCommandLineNo() );
-		elseBranch.setBranchInfo("ELSE branch from" + parent.getState().getCommandLineNo() );
-		
 		List<ExecutionTreeNode> returnList = new ArrayList<ExecutionTreeNode>();
-		returnList.add(ifBranch);
-		returnList.add(elseBranch);
+		String lhs = conditionStmt.getOp1().toString();
+		String rhs =  conditionStmt.getOp2().toString();
+		String op =  conditionStmt.getSymbol().toString();
+		if (parent.getLocalVars().get(lhs).getValue().containsKey("hasNext")) {
+			log("Actually we didn't");
+			parent.setNextLine(parent.getNextLine() + 1);
+			returnList.add(parent);
+	 	} else {
+	 		ExecutionTreeNode ifBranch = new ExecutionTreeNode(parent);
+	 		ExecutionTreeNode elseBranch = new ExecutionTreeNode(parent);
+	 		
+			ifBranch.setNextLine(unitIndexes.get(goto_target));
+			elseBranch.setNextLine(parent.getNextLine() + 1);
+			
+			ifBranch.addConstraint(conditionStmt.toString());
+			ifBranch.addCondition(new Condition(op, str2Var(lhs, parent.getLocalVars()), str2Var(rhs, parent.getLocalVars()), false));
+			elseBranch.addConstraint("! " + conditionStmt.toString());
+			elseBranch.addCondition(new Condition(op, str2Var(lhs, parent.getLocalVars()), str2Var(rhs, parent.getLocalVars()), true));
+			
+			returnList.add(ifBranch);
+			returnList.add(elseBranch);
+	 	}
 		return returnList;
 	}
 
-	protected ExecutionTreeNode performGotoStmt(State st, Unit u, Map<Unit,Integer> unitIndexes, List<UnitSet> units) {
+	protected ExecutionTreeNode performGotoStmt(ExecutionTreeNode node, Unit u, Map<Unit,Integer> unitIndexes) {
 		GotoStmt gt_st = (GotoStmt) u;
 		Unit goto_target = gt_st.getTarget();
-		ExecutionTreeNode node;
 		
-		if(unitIndexes.get(goto_target) > st.getCommandLineNo()) {
+		if(unitIndexes.get(goto_target) > node.getNextLine()) {
 		    //System.out.println(Color.ANSI_GREEN + st.getCommandLineNo() + " goto " + Color.ANSI_RESET + goto_target);
-		    log(Color.ANSI_GREEN + st.getCommandLineNo() + " goto " + Color.ANSI_RESET + goto_target);
-		    node = new ExecutionTreeNode(null, st, 0, unitIndexes.get(goto_target), false);
+		    log(Color.ANSI_GREEN + node.getNextLine() + " goto " + Color.ANSI_RESET + goto_target);
+		    //node = new ExecutionTreeNode(null, st, 0, unitIndexes.get(goto_target), false);
+		    node.setNextLine(unitIndexes.get(goto_target));
 		}
 		else {
 			//System.out.println(Color.ANSI_GREEN +  st.getCommandLineNo() + " goto " + Color.ANSI_RESET + unitIndexes.get(goto_target) + " (Loop back, terminate)");
-			log(Color.ANSI_GREEN + st.getCommandLineNo() + " goto " + Color.ANSI_RESET + unitIndexes.get(goto_target) + " (Loop back, terminate)");
-			node = new ExecutionTreeNode(null, st, 0, st.getCommandLineNo(), true);
+			log(Color.ANSI_GREEN + node.getNextLine() + " goto " + Color.ANSI_RESET + unitIndexes.get(goto_target) + " (Loop back, terminate)");
+			//node = new ExecutionTreeNode(null, st, 0, st.getCommandLineNo(), true);
+		    node.setReturnFlag(true);
 		}
 		return node;
 	}
 
+
 	protected ExecutionTreeNode performVirtualInvoke(ExecutionTreeNode currentNode, UnitSet us) {
-		State newState = currentNode.getState();
-		Map<String, String>lastEnv = newState.getLocalVars();
 		
 		// handling OutputCollector
 		if(us.getUnit().toString().contains("OutputCollector") || us.getUnit().toString().contains("Context")) {
@@ -651,28 +528,28 @@ public class ExecutionTree {
 			String valueV = (us.getUnit().toString().split(">")[1]).split(",")[1];
 			valueV = valueV.replace(")", "");
 			
-			String value = valueReplace(valueV, lastEnv);
 
-			newState.update(key, value);
-			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + value);
-			newState.update("output", value);
-			log(Color.ANSI_GREEN + "output: " + value + Color.ANSI_RESET);
+			//newState.update(key, value);
+			currentNode.setVar(key, str2Var(valueV, currentNode.getLocalVars()));
+			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + valueV);
 
 			// Assign valueK and value from output.collect(valueK, value) to individual variables
 			String valueK = (us.getUnit().toString().split(">")[1]).split(",")[0];
 			valueK = valueK.replace("(", "");
 
-			String var = "outV" + currentNode.getNextLine();
-			newState.update(var, value);
-			mVarsType.put(var, "double");
-			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var + " -> " + value);
+			String keyV = "outV" + currentNode.getNextLine();
+			//newState.update(var, value);
+			currentNode.setVar(keyV, str2Var(valueV, currentNode.getLocalVars()));
+			mVarsType.put(keyV, "double");
+			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + keyV + " -> " + valueV);
 
 			if (mVarsType.containsKey(valueK)) {
 				String varK = "outK" + currentNode.getNextLine();
-				value = valueReplace(valueK, lastEnv);
-				newState.update(varK, value);
+				//value = valueReplace(valueK, lastEnv);
+				//newState.update(varK, value);
+				currentNode.setVar(varK, str2Var(valueK, currentNode.getLocalVars()));
 				mVarsType.put(varK, mVarsType.get(valueK));
-				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + varK + " -> " + value);
+				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + varK + " -> " + valueK);
 			}
 		} else {
 			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
@@ -680,20 +557,21 @@ public class ExecutionTree {
 			value = value.replace(")", "");
 			value = value.replace("(", "");
 
-			value = valueReplace(value, lastEnv);
-
-			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + us.getUnit().toString() + " -> " + value);
-			newState.update(key.toString() , value);
+			if (value.length() == 0) {
+				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + "remain");
+			} else {
+				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + value);
+				//newState.update(key.toString() , value);
+				currentNode.setVar(key, str2Var(value, currentNode.getLocalVars()));
+			}
 		}
-		ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), newState, 
-											currentNode.getExecutionOrder(), currentNode.getNextLine() + 1, currentNode.getReturnFlag());
-		return newLeaf;
+		currentNode.setNextLine(currentNode.getNextLine() + 1);
+		return currentNode;
 
 	}
 	
 	protected ExecutionTreeNode performSpecialInvoke(ExecutionTreeNode currentNode, UnitSet us) {
-		ExecutionTreeNode newLeaf = new ExecutionTreeNode(currentNode.getConstraint(), currentNode.getState(), 
-											currentNode.getExecutionOrder(), currentNode.getNextLine() + 1, currentNode.getReturnFlag());
+		currentNode.setNextLine(currentNode.getNextLine() + 1);
 		if(us.getUnit().toString().contains("init")) {
 			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
 			String value = us.getUnit().toString().split(">")[2];
@@ -703,53 +581,13 @@ public class ExecutionTree {
 				value = "0";
 			}
 			
-			value = valueReplace(value, currentNode.getState().getLocalVars());
 			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + key + " -> " + value);
-			newLeaf.getState().update(key, value);
 			
-			return newLeaf;
+			currentNode.setVar(key, str2Var(value, currentNode.getLocalVars()));
+			return currentNode;
 		}				        
 		return null;
 	}
-
-	// Does not affect the result, just to make the Symbolic State more reasonable
-	protected void detectOutput(ExecutionTreeNode node) {
-		for (UnitSet us : mUnits) {
-			Unit u = us.getUnit();
-			if (u instanceof InvokeStmt) {
-				if(u.toString().contains("virtualinvoke")) {
-					if(u.toString().contains("OutputCollector") || u.toString().contains("Context")) {
-						String value = (u.toString().split(">")[1]).split(",")[1];
-				        value = value.replace(")", "");
-                        for (String replace: node.getLocalVars().keySet()) {
-				        	if(value.contains(replace) ) {
-				        	    value = value.replace(replace, node.getLocalVars().get(replace));
-				        	}
-				        }
-				        node.getLocalVars().put("output", value);
-					}
-				}
-				else if (u.toString().contains("specialinvoke")) {
-				    if (u.toString().contains("Writable") && u.toString().contains("init")) {
-				    	String key = (u.toString().split("\\s+")[1]).split("\\.")[0];
-				    	String type = u.toString().split(">")[1];
-				        String value = u.toString().split(">")[2];
-				        value = value.replace(")", "");
-				        value = value.replace("(", "");
-				        
-				        for (String replace : node.getLocalVars().keySet()) {
-				        	if(value.contains(replace) ) {
-				        	    value = value.replace(replace, node.getLocalVars().get(replace));
-				        	}
-				        }
-				        node.getLocalVars().put(key, value);    
-				    }				        
-				    
-				}
-			}
-		}
-	}
-	*/
 
 	public Map<String, String> getVarType() {
 		return mVarsType;

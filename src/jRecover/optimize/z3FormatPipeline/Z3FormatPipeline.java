@@ -6,22 +6,18 @@ import java.util.Map;
 
 import jRecover.Option;
 import jRecover.color.Color;
-import jRecover.executionTree.ExecutionTreeNode;
+import jRecover.optimize.executionTree.ExecutionTree;
+import jRecover.optimize.executionTree.ExecutionTreeNode;
+import jRecover.optimize.state.Condition;
+import jRecover.optimize.state.Variable;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.io.PrintStream;
-import java.io.PrintWriter;
 
 public class Z3FormatPipeline {
 	Map<String, String> mTypeTable;
@@ -105,8 +101,8 @@ public class Z3FormatPipeline {
 	
 	protected void writeZ3Format() {
 		variableTypeDeclare();
-		
 		logAll("Finshed variableDeclartion");
+
 		int stage = 1;
 		while (stage <= 2) {
 			constructFormula(stage, 1);
@@ -114,6 +110,7 @@ public class Z3FormatPipeline {
 			logAll("Finshed stage: " + stage);
 			stage += 1;
 		}
+
 		//mPipeContent.add("(assert (not (= input0_1 input0_2)))\n");
 		mPipeContent.add("(assert (not (= input0_1_r1 input0_2_r1)))\n");
 		mPipeContent.add("(assert (= input0_1_r1 input0_2_r2))\n");
@@ -162,6 +159,7 @@ public class Z3FormatPipeline {
 		mPipeContent.add("(check-sat)\n");
 
 	}
+	
 	
 	protected void constructFormula(int stage, int round) {
 		// Generate formula for each variable in each round
@@ -292,28 +290,23 @@ public class Z3FormatPipeline {
 		  initial version would be the same, but internal version(_1, _2) maybe not.
 		  result formula wouldn't take variable with '$' into account.
 		*/
-		for(String variable : mTypeTable.keySet()) {
+		for (String variable : mTypeTable.keySet()) {
 			String type = mTypeTable.get(variable);
 			String var = variable.replace("_v", "");
 
-			if (type == "int" || type == "byte" || type == "short" || type == "long"
-					|| type == "input type" || type == "before loop flag") {
+			if (type == "int" || type == "byte" || type == "short" || type == "long") {
 				type = "Int";
+				mVariables.put(var, false);
+			} else if (type == "input type") {
+				type = "Real";
 				mVariables.put(var, false);
 			} else if (type == "double" | type == "float" ) {
 				type = "Real";
 				mVariables.put(var, false);
-			} else if (type == "boolean" ) {
-				type = "Int";
-				mVariables.put(var, false);
-			} else if (type.contains("beforeLoopDegree")) {
+			} else if (type == "boolean") {
 				type = "Int";
 				mVariables.put(var, false);
 			} else if (type.contains("beforeLoop")) {
-				type = "Int";
-				mVariables.put(var, false);
-			} else if (type == "") {
-				//deal with output
 				type = "Int";
 				mVariables.put(var, false);
 			} else if (type.contains("Object")){
@@ -321,6 +314,10 @@ public class Z3FormatPipeline {
 				mVariables.put(var, false);
 			} else if (type.contains("IntWritable") || type.contains("LongWritable")) {
 				type = "Int";
+			    log(variable + " " + Color.ANSI_RED + mTypeTable.get(variable) + " -> Int" + Color.ANSI_RESET);
+				mVariables.put(var, false);
+			} else if (type.contains("DoubleWritable") || type.contains("FloatWritable")) {
+				type = "Real";
 			    log(variable + " " + Color.ANSI_RED + mTypeTable.get(variable) + " -> Int" + Color.ANSI_RESET);
 				mVariables.put(var, false);
 			} else {
@@ -340,47 +337,9 @@ public class Z3FormatPipeline {
 		mPipeContent.add("(declare-const null Int)\n");
 		mPipeContent.add("(assert (= null 0))\n");
 		
-		// Declare z3 variable for global variable
-		for (ExecutionTreeNode node : mBeforeNodes) {
-			for (String value : node.getLocalVars().values()) catchGlobalVariable(node.getLocalVars(), value);
-			for (String value : node.getConstraint()) catchGlobalVariable(node.getLocalVars(), value);
-		}
-
-		for (ExecutionTreeNode node : mInnerNodes) {
-			for (String value : node.getLocalVars().values()) catchGlobalVariable(node.getLocalVars(), value);
-			for (String value : node.getConstraint()) catchGlobalVariable(node.getLocalVars(), value);
-		}
-		
-		for (String element : mGlobalVariables) {
-			mPipeContent.add("(declare-const " + element + " Int)\n");
-		}
-		
 	}
 
 	
-	protected void catchGlobalVariable(Map<String, String> vars, String value) {
-		String valueSet[] = value.split("\\s+");
-		for (String element : valueSet) {
-			if (!element.contains("(") 
-					&& !element.contains(")") 
-					&& !element.contains("_v")
-					&& !element.contains("input")
-					&& !element.contains("!")
-					&& !element.contains("=")
-					&& !element.contains("<")
-					&& !element.contains(">")
-					&& !element.contains("+")
-					&& !element.contains("-")
-					&& !element.contains("*")
-					&& !element.contains("/")
-					&& !element.contains("mod")
-					&& !element.contains("null")
-					&& !element.matches("-?[0-9]*\\.?[0-9]*")
-					&& !vars.containsKey(element)) {
-				if (!mGlobalVariables.contains(element)) mGlobalVariables.add(element);
-			}
-		}
-	}
 	
 	protected void logAll(String str) {
 		if (!mOption.silence_flag) System.out.println(str);

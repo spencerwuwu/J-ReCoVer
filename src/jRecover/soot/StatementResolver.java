@@ -59,7 +59,6 @@ public class StatementResolver {
 	private boolean mNoLoop = false;
 	
 
-	private final List<String> resolvedClassNames;
 	Option mOption = new Option();
 
 	public StatementResolver() {
@@ -67,7 +66,6 @@ public class StatementResolver {
 	}
 	
 	public StatementResolver(List<String> resolvedClassNames) {
-		this.resolvedClassNames = resolvedClassNames;
 		// first reset everything:
 		soot.G.reset();
 	}
@@ -152,24 +150,8 @@ public class StatementResolver {
 				try {
 					completeAnalysis(body);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			}
-		}
-		
-		// TODO: Not really doing this tbh
-		if (mOption.cfg_flag) {
-			// BlockGraph blockGraph = new BriefBlockGraph(body);
-			//     System.out.println(blockGraph);
-			// }
-			CFGToDotGraph cfgToDot = new CFGToDotGraph();
-			int i = 0;
-			for (JimpleBody body : this.getSceneBodies()) {
-				DirectedGraph g = new CompleteUnitGraph(body);
-				DotGraph dotGraph = cfgToDot.drawCFG(g, body);
-				dotGraph.plot(i+".dot");
-				i = i+1;
 			}
 		}
 		

@@ -2,12 +2,10 @@ package jRecover.optimize.executionTree;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import jRecover.optimize.state.Condition;
-import jRecover.optimize.state.State;
 import jRecover.optimize.state.Variable;
 
 public class ExecutionTreeNode {
@@ -16,14 +14,12 @@ public class ExecutionTreeNode {
 	protected Map<String, Variable> mLocalVars;
 	//private State mState;
 	private String mBranchInfo;
-	private int mExecutionOrder;
 	private int mNextline;
 	private boolean mReturnFlag = false;
 	public boolean mHaveFirstLoop = false;
 
 	public ExecutionTreeNode() {
 		//mState = null;
-		mExecutionOrder = 0;
 		mNextline = 0;
 		mConditions = new ArrayList<Condition>();
 		mConstraints = new ArrayList<String>();
@@ -31,7 +27,7 @@ public class ExecutionTreeNode {
 		mReturnFlag = false;
 	}
 
-	public ExecutionTreeNode(List<Condition> conditions, List<String> constraints, Map<String, Variable> vars, int newOrder, int newNextLine, boolean newReturnFlag) {
+	public ExecutionTreeNode(List<Condition> conditions, List<String> constraints, Map<String, Variable> vars, int newNextLine, boolean newReturnFlag) {
 		mConditions = new ArrayList<Condition>();
 		if (conditions != null && !conditions.isEmpty()) mConditions.addAll(conditions);
 		
@@ -40,9 +36,29 @@ public class ExecutionTreeNode {
 		//mState = new State(newState);
 		mLocalVars = new HashMap<String, Variable>(vars);
 
-		mExecutionOrder = newOrder;
 		mNextline = newNextLine;
 		mReturnFlag = newReturnFlag;
+	}
+
+	public ExecutionTreeNode(ExecutionTreeNode node) {
+		if (node.getConditions() != null) 
+			mConditions = new ArrayList<Condition>(node.getConditions());
+		else
+			mConditions = new ArrayList<Condition>();
+
+		if (node.getConstraints() != null) 
+			mConstraints = new ArrayList<String>(node.getConstraints());
+		else
+			mConstraints = new ArrayList<String>();
+		
+		//mState = new State(newState);
+		if (node.getLocalVars() != null)
+			mLocalVars = new HashMap<String, Variable>(node.getLocalVars());
+		else
+			mLocalVars = new HashMap<String, Variable>();
+
+		mNextline = node.getNextLine();
+		mReturnFlag = node.getReturnFlag();
 	}
 
 	public Map<String, Variable> getLocalVars(){
@@ -55,6 +71,10 @@ public class ExecutionTreeNode {
 	
 	public List<Condition> getConditions(){
 		return mConditions;
+	}
+	
+	public List<String> getConstraints(){
+		return mConstraints;
 	}
 	
 	public void setConditions(List<Condition> constraintList) {
@@ -84,14 +104,6 @@ public class ExecutionTreeNode {
 	
 	public void setNextLine(int i) {
 		mNextline = i;
-	}
-	
-	public int getExecutionOrder() {
-		return mExecutionOrder;
-	}
-	
-	public void setExecutionOrder(int order) {
-		mExecutionOrder = order;
 	}
 	
 	public void setBranchInfo(String info) {

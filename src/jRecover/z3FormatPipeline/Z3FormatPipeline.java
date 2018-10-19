@@ -255,13 +255,13 @@ public class Z3FormatPipeline {
 			
 			for (String key : mVariables.keySet()) {
 				if (lhs.toString().equals(key)) {
-					lhs.append('_').append(stage).append("_r").append(round);
+					lhs.append('_').append(stage-1).append("_r").append(round);
 					break;
 				}
 			}
 			for (String key : mVariables.keySet()) {
 				if (rhs.toString().equals(key)) {
-					rhs.append("_").append(stage).append("_r").append(round);
+					rhs.append("_").append(stage-1).append("_r").append(round);
 					break;
 				}
 			}
@@ -321,6 +321,10 @@ public class Z3FormatPipeline {
 				mVariables.put(var, false);
 			} else if (type.contains("IntWritable") || type.contains("LongWritable")) {
 				type = "Int";
+			    log(variable + " " + Color.ANSI_RED + mTypeTable.get(variable) + " -> Int" + Color.ANSI_RESET);
+				mVariables.put(var, false);
+			} else if (type.contains("DoubleWritable") || type.contains("FloatWritable")) {
+				type = "Real";
 			    log(variable + " " + Color.ANSI_RED + mTypeTable.get(variable) + " -> Int" + Color.ANSI_RESET);
 				mVariables.put(var, false);
 			} else {

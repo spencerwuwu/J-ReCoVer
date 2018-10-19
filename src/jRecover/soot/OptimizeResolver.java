@@ -7,7 +7,7 @@ import jRecover.color.Color;
 import jRecover.optimize.executionTree.ExecutionTree;
 import jRecover.optimize.executionTree.ExecutionTreeNode;
 import jRecover.optimize.state.Variable;
-import jRecover.optimize.state.State;
+import jRecover.optimize.z3FormatPipeline.Z3FormatPipeline;
 import jRecover.optimize.state.UnitSet;
 import soot.Body;
 import soot.RefType;
@@ -15,24 +15,15 @@ import soot.Scene;
 import soot.SootClass;
 import soot.SootField;
 import soot.SootMethod;
-import soot.Type;
 import soot.Unit;
 import soot.UnitBox;
 import soot.Value;
 import soot.ValueBox;
 import soot.jimple.*;
-import soot.jimple.internal.*;
-import soot.jimple.internal.JLookupSwitchStmt;
-import soot.jimple.toolkits.pointer.LocalMustNotAliasAnalysis;
-import soot.toolkits.graph.BlockGraph;
-import soot.toolkits.graph.BriefBlockGraph;
-import soot.toolkits.graph.BriefUnitGraph;
 import soot.toolkits.graph.CompleteUnitGraph;
 import soot.toolkits.graph.DirectedGraph;
 import soot.toolkits.graph.ExceptionalUnitGraph;
 import soot.toolkits.graph.UnitGraph;
-import soot.toolkits.scalar.FlowAnalysis;
-import soot.toolkits.scalar.SimpleLiveLocals;
 import soot.util.cfgcmd.CFGToDotGraph;
 import soot.util.dot.DotGraph;
 
@@ -57,7 +48,6 @@ public class OptimizeResolver {
 	private boolean mNoLoop = false;
 	
 
-	private final List<String> resolvedClassNames;
 	Option mOption = new Option();
 
 	public OptimizeResolver() {
@@ -65,7 +55,6 @@ public class OptimizeResolver {
 	}
 	
 	public OptimizeResolver(List<String> resolvedClassNames) {
-		this.resolvedClassNames = resolvedClassNames;
 		// first reset everything:
 		soot.G.reset();
 	}
@@ -150,24 +139,8 @@ public class OptimizeResolver {
 				try {
 					completeAnalysis(body);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			}
-		}
-		
-		// TODO: Not really doing this tbh
-		if (mOption.cfg_flag) {
-			// BlockGraph blockGraph = new BriefBlockGraph(body);
-			//     System.out.println(blockGraph);
-			// }
-			CFGToDotGraph cfgToDot = new CFGToDotGraph();
-			int i = 0;
-			for (JimpleBody body : this.getSceneBodies()) {
-				DirectedGraph g = new CompleteUnitGraph(body);
-				DotGraph dotGraph = cfgToDot.drawCFG(g, body);
-				dotGraph.plot(i+".dot");
-				i = i+1;
 			}
 		}
 		
@@ -236,8 +209,8 @@ public class OptimizeResolver {
 		
 	
 		//traverse tree to find leaves and doAnalysis
-		ExecutionTreeNode beforeNode = new ExecutionTreeNode(null, null, mLocalVars, 0, 0, false); 
-		ExecutionTreeNode innerNode = new ExecutionTreeNode(null, null, mLocalVars, mEnterLoopLine, 0, false); 
+		ExecutionTreeNode beforeNode = new ExecutionTreeNode(null, null, mLocalVars, 0, false); 
+		ExecutionTreeNode innerNode = new ExecutionTreeNode(null, null, mLocalVars, mEnterLoopLine, false); 
 
 		ExecutionTree beforeLoopTree = new ExecutionTree(beforeNode, units, unitIndexes, 
 				mEnterLoopLine, mOutLoopLine, mVarsType, true, mOption);
@@ -263,6 +236,16 @@ public class OptimizeResolver {
 
 		logAll("Starting z3 builder...\n");
 
+		/*
+		Z3FormatPipeline z3Builder = new Z3FormatPipeline(mVarsType, 
+				beforeLoopTree.getEndNodes(), innerLoopTree.getEndNodes(), mUseNextBeforeLoop, mOutputRelated, mOption, mNoLoop);
+
+		if (z3Builder.getResult()) {
+			System.out.println("RESULT: Proved to be commutative");
+		} else {
+			System.out.println("RESULT: CANNOT prove to be commutative");
+		}
+		*/
 	}
 	
 	protected void checkOutputRelated(List<UnitSet> units) {

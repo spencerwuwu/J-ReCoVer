@@ -12,7 +12,7 @@ public class Variable {
 	/*
 	 * Name of value:
 	 * xx_v		-> initial symbolic value
-	 * tmp_xx_t -> tmp variable with dual list
+	 * _xx_t -> tmp variable with dual list
 	 * others	-> global variable or number
 	 */
 
@@ -107,15 +107,15 @@ public class Variable {
 	
 	public String toString() {
 		StringBuffer result = new StringBuffer("{") ;
-		if (mIsBinary) result.append("Operator: \t" + mOperator + ", ");
+		if (mIsBinary) result.append("Operator: '" + mOperator + "', ");
 		result.append("[");
 		for (String vname : mValue.keySet()) {
-			result.append(vname + ": " + mValue.get(vname) + ",");
+			result.append("'" + vname + "': " + mValue.get(vname) + ",");
 		}
 		if (mIsBinary) {
-		result.append("[");
+		result.append("],[");
 			for (String vname : mValueSub.keySet()) {
-				result.append(vname + ": " + mValueSub.get(vname) + ",");
+				result.append("'" + vname + "': " + mValueSub.get(vname) + ",");
 			}
 		}
 		result.append("]}");

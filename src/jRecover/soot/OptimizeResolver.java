@@ -236,7 +236,6 @@ public class OptimizeResolver {
 
 		logAll("Starting z3 builder...\n");
 
-		/*
 		Z3FormatPipeline z3Builder = new Z3FormatPipeline(mVarsType, 
 				beforeLoopTree.getEndNodes(), innerLoopTree.getEndNodes(), mUseNextBeforeLoop, mOutputRelated, mOption, mNoLoop);
 
@@ -245,7 +244,6 @@ public class OptimizeResolver {
 		} else {
 			System.out.println("RESULT: CANNOT prove to be commutative");
 		}
-		*/
 	}
 	
 	protected void checkOutputRelated(List<UnitSet> units) {

@@ -68,6 +68,7 @@ public class Z3FormatPipeline {
 		}
 		
 		for (String formula : mPipeContent) {
+			System.out.print(formula);
 			byte[] bytes = formula.getBytes();
 			int read = 0;
 			do {
@@ -120,13 +121,13 @@ public class Z3FormatPipeline {
 		mPipeContent.add("(assert (= beforeLoop_2_r1 beforeLoop_2_r2))\n");
 		
 		if (mNoLoop) {
-			mPipeContent.add("(assert (= beforeLoop_1_r1 0))\n");
-			mPipeContent.add("(assert (= beforeLoop_2_r1 0))\n");
+			mPipeContent.add("(assert (= beforeLoop_1_r1 1))\n");
+			mPipeContent.add("(assert (= beforeLoop_2_r1 1))\n");
 		} else {
 			if (!mUsingNextBeforeLoop) {
-				mPipeContent.add("(assert (= beforeLoop_1_r1 1))\n");
+				mPipeContent.add("(assert (= beforeLoop_1_r1 0))\n");
 			}
-			mPipeContent.add("(assert (= beforeLoop_2_r1 1))\n");
+			mPipeContent.add("(assert (= beforeLoop_2_r1 0))\n");
 		}
 
 		StringBuffer finalAssertion = new StringBuffer("");
@@ -205,80 +206,25 @@ public class Z3FormatPipeline {
 	}
 	
 	protected StringBuffer combineValueCondition(ExecutionTreeNode node, String var, int stage, int round) {
-		StringBuffer condition = generateConditions(node.getConstraint(), stage, round);
-		String valueTokens[] = node.getLocalVars().get(var).split("\\s+");
-		StringBuffer value = new StringBuffer("");
-		for (String token : valueTokens) {
-			if (token.contains("_v")) {
-				token = token.replace("_v", "_" + (stage - 1) + "_r" + round);
-			} else if (token.contains("input")) {
-				token = token + "_" + stage + "_r" + round;
-			}
-			if (value.length() == 0) value.append(token);
-			else value.append(" ").append(token);
-		}
-		if (value.length() == 0) return value;
-
+		StringBuffer condition = generateConditions(node.getConditions(), stage - 1, round);
+		StringBuffer variable = node.getLocalVars().get(var).getFormula(stage - 1, round);
 
 		StringBuffer tmp = new StringBuffer("");
 		tmp.append("(and ").append(condition).append(' ');
-		tmp.append("(= ").append(var).append("_").append(stage).append("_r").append(round).append(' ').append(value).append(')');
+		tmp.append("(= ").append(var).append("_").append(stage).append("_r").append(round).append(' ').append(variable).append(')');
 		tmp.append(")\n");
 		return tmp;
 		//value = "(= " + var + "_" + stage + "_r" + round + " " + value + ")";
 		//return "(and " + condition + " " + value + ")\n";
 	}
 	
-	protected StringBuffer generateConditions(List<String> constraints, int stage, int round) {
+	protected StringBuffer generateConditions(List<Condition> cList, int stage, int round) {
 		StringBuffer conditions = new StringBuffer("");
-		for (String constraint : constraints) {
-			String tokens[] = constraint.split("\\s+");
-			String operation = "";
-			StringBuffer lhs = new StringBuffer("");
-			StringBuffer rhs = new StringBuffer("");
-			StringBuffer condition = new StringBuffer("");
-			boolean negative = false;
-			if (tokens.length == 4 && tokens[0].equals("!")) {
-				lhs.append(tokens[1]);
-				operation = tokens[2];
-				rhs.append(tokens[3]);
-				negative = true;
+		for (Condition condition : cList) {
+			if (conditions.length() == 0) {
+				conditions.append(condition.getFormula(stage, round));
 			} else {
-				lhs.append(tokens[0]);
-				operation = tokens[1];
-				rhs.append(tokens[2]);
-			}
-			
-			if (lhs.toString().equals("beforeLoopDegree")) continue;
-			
-			for (String key : mVariables.keySet()) {
-				if (lhs.toString().equals(key)) {
-					lhs.append('_').append(stage).append("_r").append(round);
-					break;
-				}
-			}
-			for (String key : mVariables.keySet()) {
-				if (rhs.toString().equals(key)) {
-					rhs.append("_").append(stage).append("_r").append(round);
-					break;
-				}
-			}
-
-			if (operation.equals("!=")) {
-				condition.append("(not (= ").append(lhs).append(" ").append(rhs).append("))");
-			} else if (operation.equals("==")) {
-				condition.append("(= ").append(lhs).append(" ").append(rhs).append(")");
-			} else {
-				condition.append("(").append(operation).append(" ").append(lhs).append(" ").append(rhs).append(")");
-			}
-			
-			if (negative) {
-				condition.insert(0, "(not ").append(")");
-			}
-			
-			if (conditions.length() == 0) conditions = condition;
-			else {
-				conditions.insert(0, "(and ").append(condition).append(")");
+				conditions.insert(0, "(and ").append(condition.getFormula(stage, round)).append(")");
 			}
 		}
 		return conditions;

@@ -62,11 +62,12 @@ public class ExecutionTree {
 		List<ExecutionTreeNode> newNodes = new ArrayList<ExecutionTreeNode>();
 		List<ExecutionTreeNode> endNodes = new ArrayList<ExecutionTreeNode>();
 		
-		// Condition for beforeLoop will be set in Z3 Builder
 		if (!mBefore) {
 			mRoot.addConstraint("beforeLoop == 0");
+			mRoot.addCondition(new Condition("!=", new Variable("beforeLoop"), new Variable("1"), false));
 		} else {
-			mRoot.addConstraint("beforeLoop != 0");
+			mRoot.addConstraint("beforeLoop == 1");
+			mRoot.addCondition(new Condition("==", new Variable("beforeLoop"), new Variable("1"), false));
 		}
 
 		currentNodes.add(mRoot);
@@ -291,19 +292,11 @@ public class ExecutionTree {
 	}
 	
 	protected boolean checkNumber(String value) {
-		String values[] = value.split("\\s+");
-
-		// parse long 123L -> 123
-		Pattern p = Pattern.compile("-?[0-9]*(\\.[0-9]*)?");
-		int i = 0;
-		while (i < values.length) {
-			Matcher m = p.matcher(values[i]);
-			if (m.find()) {
-				return true;
-			}
-			i += 1;
+		Pattern p = Pattern.compile("^-?[0-9]*(\\.[0-9]*)?$");
+		Matcher m = p.matcher(value);
+		if (m.find()) {
+			return true;
 		}
-		
 		return false;
 	}
 	
@@ -477,7 +470,7 @@ public class ExecutionTree {
 		List<ExecutionTreeNode> returnList = new ArrayList<ExecutionTreeNode>();
 		String lhs = conditionStmt.getOp1().toString();
 		String rhs =  conditionStmt.getOp2().toString();
-		String op =  conditionStmt.getSymbol().toString();
+		String op =  conditionStmt.getSymbol().toString().replaceAll("\\s+", "");
 		if (parent.getLocalVars().get(lhs).getValue().containsKey("hasNext")) {
 			log("Actually we didn't");
 			parent.setNextLine(parent.getNextLine() + 1);

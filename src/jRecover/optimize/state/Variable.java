@@ -2,6 +2,8 @@ package jRecover.optimize.state;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Variable {
 	// Value of this variable
@@ -58,7 +60,7 @@ public class Variable {
 	}
 	
 	public Variable multipleVariable(Variable v1, Variable v2) {
-		Variable result = new Variable(true, "mul", v1.getValue(), v2.getValue());
+		Variable result = new Variable(true, "*", v1.getValue(), v2.getValue());
 		return result;
 	}
 	
@@ -104,6 +106,45 @@ public class Variable {
 		return mOperator;
 	}
 	
+	public StringBuffer getFormula(int stage, int round) {
+		if (mIsBinary) {
+			return map2String(mValue, stage, round).insert(0, "(" + mOperator + " ").append(map2String(mValueSub, stage, round)).append(")");
+		} else {
+			return map2String(mValue, stage, round);
+		}
+	}
+	
+
+	public boolean isNumber(String value) {
+		Pattern p = Pattern.compile("^-?[0-9]*(\\.[0-9]*)?$");
+		Matcher m = p.matcher(value);
+		if (m.find()) {
+			return true;
+		}
+		return false;
+	}
+ 	
+	public StringBuffer map2String(Map<String, Integer> list, int stage, int round) {
+		StringBuffer var = new StringBuffer("");
+		for (String key : list.keySet()) {
+			if (list.get(key) == 0) continue;
+			else {
+				int value = list.get(key);
+				if (!isNumber(key)
+						&& !key.contains("hasNext")) {
+					if (key.contains("_v")) key = key.replace("_v", "_" + stage + "_r" + round);
+					else key = key + "_" + stage + "_r" + round;
+				}
+				if (var.length() == 0) {
+					var.insert(0, "(* ").append(value).append(" " + key + ")");
+				} else {
+					var.insert(0, "(+ ").append(" (* ").append(value).append(" " + key + "))");
+				}
+			}
+		}
+		
+		return var;
+	}
 	
 	public String toString() {
 		StringBuffer result = new StringBuffer("{") ;

@@ -29,6 +29,7 @@ import soot.util.dot.DotGraph;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -198,7 +199,7 @@ public class OptimizeResolver {
 		
 		
 		// Starting to analysis
-		logAll("Start analyzing");
+		logAll("Start analyzing (Optimize mode)");
 		
 	
 		//traverse tree to find leaves and doAnalysis
@@ -253,7 +254,10 @@ public class OptimizeResolver {
 		List<Unit> unitList = new ArrayList<Unit>();
 
 		for (String key : mVarsType.keySet()) {
-			mOutputRelated.put(key, false);
+			if (key.contains("outK") || key.contains("outV"))
+				mOutputRelated.put(key, true);
+			else
+				mOutputRelated.put(key, false);
 		}
 		if (mNoLoop) return;
 		int index = units.size() - 1;
@@ -262,12 +266,9 @@ public class OptimizeResolver {
 			index -= 1;
 		}
 		
-		index = units.size();
 		for (Unit unit : unitList) {
-
 			if (unit instanceof AssignStmt) {
-				parseAssignment(unit, index);
-
+				parseAssignment(unit);
 			} else if (unit instanceof IfStmt) {
 				IfStmt if_st = (IfStmt) unit;
 				Value condition = if_st.getCondition();
@@ -277,10 +278,8 @@ public class OptimizeResolver {
 						mOutputRelated.put(var, true);
 					}
 				}
-
 			} else if(unit.toString().contains("virtualinvoke")) {
-				parseVirtualinvoke(unit, index);
-
+				parseVirtualinvoke(unit);
 			} else if(unit.toString().contains("specialinvoke")) {
 				if(unit.toString().contains("init")) {
 					String var = (unit.toString().split("\\s+")[1]).split("\\.")[0];
@@ -288,22 +287,53 @@ public class OptimizeResolver {
 					value = value.replace(")", "");
 					value = value.replace("(", "");
 					if (value.length() == 0) {
-						index -= 1;
 						continue;
 					}
-					
 					if (mOutputRelated.containsKey(var) && mOutputRelated.get(var)) {
 						mOutputRelated.put(value, true);
+					} else if (mOutputRelated.containsKey(value) && mOutputRelated.get(value)){
+						mOutputRelated.put(var, true);
 					}
 				}
-
 			}
-			index -= 1;
+		}
+		
+		Collections.reverse(unitList);
+		for (Unit unit : unitList) {
+			if (unit instanceof AssignStmt) {
+				parseAssignment(unit);
+			} else if (unit instanceof IfStmt) {
+				IfStmt if_st = (IfStmt) unit;
+				Value condition = if_st.getCondition();
+				String vars[] = condition.toString().split("\\s+");
+				for (String var : vars) {
+					if (mOutputRelated.containsKey(var)) {
+						mOutputRelated.put(var, true);
+					}
+				}
+			} else if(unit.toString().contains("virtualinvoke")) {
+				parseVirtualinvoke(unit);
+			} else if(unit.toString().contains("specialinvoke")) {
+				if(unit.toString().contains("init")) {
+					String var = (unit.toString().split("\\s+")[1]).split("\\.")[0];
+					String value = unit.toString().split(">")[2];
+					value = value.replace(")", "");
+					value = value.replace("(", "");
+					if (value.length() == 0) {
+						continue;
+					}
+					if (mOutputRelated.containsKey(var) && mOutputRelated.get(var)) {
+						mOutputRelated.put(value, true);
+					} else if (mOutputRelated.containsKey(value) && mOutputRelated.get(value)){
+						mOutputRelated.put(var, true);
+					}
+				}
+			}
 		}
 
 	}
 	
-	protected void parseAssignment(Unit unit, int currentLine) {
+	protected void parseAssignment(Unit unit) {
 		DefinitionStmt ds = (DefinitionStmt) unit;
 		String var = ds.getLeftOp().toString();
 		String ass_s = ds.getRightOp().toString();
@@ -329,17 +359,21 @@ public class OptimizeResolver {
 			}
 			String ass[] = ass_s.split("\\s+");
 			
-			// Continue if assignment is being operated (exclude directly assignment of input)
-			if (ass.length <= 1) return;
 			//if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, true);
-			for (String str : ass) {
-				if (mOutputRelated.containsKey(var) && mOutputRelated.get(var))
-					if (mOutputRelated.containsKey(str)) mOutputRelated.put(str, true);
+			if (mOutputRelated.containsKey(var) && mOutputRelated.get(var)) {
+				for (String str : ass) {
+					mOutputRelated.put(str, true);
+				}
+			} else {
+				for (String str : ass) 
+					if (mOutputRelated.containsKey(str) 
+							&& mOutputRelated.get(str)) 
+						mOutputRelated.put(var, true);
 			}
 		}
 	}
 	
-	protected boolean parseVirtualinvoke(Unit unit, int currentLine) {
+	protected void parseVirtualinvoke(Unit unit) {
 		if(unit.toString().contains("OutputCollector") || unit.toString().contains("Context")) {
 			String key = (unit.toString().split(">")[1]).split(",")[0];
 			String value = (unit.toString().split(">")[1]).split(",")[1];
@@ -348,18 +382,27 @@ public class OptimizeResolver {
 			value = value.replace(" ", "");
 			mOutputRelated.put(value, true);
 			mOutputRelated.put(key, true);
-			if (currentLine > mOutLoopLine) return true;
-			else return false;
+			return;
 		} else {
+			// virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: void set(int)>(i0);
 			String key = (unit.toString().split("\\s+")[1]).split("\\.")[0];
-			if (mOutputRelated.containsKey(key) && mOutputRelated.get(key)) {
-				String value = unit.toString().split(">")[1];
-				value = value.replace(")", "");
-				value = value.replace("(", "");
-				mOutputRelated.put(value, true);
+			String value = unit.toString().split(">")[1];
+			value = value.replace(")", "");
+			value = value.replace("(", "");
+
+			if (mOutputRelated.containsKey(key)) {
+				if (mOutputRelated.get(key)) {
+					mOutputRelated.put(value, true);
+					return;
+				}
+			}
+			if (mOutputRelated.containsKey(value)) {
+				if (mOutputRelated.get(value)) {
+					mOutputRelated.put(key, true);
+				}
 			}
 		}
-		return false;
+
 	}
 	
 	protected void detectLoop(UnitGraph graph, Map<Unit, Integer> unitIndexes) {
@@ -401,12 +444,8 @@ public class OptimizeResolver {
 			String localVar = valueName + "_v";
 			mVarsType.put(valueName, type);
 			mLocalVars.put(valueName, new Variable(localVar));
-			log("Variable " + type + " " + localVar);
+			log("Variable " + type + " " + valueName);
 		}
-		// Insert some input (only one input now)
-		//mLocalVars.put("output", "0");
-		//mVarsType.put("output", "");
-		//log("Variable output");
 
 		mLocalVars.put("beforeLoop", new Variable("beforeLoop_v"));
 		mVarsType.put("beforeLoop", "int");

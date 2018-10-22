@@ -68,6 +68,10 @@ public class ExecutionTreeNode {
 	public void setVar(String name, Variable var) {
 		mLocalVars.put(name, var);
 	}
+
+	public void setRefVar(String name, Variable var) {
+		mLocalVars.get(name).updateAs(var);
+	}
 	
 	public List<Condition> getConditions(){
 		return mConditions;

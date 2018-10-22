@@ -45,6 +45,16 @@ public class Variable {
 		mIsBinary = v.isBinary();
 		if (mIsBinary) mOperator = new String(v.getOperator());
 	}
+
+	public void updateAs(Variable v) {
+		mValue.clear();
+		mValue.putAll(v.getValue());
+		
+		mValueSub.clear();
+		mValueSub.putAll(v.getValueSub());
+		mIsBinary = v.isBinary();
+		if (mIsBinary) mOperator = new String(v.getOperator());
+	}
 	
 	
 	public Variable addVariable(Variable v1, Variable v2) {

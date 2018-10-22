@@ -1,5 +1,6 @@
 #!/usr/bin/python2.7
 import os
+import sys
 
 type1 = "Proved to be commutative"
 type2 = "CANNOT prove to be commutative. Counterexample found"
@@ -71,26 +72,36 @@ def write2seed(seed_f, java, result):
     seed_f.write(":source => \"2018\", ")
     seed_f.write(":comment => \"\", ")
 
+    output = 0
     if type4 in result:
         seed_f.write(":result_type => 3, ")
+        output = 3
     elif type1 in result:
         result = "Proved to be commutative."
         seed_f.write(":result_type => 1, ")
+        output = 1
     elif type2 in result:
         seed_f.write(":result_type => 2, ")
+        output = 2
     else:
         seed_f.write(":result_type => 3, ")
+        output = 3
     seed_f.write(":result => \"" + result + "\"")
     seed_f.write(")\n");
 
+    return output 
 
 
-def main():
+def main(f):
     seed_f = open("2_benchmarks2018.rb", "w")
-    log_f = open("output.success.txt", "r")
+    log_f = open(f, "r")
 
     java = ""
     result = ""
+    count = 0
+    type1 = 0
+    type2 = 0
+    type3 = 0
     for line in log_f.readlines():
         if "java" in line:
             java = line.split(":")[0]
@@ -100,11 +111,26 @@ def main():
             result += line.replace("RESULT: ", "").replace("\n", "") + ". "
         if "---------" in line:
             result = result.replace(" in 500 tests", "").replace(":.", ".")
-            write2seed(seed_f, java, result)
+            count += 1
+            result = write2seed(seed_f, java, result)
+            if result == 1:
+                type1 += 1
+            elif result == 2:
+                type2 += 1
+            else:
+                type3 += 1
+
 
 
     seed_f.write("puts \"Benchmarks 2018 done\"")
     seed_f.close()
+    print "total: " + str(count)
+    print "type1: " + str(type1)
+    print "type2: " + str(type2)
+    print "type3: " + str(type3)
 
 if __name__ == "__main__":
-    main()
+    if (len(sys.argv) < 2):
+        print "./seed.py inputfile"
+        exit(1)
+    main(sys.argv[1])

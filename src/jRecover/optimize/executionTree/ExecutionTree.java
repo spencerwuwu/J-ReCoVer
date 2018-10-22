@@ -327,6 +327,33 @@ public class ExecutionTree {
 		
 		String ass_s = assignment.toString();
 		
+		// Handle ref type for *Writable
+		String lhs = var.toString();
+		if (mVarsType.containsKey(lhs) && mVarsType.get(lhs).contains("Writable")) {
+			if (ass_s.contains("new org.")) {
+				node.setVar(lhs, new Variable("null"));
+				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "null");
+			} else {
+				// removing quotes, eg: (org.apache.hadoop.io.IntWritable) $r6 -> $r6
+				ass_s = ass_s.replaceAll("\\(.*?\\)\\s+", "");
+				// eg: <reduce_test.collector91_140_7_17: org.apache.hadoop.io.IntWritable SumValue> -> SumValue
+				if (ass_s.contains("<")) {
+					ass_s = ass_s.split("\\s+")[2].replace(">", "");
+				}
+				
+				if (!node.getLocalVars().containsKey(ass_s)) {
+					mVarsType.put(ass_s, mVarsType.get(lhs));
+					Variable newValue = new Variable(ass_s);
+					node.setVar(ass_s, newValue);
+					node.setVar(lhs, newValue);
+				} else {
+					node.setVar(lhs, node.getLocalVars().get(ass_s));
+				}
+				log(Color.ANSI_CYAN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
+			}
+			return node;
+		}
+		
 		// Normal assignment
 		if (!ass_s.contains("Iterator")) {
 			// removing quotes, eg: (org.apache.hadoop.io.IntWritable) $r6 -> $r6
@@ -527,7 +554,6 @@ public class ExecutionTree {
 			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
 			String valueV = (us.getUnit().toString().split(">")[1]).split(",")[1];
 			valueV = valueV.replace(")", "");
-			
 
 			//newState.update(key, value);
 			currentNode.setVar(key, str2Var(valueV, currentNode.getLocalVars()));
@@ -551,6 +577,15 @@ public class ExecutionTree {
 				mVarsType.put(varK, mVarsType.get(valueK));
 				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + varK + " -> " + valueK);
 			}
+		// handling value set for ref of Writable
+		} else if (us.getUnit().toString().contains("Writable") && us.getUnit().toString().contains("org.apache.hadoop.io")) {
+			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
+			String value = us.getUnit().toString().split(">")[1];
+			value = value.replace(")", "");
+			value = value.replace("(", "");
+			log(Color.ANSI_GREEN + "set: " + Color.ANSI_RESET + key + " -> " + value);
+
+			currentNode.setRefVar(key, str2Var(value, currentNode.getLocalVars()));
 		} else {
 			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
 			String value = us.getUnit().toString().split(">")[1];
@@ -566,11 +601,12 @@ public class ExecutionTree {
 			}
 		}
 		currentNode.setNextLine(currentNode.getNextLine() + 1);
-		return currentNode;
 
+		return currentNode;
 	}
 	
 	protected ExecutionTreeNode performSpecialInvoke(ExecutionTreeNode currentNode, UnitSet us) {
+		// specialinvoke $r5.<org.apache.hadoop.io.IntWritable: void <init>()>();
 		currentNode.setNextLine(currentNode.getNextLine() + 1);
 		if(us.getUnit().toString().contains("init")) {
 			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];

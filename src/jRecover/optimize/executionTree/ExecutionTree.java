@@ -123,13 +123,16 @@ public class ExecutionTree {
 			if (determineUnitState == 1) {
 				Unit newUnit = us.getUnit();
 				if (newUnit instanceof AssignStmt) {
-					ExecutionTreeNode newNode = performAssignStmt(currentNode, newUnit);
-					newNode.setNextLine(currentNode.getNextLine() + 1);
-					newNodes.add(newNode);
+					List<ExecutionTreeNode> nodes = performAssignStmt(currentNode, newUnit);
+					for (ExecutionTreeNode newNode : nodes) {
+						newNode.setNextLine(currentNode.getNextLine() + 1);
+						newNodes.add(newNode);
+					}
+
 				} else if (newUnit instanceof IdentityStmt){
-					ExecutionTreeNode newNode = performIdentityStmt(currentNode, newUnit);
-					newNode.setNextLine(currentNode.getNextLine() + 1);
-					newNodes.add(newNode);
+					//ExecutionTreeNode newNode = performIdentityStmt(currentNode, newUnit);
+					currentNode.setNextLine(currentNode.getNextLine() + 1);
+					newNodes.add(currentNode);
 				} else {
 					log(Color.ANSI_RED + "Skip" + Color.ANSI_RESET);
 					skip = true;
@@ -318,7 +321,7 @@ public class ExecutionTree {
 		return new Variable(value);
 	}
 
-	protected ExecutionTreeNode performAssignStmt(ExecutionTreeNode node, Unit u) {
+	protected List<ExecutionTreeNode> performAssignStmt(ExecutionTreeNode node, Unit u) {
 		//adding flag to decide if it is in loop or not
 		DefinitionStmt ds = (DefinitionStmt) u;
 		Value var = ds.getLeftOp();
@@ -327,12 +330,25 @@ public class ExecutionTree {
 		
 		String ass_s = assignment.toString();
 		
+		List<ExecutionTreeNode> resultNodes = new ArrayList<ExecutionTreeNode>();
+		
 		// Handle ref type for *Writable
 		String lhs = var.toString();
+		// parse lhs if necessary
+		// eg: r0.<reduce_test.autoGenerator: int lastKey> = $i0
+		if (lhs.contains("r0.<")) {
+			lhs = lhs.split("\\.<")[1].replace('>', ' ').split("\\s+")[2];
+			if (!mVarsType.containsKey(lhs)) {
+				String type = var.toString().split("\\.<")[1].split("\\s+")[1];
+				mVarsType.put(lhs, type);
+				node.setVar(lhs, new Variable(lhs));
+			}
+		}
+
 		if (mVarsType.containsKey(lhs) && mVarsType.get(lhs).contains("Writable")) {
 			if (ass_s.contains("new org.")) {
 				node.setVar(lhs, new Variable("null"));
-				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "null");
+				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " + "null");
 			} else {
 				// removing quotes, eg: (org.apache.hadoop.io.IntWritable) $r6 -> $r6
 				ass_s = ass_s.replaceAll("\\(.*?\\)\\s+", "");
@@ -349,13 +365,17 @@ public class ExecutionTree {
 				} else {
 					node.setVar(lhs, node.getLocalVars().get(ass_s));
 				}
-				log(Color.ANSI_CYAN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
+				log(Color.ANSI_CYAN + "assign: " + Color.ANSI_RESET + lhs + " -> " + ass_s);
 			}
-			return node;
+			resultNodes.add(node);
+			return resultNodes;
 		}
 		
 		// Normal assignment
 		if (!ass_s.contains("Iterator")) {
+
+			String target = lhs;
+
 			// removing quotes, eg: (org.apache.hadoop.io.IntWritable) $r6 -> $r6
 			ass_s = ass_s.replaceAll("\\(.*?\\)\\s+", "");
 
@@ -364,8 +384,18 @@ public class ExecutionTree {
 					// $i0 = virtualinvoke r6.<org.apache.hadoop.io.LongWritable: int compareTo(org.apache.hadoop.io.LongWritable)>(r4)
 					String valueL = ass_s.split("\\s+")[1].split("\\.")[0];
 					String valueR = ass_s.split("\\>")[1].replace("(", "").replace(")", "");
-					if (valueR.length() == 0) ass_s = "1";
-					else ass_s = valueL + " - " + valueR ;
+					if (valueR.length() == 0) {
+						ass_s = "1";
+						node.setVar(target, new Variable(ass_s));
+					} else {
+						Variable lhsV = str2Var(valueL, node.getLocalVars());
+						Variable rhsV = str2Var(valueR, node.getLocalVars());
+
+						node.setVar(target, lhsV.subtractVariable(lhsV, rhsV));
+					}
+					log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " +  valueL + " compareTo(" + valueR + ")");
+					resultNodes.add(node);
+					return resultNodes;
 				} else {
 					// handle virtualinvoke, eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
 					ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
@@ -377,9 +407,37 @@ public class ExecutionTree {
 				if (ass_s.contains("java.lang.Math")) {
 					// i0 = staticinvoke <java.lang.Math: int max(int,int)>(i0, $i1);
 					String params[] = ass_s.split(">")[1].replace("(", "").replace(")", "").split(",\\s+");
+					Variable valueL = str2Var(params[0], node.getLocalVars());
+					Variable valueR = str2Var(params[1], node.getLocalVars());
 					if (ass_s.contains("max")) {
-						ass_s = "(ite (> " + params[0] + " " + params[1] + " ) " + params[0] + " " + params[1] + " )";
+						ExecutionTreeNode ge = new ExecutionTreeNode(node);
+						ge.addConstraint(params[0] + " >= " + params[1]);
+						ge.addCondition(new Condition(">=", valueL, valueR, false));
+						ge.setVar(target, valueL);
+						ExecutionTreeNode lt = new ExecutionTreeNode(node);
+						lt.addConstraint(params[0] + " < " + params[1]);
+						lt.addCondition(new Condition("<", valueL, valueR, false));
+						lt.setVar(target, valueR);
+						resultNodes.add(ge);
+						resultNodes.add(lt);
+						ass_s = "max(" + params[0] + ", " + params[1] + ")";
+						log("Split tree here");
+					} else if (ass_s.contains("min")) {
+						ExecutionTreeNode ge = new ExecutionTreeNode(node);
+						ge.addConstraint(params[0] + " >= " + params[1]);
+						ge.addCondition(new Condition(">=", valueL, valueR, false));
+						ge.setVar(target, valueR);
+						ExecutionTreeNode lt = new ExecutionTreeNode(node);
+						lt.addConstraint(params[0] + "<" + params[1]);
+						lt.addCondition(new Condition("<", valueL, valueR, false));
+						lt.setVar(target, valueL);
+						resultNodes.add(ge);
+						resultNodes.add(lt);
+						ass_s = "max(" + params[0] + ", " + params[1] + ")";
+						log("Split tree here");
 					}
+					log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " + ass_s);
+					return resultNodes;
 				} else {
 					ass_s = ass_s.split(">")[1].replace("(", "").replace(")", "");
 				}
@@ -396,7 +454,6 @@ public class ExecutionTree {
 				ass_s = "1";
 			}
 
-			String target = var.toString();
 			if (ass_s.length() == 0) ass_s = "0";
 			else {
 			// handling operations
@@ -424,44 +481,25 @@ public class ExecutionTree {
 						node.setVar(target, new Variable(newVar));
 						mVarsType.put(newVar, "double");
 					}
-					/*
-					if (!tmp[1].contains("cmp")) {
-						if (tmp[1].equals("%")) {
-							tmp[1] = "rem";
-						} else if (tmp[1].equals("/")) {
-							tmp[1] = "div";
-						}
-						ass_s = "(" + tmp[1] + " " + tmp[0] + " " + tmp[2] + " )";
-					} else {
-						//ass_s = "(ite (= " + tmp[0] + " " + tmp[2] + " ) 0 ((ite (< " + tmp[0] + " " + tmp[2] + " ) -1 1)))";
-						ass_s = "(- " + tmp[0] + " " + tmp[2] + " )";
-					}
-					*/
 				} else {
 					node.setVar(target, str2Var(ass_s, node.getLocalVars()));
 				}
 			}
-			
-			
-			// replace rhs with mLocalVars value
-			//ass_s = valueReplace(ass_s, lastEnv);
 
-			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);
+			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " + ass_s);
 		}
 		else { 
 			// Handling iterator relative assignments
 			if (ass_s.contains("hasNext()")) {
-				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "hasNext");
-				//st.update(var.toString(), "hasNext");
-				node.setVar(var.toString(), new Variable("hasNext"));
+				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " + "hasNext");
+				node.setVar(lhs, new Variable("hasNext"));
 			} else if (ass_s.contains("next()")) {
 				if (mBefore) {
 					//mBeforeLoopDegree += 1;
 					if (!mUseNextBeforeLoop) {
 						mUseNextBeforeLoop = true;
-						//st.update(var.toString(), "input0");
-						node.setVar(var.toString(), new Variable("input0"));
-						log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + "input0");    
+						node.setVar(lhs, new Variable("input0"));
+						log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " + "input0");    
 					} else {
 						logAll("Does not support multiple input in one function body yet.");
 					}
@@ -470,25 +508,25 @@ public class ExecutionTree {
 					mVarsType.put("input0", "input type");
 					
 					ass_s = "input0";
-					//st.update(var.toString(), ass_s);
-					node.setVar(var.toString(), new Variable(ass_s));
-					log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + ass_s);    
+					node.setVar(lhs, new Variable(ass_s));
+					log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " + ass_s);    
 				}
 		    }	
 		}
-		return node;
+		resultNodes.add(node);
+		return resultNodes;
 	}
 
 	protected ExecutionTreeNode performIdentityStmt(ExecutionTreeNode node, Unit u) {
 		DefinitionStmt ds = (DefinitionStmt) u;
-		Value var = ds.getLeftOp();
+		String var = ds.getLeftOp().toString();
 		Value assignment = ds.getRightOp();
 		// Preserve only org.apache.hadoop.io.'IntWritable and marked it as parameter'
 		String assignment_tail = "@parameter."+assignment.toString().split("\\.(?=[^\\.]+$)")[1]; 
 		
-		log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var.toString() + " -> " + assignment_tail);
+		log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var + " -> " + var + "_v");
 		//st.update(var.toString(), assignment_tail);
-		node.setVar(var.toString(), new Variable(assignment_tail));
+		node.setVar(var.toString(), new Variable(var + "_v"));
 		return node;
 	}
 

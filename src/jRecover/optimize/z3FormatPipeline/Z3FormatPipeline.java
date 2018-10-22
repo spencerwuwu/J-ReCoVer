@@ -68,7 +68,7 @@ public class Z3FormatPipeline {
 		}
 		
 		for (String formula : mPipeContent) {
-			System.out.print(formula);
+			//System.out.print(formula);
 			byte[] bytes = formula.getBytes();
 			int read = 0;
 			do {
@@ -113,21 +113,21 @@ public class Z3FormatPipeline {
 		}
 
 		//mPipeContent.add("(assert (not (= input0_1 input0_2)))\n");
-		mPipeContent.add("(assert (not (= input0_1_r1 input0_2_r1)))\n");
-		mPipeContent.add("(assert (= input0_1_r1 input0_2_r2))\n");
-		mPipeContent.add("(assert (= input0_2_r1 input0_1_r2))\n");
+		mPipeContent.add("(assert (not (= input0_0_r1 input0_1_r1)))\n");
+		mPipeContent.add("(assert (= input0_0_r1 input0_1_r2))\n");
+		mPipeContent.add("(assert (= input0_1_r1 input0_0_r2))\n");
 		
+		mPipeContent.add("(assert (= beforeLoop_0_r1 beforeLoop_0_r2))\n");
 		mPipeContent.add("(assert (= beforeLoop_1_r1 beforeLoop_1_r2))\n");
-		mPipeContent.add("(assert (= beforeLoop_2_r1 beforeLoop_2_r2))\n");
 		
 		if (mNoLoop) {
+			mPipeContent.add("(assert (= beforeLoop_0_r1 1))\n");
 			mPipeContent.add("(assert (= beforeLoop_1_r1 1))\n");
-			mPipeContent.add("(assert (= beforeLoop_2_r1 1))\n");
 		} else {
 			if (!mUsingNextBeforeLoop) {
-				mPipeContent.add("(assert (= beforeLoop_1_r1 0))\n");
+				mPipeContent.add("(assert (= beforeLoop_0_r1 0))\n");
 			}
-			mPipeContent.add("(assert (= beforeLoop_2_r1 0))\n");
+			mPipeContent.add("(assert (= beforeLoop_1_r1 0))\n");
 		}
 
 		StringBuffer finalAssertion = new StringBuffer("");

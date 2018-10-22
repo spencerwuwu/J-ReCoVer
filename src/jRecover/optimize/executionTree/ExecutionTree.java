@@ -306,7 +306,14 @@ public class ExecutionTree {
 		if (vList.containsKey(value)) {
 			return new Variable(vList.get(value));
 		} else if (!checkNumber(value)) {
-			vList.put(value, new Variable(value));
+			if (value.contains("new ")) {
+				return new Variable("null");
+			} else {
+				vList.put(value, new Variable(value));
+				if (!mVarsType.containsKey(value)) {
+					mVarsType.put(value, "double");
+				}
+			}
 		}
 		return new Variable(value);
 	}

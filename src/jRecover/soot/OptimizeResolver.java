@@ -196,13 +196,6 @@ public class OptimizeResolver {
 		// Detect where the loop starts
 		detectLoop(graph, unitIndexes);
 		
-		checkOutputRelated(units);
-
-		log("====== Output Related ======");
-		for (String key : mOutputRelated.keySet()) {
-			log(key + ": \t" + mOutputRelated.get(key));
-		}
-		log("======================================");
 		
 		// Starting to analysis
 		logAll("Start analyzing");
@@ -217,7 +210,8 @@ public class OptimizeResolver {
 
 		beforeLoopTree.executeTree();
 		for (Map.Entry<String, String> entry : beforeLoopTree.getVarType().entrySet()) {
-			mVarsType.put(entry.getKey(), entry.getValue());
+			if (!mVarsType.containsKey(entry.getKey()))
+					mVarsType.put(entry.getKey(), entry.getValue());
 		}
 		mUseNextBeforeLoop = beforeLoopTree.useNextBeforeLoop();
 		logAll("beforeLoop finished");
@@ -231,8 +225,17 @@ public class OptimizeResolver {
 		logAll("innerLoop finished");
 		
 		for (Map.Entry<String, String> entry : innerLoopTree.getVarType().entrySet()) {
-			mVarsType.put(entry.getKey(), entry.getValue());
+			if (!mVarsType.containsKey(entry.getKey()))
+				mVarsType.put(entry.getKey(), entry.getValue());
 		}
+
+		checkOutputRelated(units);
+
+		log("====== Output Related ======");
+		for (String key : mOutputRelated.keySet()) {
+			log(key + ": \t" + mOutputRelated.get(key));
+		}
+		log("======================================");
 
 		logAll("Starting z3 builder...\n");
 
@@ -249,7 +252,7 @@ public class OptimizeResolver {
 	protected void checkOutputRelated(List<UnitSet> units) {
 		List<Unit> unitList = new ArrayList<Unit>();
 
-		for (String key : mLocalVars.keySet()) {
+		for (String key : mVarsType.keySet()) {
 			mOutputRelated.put(key, false);
 		}
 		if (mNoLoop) return;

@@ -345,7 +345,7 @@ def main(T1, T2, T3, T4, r_type):
         print "Trying to find a counterexample...\n"
         run_finder(global_path, path, p_name)
 
-    os.system("rm -rf " + path)
+    #os.system("rm -rf " + path)
 
 
 if __name__ == "__main__":

@@ -118,7 +118,7 @@ public class Variable {
 	
 	public StringBuffer getFormula(int stage, int round) {
 		if (mIsBinary) {
-			return map2String(mValue, stage, round).insert(0, "(" + mOperator + " ").append(map2String(mValueSub, stage, round)).append(")");
+			return map2String(mValue, stage, round).insert(0, "(" + mOperator + " ").append(" ").append(map2String(mValueSub, stage, round)).append(")");
 		} else {
 			return map2String(mValue, stage, round);
 		}
@@ -146,9 +146,15 @@ public class Variable {
 					else key = key + "_" + stage + "_r" + round;
 				}
 				if (var.length() == 0) {
-					var.insert(0, "(* ").append(value).append(" " + key + ")");
+					if (value == 1)
+						var.append(key);
+					else
+						var.insert(0, "(* ").append(value).append(" " + key + ")");
 				} else {
-					var.insert(0, "(+ ").append(" (* ").append(value).append(" " + key + "))");
+					if (value == 1)
+						var.insert(0, "(+ ").append(" " + key + ")");
+					else
+						var.insert(0, "(+ ").append(" (* ").append(value).append(" " + key + "))");
 				}
 			}
 		}

@@ -20,11 +20,11 @@ public class Condition {
 		StringBuffer formula = new StringBuffer("");
 		
 		if (mCmp.equals("!=")) {
-			formula.append("(not (= ").append(lhs).append(rhs).append("))");
+			formula.append("(not (= ").append(lhs).append(" ").append(rhs).append("))");
 		} else if (mCmp.equals("==")) {
-			formula.append("(= ").append(lhs).append(rhs).append(")");
+			formula.append("(= ").append(lhs).append(" ").append(rhs).append(")");
 		} else {
-			formula.append("(" + mCmp + " ").append(lhs).append(rhs).append(")");
+			formula.append("(" + mCmp + " ").append(lhs).append(" ").append(rhs).append(")");
 		}
 		
 		if (mNegative) formula.insert(0, "(not ").append(")");

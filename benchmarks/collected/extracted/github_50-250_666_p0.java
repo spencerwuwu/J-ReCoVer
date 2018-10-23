@@ -1,5 +1,5 @@
 
-  //private static final Logger log = LoggerFactory.getLogger(BayesTfIdfReducer.class);
+  //private final Logger log = LoggerFactory.getLogger(BayesTfIdfReducer.class);
 
   public void reduce(Text key,
                      Iterator<DoubleWritable> values,

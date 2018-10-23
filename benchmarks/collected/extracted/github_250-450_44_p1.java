@@ -1,6 +1,6 @@
 			    
 		float marginal = 1.0f;
-		int need_to_cover = 0;
+		int need_to_cover = 1;
 		FloatWritable prob = new FloatWritable(0.0f);
 			  
 		public void reduce(Text key, Iterator<IntWritable> values,

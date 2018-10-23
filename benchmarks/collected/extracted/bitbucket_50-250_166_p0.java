@@ -1,6 +1,6 @@
   
-    static int numSeen;
-    static int actualSum;
+    int numSeen;
+    int actualSum;
     public void configure(JobConf job) { }
 
     public void reduce(IntWritable key, Iterator<IntWritable> val,

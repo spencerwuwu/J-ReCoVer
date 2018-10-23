@@ -14,4 +14,4 @@
         pContext.write( pCountryCode, new DoubleWritable( avg ) );
     }
 
-    //private static final Log LOG = LogFactory.getLog( WorldDevIndicatorReducer.class );
+    //private final Log LOG = LogFactory.getLog( WorldDevIndicatorReducer.class );

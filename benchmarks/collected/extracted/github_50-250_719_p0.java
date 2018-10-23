@@ -11,5 +11,5 @@
         pContext.write( location, new IntWritable( count ) );
     }
 
-    //private static final Log LOG = LogFactory.getLog( UfoSightingsReducer.class );
+    //private final Log LOG = LogFactory.getLog( UfoSightingsReducer.class );
 

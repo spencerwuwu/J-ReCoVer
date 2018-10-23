@@ -1,4 +1,4 @@
-		private final static IntWritable SumValue = new IntWritable();
+		private final IntWritable SumValue = new IntWritable();
 
 		public void reduce(Text tupleKey, Iterable<IntWritable> values, Context context)
 				throws IOException, InterruptedException {

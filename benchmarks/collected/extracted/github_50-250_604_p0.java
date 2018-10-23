@@ -1,6 +1,6 @@
 
 		// Reuse objects
-		private final static IntWritable sumWritable = new IntWritable();
+		private final IntWritable sumWritable = new IntWritable();
 
 		public void reduce(Text key, Iterable<IntWritable> values, Context context)	throws IOException, InterruptedException {
 			// sum up values

@@ -1,5 +1,5 @@
 
-  private static final double LOG_2 = Math.log(2.0);
+  private final double LOG_2 = Math.log(2.0);
 
   private final DoubleWritable result = new DoubleWritable();
   private long numberItems = 1;

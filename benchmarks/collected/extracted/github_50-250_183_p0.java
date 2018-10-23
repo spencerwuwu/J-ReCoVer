@@ -1,5 +1,5 @@
 
-    //private static final Log LOG = LogFactory.getLog(LogCombiner.class);
+    //private final Log LOG = LogFactory.getLog(LogCombiner.class);
 
     public void reduce(final Text pKey, final Iterable<IntWritable> pValues, final Context pContext)
         throws IOException, InterruptedException {

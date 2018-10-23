@@ -1,4 +1,4 @@
-		private final static FloatWritable sumWritable = new FloatWritable();
+		private final FloatWritable sumWritable = new FloatWritable();
 
 		public void reduce(Text key, Iterable<FloatWritable> values, Context context) throws IOException, InterruptedException {
 			int sum = 0;

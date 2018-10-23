@@ -1,6 +1,6 @@
-        private static long KmerThreshold = 1 ;
-        private static int K = 1;
-        private static long Readlen = 36;
+        private long KmerThreshold = 1 ;
+        private int K = 1;
+        private long Readlen = 36;
 		public void configure(JobConf job) {     
             Readlen = Long.parseLong(job.get("READLENGTH"));
 		}

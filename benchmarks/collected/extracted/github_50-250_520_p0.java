@@ -1,5 +1,5 @@
 
-	//private static final Log _log = LogFactory.getLog(SsReducer.class);
+	//private final Log _log = LogFactory.getLog(SsReducer.class);
 	
 	public void reduce(Text key, Iterable<DoubleWritable> values, Context context) throws IOException, InterruptedException {
 		Text k = new Text(key.toString());

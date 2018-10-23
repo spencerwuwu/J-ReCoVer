@@ -1,7 +1,7 @@
 		private final IntWritable one_int = new IntWritable(1);
 
 		int deg_type = 0;
-		static int InDeg = 1, OutDeg = 2, InOutDeg = 3;
+		int InDeg = 1, OutDeg = 2, InOutDeg = 3;
 
 		public void configure(JobConf job) {
 			deg_type = Integer.parseInt(job.get("deg_type"));

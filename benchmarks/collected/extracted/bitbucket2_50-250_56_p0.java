@@ -3,7 +3,7 @@
   /**
    * We can either ignore how many times the user interacted (boolean) or output the number of times they interacted.
    */
-  public static final String USE_COUNTS_PREFERENCE = "useBooleanPreferences";
+  public final String USE_COUNTS_PREFERENCE = "useBooleanPreferences";
 
   /*
   protected void setup(Context context) throws IOException, InterruptedException {

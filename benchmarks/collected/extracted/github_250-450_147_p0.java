@@ -1,4 +1,4 @@
-    protected final static IntWritable one = new IntWritable(1);
+    protected final IntWritable one = new IntWritable(1);
 
     int srcs = 0;
     

@@ -2,7 +2,7 @@ package jRecover;
 
 import jRecover.Option;
 import jRecover.soot.OptimizeResolver;
-import jRecover.soot.StatementResolver;
+import jRecover.soot.StringBasedResolver;
 
 public class Main {
 	public static void main(String[] args) {
@@ -42,7 +42,7 @@ public class Main {
 
 		if (javaInput.length() != 0 & reducerClassname.length() != 0) {
 			if (!op.optimize_flag) {
-				StatementResolver SR = new StatementResolver();
+				StringBasedResolver SR = new StringBasedResolver();
 				SR.run(javaInput, classPath, op, reducerClassname);
 			} else {
 				OptimizeResolver SR = new OptimizeResolver();

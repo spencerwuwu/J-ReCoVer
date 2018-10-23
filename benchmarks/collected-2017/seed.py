@@ -56,7 +56,7 @@ def write2seed(seed_f, java, result):
     # append source
     orig_java = "orig/" + java
     orig_f = open(orig_java, "r")
-    src = orig_f.readlines()[0].replace("\n", "\\n")
+    src = orig_f.readlines()[0].replace("\r", "").replace("\n", "\\n")
     reducer = src + reducer
     orig_f.close()
 

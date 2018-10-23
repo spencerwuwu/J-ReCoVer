@@ -2,7 +2,6 @@ package jRecover;
 
 import jRecover.Option;
 import jRecover.soot.OptimizeResolver;
-import jRecover.soot.StatementResolver;
 import jRecover.soot.StringBasedResolver;
 
 public class Main {

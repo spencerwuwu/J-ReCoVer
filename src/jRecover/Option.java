@@ -27,6 +27,7 @@ public class Option {
 		cfg_flag = false;
 		silence_flag = false;
 		jimple_flag = false;
+		optimize_flag = true;
 	}
 	
 	public void parse(String input) {
@@ -35,7 +36,7 @@ public class Option {
 		} else if (input.equals("-s")) {
 			this.silence_flag = true;
 		} else if (input.equals("-o")) {
-			this.optimize_flag = true;
+			this.optimize_flag = false;
 		}
 	}
 	

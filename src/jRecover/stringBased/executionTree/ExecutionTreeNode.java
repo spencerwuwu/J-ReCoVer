@@ -103,8 +103,8 @@ public class ExecutionTreeNode {
 
 	public void addCondition(String op, Variable lhs, Variable rhs, boolean isNegative) {
 		StringBuffer newCondition = new StringBuffer("");
-		if (op == "==") op = "=";
-		else if (op == "!=") {
+		if (op.contains("==")) op = "=";
+		else if (op.contains("!=")) {
 			op = "=";
 			if (isNegative) isNegative = false;
 			else isNegative = true;

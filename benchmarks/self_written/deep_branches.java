@@ -1,11 +1,5 @@
 // A program with complicate condition branches
 // Just making it hard to determine commutativity in one sight
-//
-// Counter Example:
-//  Input1: [3, 2, 3, 1]
-//  Input2: [1, 3, 2, 3]
-//  Output1: [20]
-//  Output2: [6]
 
 public void reduce(Text prefix, Iterator<IntWritable> iter,
         OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {
@@ -56,6 +50,6 @@ public void reduce(Text prefix, Iterator<IntWritable> iter,
             }
         }
     }
-    output.collect(prefix, new IntWritable(sum1 + sum2));
+    output.collect(prefix, new IntWritable(sum2));
 }
 

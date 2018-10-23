@@ -43,20 +43,29 @@ public class ExecutionTreeNode {
 	}
 
 	public ExecutionTreeNode(ExecutionTreeNode node) {
-		if (node.getConditions() != null) 
-			mConditions = new ArrayList<String>(node.getConditions());
-		else
-			mConditions = new ArrayList<String>();
+		if (node.getConditions() != null) {
+			mConditions = new ArrayList<StringBuffer>();
+			for (StringBuffer cond : node.getConditions()) {
+				mConditions.add(new StringBuffer(cond));
+			}
+		} else
+			mConditions = new ArrayList<StringBuffer>();
 
-		if (node.getConstraints() != null) 
-			mConstraints = new ArrayList<String>(node.getConstraints());
-		else
+		if (node.getConstraints() != null) {
+			mConstraints = new ArrayList<String>();
+			for (String cons : node.getConstraints()) {
+				mConstraints.add(cons);
+			}
+		} else
 			mConstraints = new ArrayList<String>();
 		
 		//mState = new State(newState);
-		if (node.getLocalVars() != null)
-			mLocalVars = new HashMap<String, Variable>(node.getLocalVars());
-		else
+		if (node.getLocalVars() != null) {
+			mLocalVars = new HashMap<String, Variable>();
+			for (String key : node.getLocalVars().keySet()) {
+				mLocalVars.put(key, new Variable(node.getLocalVars().get(key)));
+			}
+		} else
 			mLocalVars = new HashMap<String, Variable>();
 
 		mNextline = node.getNextLine();
@@ -75,7 +84,7 @@ public class ExecutionTreeNode {
 		mLocalVars.get(name).updateAs(var);
 	}
 	
-	public List<String> getConditions(){
+	public List<StringBuffer> getConditions(){
 		return mConditions;
 	}
 	
@@ -83,16 +92,29 @@ public class ExecutionTreeNode {
 		return mConstraints;
 	}
 	
-	public void setConditions(List<String> constraintList) {
-		mConditions = new ArrayList<String>();
+	public void setConditions(List<StringBuffer> constraintList) {
+		mConditions = new ArrayList<StringBuffer>();
 		if (constraintList != null && !constraintList.isEmpty()) mConditions.addAll(constraintList);
 	}
 	
-	public void addCondition(String newConstraint) {
+	public void addCondition(StringBuffer newConstraint) {
 		mConditions.add(newConstraint);
 	}
 
-	public void addConstraint(String op, ) {
+	public void addCondition(String op, Variable lhs, Variable rhs, boolean isNegative) {
+		StringBuffer newCondition = new StringBuffer("");
+		if (op == "==") op = "=";
+		else if (op == "!=") {
+			op = "=";
+			if (isNegative) isNegative = false;
+			else isNegative = true;
+		}
+		newCondition.append("(").append(op).append(" ").append(lhs.getFormula()).append(" ").append(rhs.getFormula()).append(")");
+		if (isNegative) newCondition.insert(0, "(not ").append(")");
+		mConditions.add(newCondition);
+	}
+
+	public void addConstraint(String constraint) {
 		mConstraints.add(constraint);
 	}
 	

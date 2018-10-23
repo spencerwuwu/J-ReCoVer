@@ -6,10 +6,9 @@ import java.util.Map;
 
 import jRecover.Option;
 import jRecover.color.Color;
-import jRecover.optimize.executionTree.ExecutionTree;
-import jRecover.optimize.executionTree.ExecutionTreeNode;
-import jRecover.optimize.state.Condition;
-import jRecover.optimize.state.Variable;
+import jRecover.stringBased.executionTree.ExecutionTree;
+import jRecover.stringBased.executionTree.ExecutionTreeNode;
+import jRecover.stringBased.state.Variable;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -144,7 +143,8 @@ public class Z3FormatPipeline {
 					.append(key).append("_1_r2)) (not (= ").append(key).append("_2_r1 ").append(key).append("_2_r2))))\n"); 
 				}
 				continue;
-			} else if (!mOutputRelated.get(key)) continue;
+			}
+			else if (!mOutputRelated.get(key)) continue;
 
 			noVariable = false;
 			//if (mConditionRelated.get(key)) continue;
@@ -207,7 +207,8 @@ public class Z3FormatPipeline {
 	
 	protected StringBuffer combineValueCondition(ExecutionTreeNode node, String var, int stage, int round) {
 		StringBuffer condition = generateConditions(node.getConditions(), stage - 1, round);
-		StringBuffer variable = node.getLocalVars().get(var).getFormula(stage - 1, round);
+		String vtmp = node.getLocalVars().get(var).getFormula().toString().replaceAll("_v", ("_" + (stage - 1) + "_r" + round));
+		StringBuffer variable = new StringBuffer(vtmp);
 
 		StringBuffer tmp = new StringBuffer("");
 		tmp.append("(and ").append(condition).append(' ');
@@ -218,13 +219,14 @@ public class Z3FormatPipeline {
 		//return "(and " + condition + " " + value + ")\n";
 	}
 	
-	protected StringBuffer generateConditions(List<Condition> cList, int stage, int round) {
+	protected StringBuffer generateConditions(List<StringBuffer> cList, int stage, int round) {
 		StringBuffer conditions = new StringBuffer("");
-		for (Condition condition : cList) {
+		for (StringBuffer condition : cList) {
+			String tmp = condition.toString().replaceAll("_v", ("_" + stage + "_r" + round));
 			if (conditions.length() == 0) {
-				conditions.append(condition.getFormula(stage, round));
+				conditions.append(tmp);
 			} else {
-				conditions.insert(0, "(and ").append(condition.getFormula(stage, round)).append(")");
+				conditions.insert(0, "(and ").append(tmp).append(")");
 			}
 		}
 		return conditions;

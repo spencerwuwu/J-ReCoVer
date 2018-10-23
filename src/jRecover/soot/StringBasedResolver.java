@@ -8,6 +8,7 @@ import jRecover.stringBased.executionTree.ExecutionTree;
 import jRecover.stringBased.executionTree.ExecutionTreeNode;
 import jRecover.stringBased.z3FormatPipeline.Z3FormatPipeline;
 import jRecover.stringBased.state.UnitSet;
+import jRecover.stringBased.state.Variable;
 import soot.Body;
 import soot.RefType;
 import soot.Scene;
@@ -39,7 +40,7 @@ import java.util.Set;
 
 public class StringBasedResolver {
 
-	private LinkedHashMap<String, String> mLocalVars = new LinkedHashMap<String, String>();
+	private LinkedHashMap<String, Variable> mLocalVars = new LinkedHashMap<String, Variable>();
 	private LinkedHashMap<String, String> mVarsType = new LinkedHashMap<String, String>();
 	Map<String, Boolean>mOutputRelated = new LinkedHashMap<String, Boolean>();
 	private int mEnterLoopLine = 0;
@@ -239,7 +240,6 @@ public class StringBasedResolver {
 
 		logAll("Starting z3 builder...\n");
 
-		/*
 		Z3FormatPipeline z3Builder = new Z3FormatPipeline(mVarsType, 
 				beforeLoopTree.getEndNodes(), innerLoopTree.getEndNodes(), mUseNextBeforeLoop, mOutputRelated, mOption, mNoLoop);
 
@@ -248,7 +248,6 @@ public class StringBasedResolver {
 		} else {
 			System.out.println("RESULT: CANNOT prove to be commutative");
 		}
-		*/
 	}
 	
 	protected void checkOutputRelated(List<UnitSet> units) {
@@ -444,11 +443,11 @@ public class StringBasedResolver {
 			String type = value.getType().toString();
 			String localVar = valueName + "_v";
 			mVarsType.put(valueName, type);
-			mLocalVars.put(valueName, localVar);
+			mLocalVars.put(valueName, new Variable(localVar));
 			log("Variable " + type + " " + valueName);
 		}
 
-		mLocalVars.put("beforeLoop", "beforeLoop_v");
+		mLocalVars.put("beforeLoop", new Variable("beforeLoop_v"));
 		mVarsType.put("beforeLoop", "int");
 		log("Variable boolean beforeLoop");
 		

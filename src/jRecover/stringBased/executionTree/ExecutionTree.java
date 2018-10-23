@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import jRecover.Option;
 import jRecover.color.Color;
 import jRecover.stringBased.state.UnitSet;
+import jRecover.stringBased.state.Variable;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.*;
@@ -62,10 +63,10 @@ public class ExecutionTree {
 		
 		if (!mBefore) {
 			mRoot.addConstraint("beforeLoop == 0");
-			mRoot.addCondition("!=", new Variable("beforeLoop"), new Variable("1"), false);
+			mRoot.addCondition("!=", new Variable("beforeLoop_v"), new Variable("1"), false);
 		} else {
 			mRoot.addConstraint("beforeLoop == 1");
-			mRoot.addCondition(new Condition("==", new Variable("beforeLoop"), new Variable("1"), false));
+			mRoot.addCondition("==", new Variable("beforeLoop_v"), new Variable("1"), false);
 		}
 
 		currentNodes.add(mRoot);
@@ -121,11 +122,9 @@ public class ExecutionTree {
 			if (determineUnitState == 1) {
 				Unit newUnit = us.getUnit();
 				if (newUnit instanceof AssignStmt) {
-					List<ExecutionTreeNode> nodes = performAssignStmt(currentNode, newUnit);
-					for (ExecutionTreeNode newNode : nodes) {
-						newNode.setNextLine(currentNode.getNextLine() + 1);
-						newNodes.add(newNode);
-					}
+					ExecutionTreeNode node = performAssignStmt(currentNode, newUnit);
+					currentNode.setNextLine(currentNode.getNextLine() + 1);
+					newNodes.add(node);
 
 				} else if (newUnit instanceof IdentityStmt){
 					//ExecutionTreeNode newNode = performIdentityStmt(currentNode, newUnit);
@@ -310,7 +309,7 @@ public class ExecutionTree {
 			if (value.contains("new ")) {
 				return new Variable("null");
 			} else {
-				vList.put(value, new Variable(value));
+				vList.put(value, new Variable(value + "_v"));
 				if (!mVarsType.containsKey(value)) {
 					mVarsType.put(value, "double");
 				}
@@ -319,7 +318,7 @@ public class ExecutionTree {
 		return new Variable(value);
 	}
 
-	protected List<ExecutionTreeNode> performAssignStmt(ExecutionTreeNode node, Unit u) {
+	ExecutionTreeNode performAssignStmt(ExecutionTreeNode node, Unit u) {
 		//adding flag to decide if it is in loop or not
 		DefinitionStmt ds = (DefinitionStmt) u;
 		Value var = ds.getLeftOp();
@@ -327,8 +326,6 @@ public class ExecutionTree {
 		Value assignment = ds.getRightOp();
 		
 		String ass_s = assignment.toString();
-		
-		List<ExecutionTreeNode> resultNodes = new ArrayList<ExecutionTreeNode>();
 		
 		// Handle ref type for *Writable
 		String lhs = var.toString();
@@ -339,7 +336,7 @@ public class ExecutionTree {
 			if (!mVarsType.containsKey(lhs)) {
 				String type = var.toString().split("\\.<")[1].split("\\s+")[1];
 				mVarsType.put(lhs, type);
-				node.setVar(lhs, new Variable(lhs));
+				node.setVar(lhs, new Variable(lhs + "_v"));
 			}
 		}
 
@@ -357,7 +354,7 @@ public class ExecutionTree {
 				
 				if (!node.getLocalVars().containsKey(ass_s)) {
 					mVarsType.put(ass_s, mVarsType.get(lhs));
-					Variable newValue = new Variable(ass_s);
+					Variable newValue = new Variable(ass_s + "_v");
 					node.setVar(ass_s, newValue);
 					node.setVar(lhs, newValue);
 				} else {
@@ -365,8 +362,7 @@ public class ExecutionTree {
 				}
 				log(Color.ANSI_CYAN + "assign: " + Color.ANSI_RESET + lhs + " -> " + ass_s);
 			}
-			resultNodes.add(node);
-			return resultNodes;
+			return node;
 		}
 		
 		// Normal assignment
@@ -392,8 +388,7 @@ public class ExecutionTree {
 						node.setVar(target, lhsV.subtractVariable(lhsV, rhsV));
 					}
 					log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " +  valueL + " compareTo(" + valueR + ")");
-					resultNodes.add(node);
-					return resultNodes;
+					return node;
 				} else {
 					// handle virtualinvoke, eg: virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: int get()>() -> $r7
 					ass_s = ass_s.split("\\s+")[1].split("\\.")[0];
@@ -408,34 +403,12 @@ public class ExecutionTree {
 					Variable valueL = str2Var(params[0], node.getLocalVars());
 					Variable valueR = str2Var(params[1], node.getLocalVars());
 					if (ass_s.contains("max")) {
-						ExecutionTreeNode ge = new ExecutionTreeNode(node);
-						ge.addConstraint(params[0] + " >= " + params[1]);
-						ge.addCondition(new Condition(">=", valueL, valueR, false));
-						ge.setVar(target, valueL);
-						ExecutionTreeNode lt = new ExecutionTreeNode(node);
-						lt.addConstraint(params[0] + " < " + params[1]);
-						lt.addCondition(new Condition("<", valueL, valueR, false));
-						lt.setVar(target, valueR);
-						resultNodes.add(ge);
-						resultNodes.add(lt);
-						ass_s = "max(" + params[0] + ", " + params[1] + ")";
-						log("Split tree here");
+						node.setVar(target, valueL.minMaxVariable(valueL, valueR, true));
 					} else if (ass_s.contains("min")) {
-						ExecutionTreeNode ge = new ExecutionTreeNode(node);
-						ge.addConstraint(params[0] + " >= " + params[1]);
-						ge.addCondition(new Condition(">=", valueL, valueR, false));
-						ge.setVar(target, valueR);
-						ExecutionTreeNode lt = new ExecutionTreeNode(node);
-						lt.addConstraint(params[0] + "<" + params[1]);
-						lt.addCondition(new Condition("<", valueL, valueR, false));
-						lt.setVar(target, valueL);
-						resultNodes.add(ge);
-						resultNodes.add(lt);
-						ass_s = "max(" + params[0] + ", " + params[1] + ")";
-						log("Split tree here");
+						node.setVar(target, valueL.minMaxVariable(valueL, valueR, true));
 					}
 					log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " + ass_s);
-					return resultNodes;
+					return node;
 				} else {
 					ass_s = ass_s.split(">")[1].replace("(", "").replace(")", "");
 				}
@@ -464,20 +437,12 @@ public class ExecutionTree {
 					} else if (tmp[1].contains("cmp") || tmp[1].contains("-")) {
 						node.setVar(target, a.subtractVariable(a, b));
 					} else if (tmp[1].contains("*")) {
-						String newVar = "_" + (mTempIndex++) + "_t";
-						node.setVar(newVar, a.multipleVariable(a, b));
-						node.setVar(target, new Variable(newVar));
-						mVarsType.put(newVar, "double");
+						node.setVar(target, a.multipleVariable(a, b));
 					} else if (tmp[1].contains("/")) {
-						String newVar = "_" + (mTempIndex++) + "_t";
-						node.setVar(newVar, a.divideVariable(a, b));
-						node.setVar(target, new Variable(newVar));
-						mVarsType.put(newVar, "double");
+						node.setVar(target, a.divideVariable(a, b));
 					} else if (tmp[1].contains("%")) {
 						String newVar = "_" + (mTempIndex++) + "_t";
-						node.setVar(newVar, a.remainderVariable(a, b));
-						node.setVar(target, new Variable(newVar));
-						mVarsType.put(newVar, "double");
+						node.setVar(target, a.remainderVariable(a, b));
 					}
 				} else {
 					node.setVar(target, str2Var(ass_s, node.getLocalVars()));
@@ -496,23 +461,20 @@ public class ExecutionTree {
 					//mBeforeLoopDegree += 1;
 					if (!mUseNextBeforeLoop) {
 						mUseNextBeforeLoop = true;
-						node.setVar(lhs, new Variable("input0"));
-						log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " + "input0");    
+						node.setVar(lhs, new Variable("input0_v"));
+						log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " + "input0_v");    
 					} else {
 						logAll("Does not support multiple input in one function body yet.");
 					}
 				} else {
-					//use a new input
-					mVarsType.put("input0", "input type");
 					
-					ass_s = "input0";
+					ass_s = "input0_v";
 					node.setVar(lhs, new Variable(ass_s));
 					log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " + ass_s);    
 				}
 		    }	
 		}
-		resultNodes.add(node);
-		return resultNodes;
+		return node;
 	}
 
 	protected ExecutionTreeNode performIdentityStmt(ExecutionTreeNode node, Unit u) {
@@ -541,7 +503,7 @@ public class ExecutionTree {
 		String lhs = conditionStmt.getOp1().toString();
 		String rhs =  conditionStmt.getOp2().toString();
 		String op =  conditionStmt.getSymbol().toString().replaceAll("\\s+", "");
-		if (parent.getLocalVars().get(lhs).getValue().containsKey("hasNext")) {
+		if (parent.getLocalVars().get(lhs).getFormula().indexOf("hasNext") >= 0) {
 			log("Actually we didn't");
 			parent.setNextLine(parent.getNextLine() + 1);
 			returnList.add(parent);
@@ -553,9 +515,9 @@ public class ExecutionTree {
 			elseBranch.setNextLine(parent.getNextLine() + 1);
 			
 			ifBranch.addConstraint(conditionStmt.toString());
-			ifBranch.addCondition(new Condition(op, str2Var(lhs, parent.getLocalVars()), str2Var(rhs, parent.getLocalVars()), false));
+			ifBranch.addCondition(op, str2Var(lhs, parent.getLocalVars()), str2Var(rhs, parent.getLocalVars()), false);
 			elseBranch.addConstraint("! " + conditionStmt.toString());
-			elseBranch.addCondition(new Condition(op, str2Var(lhs, parent.getLocalVars()), str2Var(rhs, parent.getLocalVars()), true));
+			elseBranch.addCondition(op, str2Var(lhs, parent.getLocalVars()), str2Var(rhs, parent.getLocalVars()), true);
 			
 			returnList.add(ifBranch);
 			returnList.add(elseBranch);

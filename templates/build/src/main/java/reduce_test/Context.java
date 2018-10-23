@@ -5,24 +5,24 @@ import java.util.ArrayList;
 
 public class Context<T1, T2> {
 	ArrayList<T1> keyList;
-	ArrayList<T2> valueList;
+	ArrayList<String> valueList;
 	
 	
 	public Context(){
 		 keyList = new ArrayList<T1>();
-		 valueList = new ArrayList<T2>();
+		 valueList = new ArrayList<String>();
 	}
 
 	public void write(T1 key, T2 value){
 		keyList.add(key);
-		valueList.add(value);
-		System.out.print("<"+key+","+value+">");
+		if (value != null) valueList.add(value.toString());
+        else valueList.add(null);
 	}
 	
 	public ArrayList<T1> getKeyList() {
 		return keyList;
 	}
-	public ArrayList<T2> getValueList() {
+	public ArrayList<String> getValueList() {
 		return valueList;
 	}
 

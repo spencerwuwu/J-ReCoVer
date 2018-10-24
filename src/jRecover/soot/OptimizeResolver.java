@@ -443,11 +443,11 @@ public class OptimizeResolver {
 			String type = value.getType().toString();
 			String localVar = valueName + "_v";
 			mVarsType.put(valueName, type);
-			mLocalVars.put(valueName, new Variable(localVar));
+			mLocalVars.put(valueName, new Variable(valueName));
 			log("Variable " + type + " " + valueName);
 		}
 
-		mLocalVars.put("beforeLoop", new Variable("beforeLoop_v"));
+		mLocalVars.put("beforeLoop", new Variable("beforeLoop"));
 		mVarsType.put("beforeLoop", "int");
 		log("Variable boolean beforeLoop");
 		

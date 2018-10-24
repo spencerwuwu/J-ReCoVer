@@ -8,130 +8,85 @@ import java.util.regex.Pattern;
 public class Variable {
 	// Value of this variable
 	protected Map<String, Integer> mValue = new HashMap<String, Integer>();
-	// Exists when 'mIsBinary := true'
-	protected Map<String, Integer> mValueSub = new HashMap<String, Integer>();
 	
 	/*
 	 * Name of value:
 	 * xx_v		-> initial symbolic value
-	 * _xx_t -> tmp variable with dual list
 	 * others	-> global variable or number
 	 */
-
-	protected boolean mIsBinary;
-	protected String mOperator = "";
 	
 	public Variable(String initValue) {
-		mIsBinary = false;
-		mValue.put(initValue, 1);
+		if (isNumber(initValue)) {
+			if (isInteger(initValue))
+				mValue.put("1", Integer.parseInt(initValue));
+			else 
+				mValue.put(initValue, 1);
+		} else
+			mValue.put(initValue + "_v", 1);
 	}
 	
-	public Variable(boolean isBinary, String operator, Map<String, Integer> list) {
-		mIsBinary = isBinary;
-		mOperator = new String(operator);
-		mValue.putAll(list);
+	public Variable(Map<String, Integer> list) {
+		if (list != null) mValue.putAll(list);
 	}
-	
-	public Variable(boolean isBinary, String operator, Map<String, Integer> list, Map<String, Integer> listSub) {
-		mIsBinary = isBinary;
-		mOperator = new String(operator);
-		mValue.putAll(list);
-		mValueSub.putAll(listSub);
-	}
-	
 	public Variable(Variable v) {
 		mValue.putAll(v.getValue());
-		mValueSub.putAll(v.getValueSub());
-		mIsBinary = v.isBinary();
-		if (mIsBinary) mOperator = new String(v.getOperator());
 	}
 
 	public void updateAs(Variable v) {
 		mValue.clear();
 		mValue.putAll(v.getValue());
-		
-		mValueSub.clear();
-		mValueSub.putAll(v.getValueSub());
-		mIsBinary = v.isBinary();
-		if (mIsBinary) mOperator = new String(v.getOperator());
 	}
 	
 	
-	public Variable addVariable(Variable v1, Variable v2) {
-		Variable result = new Variable(false, "+", 
-				addOrSubList(false, v1.getValue(), v2.getValue()));
-		return result;
-	}
-	
-	public Variable subtractVariable(Variable v1, Variable v2) {
-		Variable result = new Variable(false, "+", 
-				addOrSubList(true, v1.getValue(), v2.getValue()));
-		return result;
-	}
-	
-	public Variable multipleVariable(Variable v1, Variable v2) {
-		Variable result = new Variable(true, "*", v1.getValue(), v2.getValue());
-		return result;
-	}
-	
-	public Variable divideVariable(Variable v1, Variable v2) {
-		Variable result = new Variable(true, "div", v1.getValue(), v2.getValue());
-		return result;
-	}
-	
-	public Variable remainderVariable(Variable v1, Variable v2) {
-		Variable result = new Variable(true, "rem", v1.getValue(), v2.getValue());
-		return result;
-	}
-	
-	public Map<String, Integer> addOrSubList(boolean isMinus, 
-			Map<String, Integer> addend, Map<String, Integer> augend) {
-		Map<String, Integer> result = new HashMap<String, Integer>(addend);
-		for (String augendKey : augend.keySet()) {
-			int value = augend.get(augendKey);
-			if (isMinus) value = value * -1;
-			
-			if (result.containsKey(augendKey)) {
-				result.put(augendKey, addend.get(augendKey) + value);
-			} else  {
-				result.put(augendKey, value);
+	public Variable(String operator, Variable v1, Variable v2) {
+		if (operator == "+") {
+			mValue.putAll(v1.getValue());
+			for (String key : v2.getValue().keySet()) {
+				if (mValue.containsKey(key)) {
+					int value = mValue.get(key) + v2.getValue().get(key);
+					mValue.put(key, value);
+				} else {
+					int value = v2.getValue().get(key);
+					mValue.put(key, value);
+				}
 			}
-		}
-		return result;
+		} else if (operator == "-"){
+			mValue.putAll(v1.getValue());
+			for (String key : v2.getValue().keySet()) {
+				if (mValue.containsKey(key)) {
+					int value = mValue.get(key) - v2.getValue().get(key);
+					mValue.put(key, value);
+				} else {
+					int value = -v2.getValue().get(key);
+					mValue.put(key, value);
+				}
+			}
+		} else if (operator == "*"){
+			StringBuffer lhs = v1.getFormula();
+			StringBuffer rhs = v2.getFormula();
+			if (isInteger(lhs.toString())) {
+				int mulend = Integer.parseInt(lhs.toString());
+				for (String key : v2.getValue().keySet()) {
+					mValue.put(key, v2.getValue().get(key) * mulend);
+				}
+			} else if (isInteger(rhs.toString())) {
+				int mulend = Integer.parseInt(rhs.toString());
+				for (String key : v1.getValue().keySet()) {
+					mValue.put(key, v1.getValue().get(key) * mulend);
+				}
+			} else {
+				mValue.put(lhs.insert(0, "(* ").append(" ").append(rhs).append(")").toString(), 1);
+			}
+		} else {
+			StringBuffer lhs = v1.getFormula();
+			StringBuffer rhs = v2.getFormula();
+			lhs.insert(0, "(" + operator + " ").append(" ").append(rhs).append(")");
+			mValue.put(lhs.toString(), 1);
+		} 
 	}
 
 	public Map<String, Integer> getValue() {
 		return mValue;
-	}
-
-	public Map<String, Integer> getValueSub() {
-		return mValueSub;
-	}
-	
-	public boolean isBinary() {
-		return mIsBinary;
-	}
-	
-	public String getOperator() {
-		return mOperator;
-	}
-	
-	public StringBuffer getFormula(int stage, int round) {
-		if (mIsBinary) {
-			return map2String(mValue, stage, round).insert(0, "(" + mOperator + " ").append(" ").append(map2String(mValueSub, stage, round)).append(")");
-		} else {
-			return map2String(mValue, stage, round);
-		}
-	}
-	
-
-	public boolean isNumber(String value) {
-		Pattern p = Pattern.compile("^-?[0-9]*(\\.[0-9]*)?$");
-		Matcher m = p.matcher(value);
-		if (m.find()) {
-			return true;
-		}
-		return false;
 	}
  	
 	public StringBuffer map2String(Map<String, Integer> list, int stage, int round) {
@@ -158,22 +113,63 @@ public class Variable {
 				}
 			}
 		}
+		if (var.length() == 0) var.append("0");
+		
+		return var;
+	}
+
+	public StringBuffer getFormula(int stage, int round) {
+		return map2String(mValue, stage, round);
+	}
+
+	protected StringBuffer getFormula() {
+		StringBuffer var = new StringBuffer("");
+		for (String key : mValue.keySet()) {
+			if (mValue.get(key) == 0) continue;
+			else {
+				int value = mValue.get(key);
+				if (var.length() == 0) {
+					if (value == 1)
+						var.append(key);
+					else
+						var.insert(0, "(* ").append(value).append(" " + key + ")");
+				} else {
+					if (value == 1)
+						var.insert(0, "(+ ").append(" " + key + ")");
+					else
+						var.insert(0, "(+ ").append(" (* ").append(value).append(" " + key + "))");
+				}
+			}
+		}
+		if (var.length() == 0) var.append("0");
 		
 		return var;
 	}
 	
+
+	protected boolean isNumber(String value) {
+		Pattern p = Pattern.compile("^-?[0-9]*(\\.[0-9]*)?$");
+		Matcher m = p.matcher(value);
+		if (m.find()) {
+			return true;
+		}
+		return false;
+	}
+	
+	protected boolean isInteger(String value) {
+		Pattern p = Pattern.compile("^-?[0-9]*$");
+		Matcher m = p.matcher(value);
+		if (m.find()) {
+			return true;
+		}
+		return false;
+	}
+	
 	public String toString() {
 		StringBuffer result = new StringBuffer("{") ;
-		if (mIsBinary) result.append("Operator: '" + mOperator + "', ");
 		result.append("[");
 		for (String vname : mValue.keySet()) {
 			result.append("'" + vname + "': " + mValue.get(vname) + ",");
-		}
-		if (mIsBinary) {
-		result.append("],[");
-			for (String vname : mValueSub.keySet()) {
-				result.append("'" + vname + "': " + mValueSub.get(vname) + ",");
-			}
 		}
 		result.append("]}");
 

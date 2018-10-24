@@ -14,21 +14,20 @@ public class Condition {
 		mNegative = negative;
 	}
 	
-	public StringBuffer getFormula(int stage, int round) {
-		StringBuffer lhs = mLhs.getFormula(stage, round);
-		StringBuffer rhs = mRhs.getFormula(stage, round);
+	public String getFormula() {
+		StringBuffer lhs = mLhs.getFormula();
+		StringBuffer rhs = mRhs.getFormula();
 		StringBuffer formula = new StringBuffer("");
-		
-		if (mCmp.equals("!=")) {
+
+		if (mCmp.contains("!=")) {
 			formula.append("(not (= ").append(lhs).append(" ").append(rhs).append("))");
-		} else if (mCmp.equals("==")) {
+		} else if (mCmp.contains("==")) {
 			formula.append("(= ").append(lhs).append(" ").append(rhs).append(")");
 		} else {
 			formula.append("(" + mCmp + " ").append(lhs).append(" ").append(rhs).append(")");
 		}
 		
 		if (mNegative) formula.insert(0, "(not ").append(")");
-		
-		return formula;
+		return formula.toString();
 	}
 }

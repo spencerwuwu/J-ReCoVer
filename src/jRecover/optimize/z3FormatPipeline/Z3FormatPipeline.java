@@ -218,13 +218,13 @@ public class Z3FormatPipeline {
 		//return "(and " + condition + " " + value + ")\n";
 	}
 	
-	protected StringBuffer generateConditions(List<Condition> cList, int stage, int round) {
+	protected StringBuffer generateConditions(List<String> cList, int stage, int round) {
 		StringBuffer conditions = new StringBuffer("");
-		for (Condition condition : cList) {
+		for (String condition : cList) {
 			if (conditions.length() == 0) {
-				conditions.append(condition.getFormula(stage, round));
+				conditions.append(condition.replaceAll("_v", ("_" + stage + "_r" + round)));
 			} else {
-				conditions.insert(0, "(and ").append(condition.getFormula(stage, round)).append(")");
+				conditions.insert(0, "(and ").append(condition.replaceAll("_v", ("_" + stage + "_r" + round))).append(")");
 			}
 		}
 		return conditions;

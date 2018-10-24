@@ -21,8 +21,12 @@ public class Variable {
 				mValue.put("1", Integer.parseInt(initValue));
 			else 
 				mValue.put(initValue, 1);
-		} else
-			mValue.put(initValue + "_v", 1);
+		} else {
+			if (initValue.length() != 0)
+				mValue.put(initValue + "_v", 1);
+			else
+				mValue.put("0", 0);
+		}
 	}
 	
 	public Variable(Map<String, Integer> list) {
@@ -148,6 +152,7 @@ public class Variable {
 	
 
 	protected boolean isNumber(String value) {
+		if (value == null || value.length() == 0) return false;
 		Pattern p = Pattern.compile("^-?[0-9]*(\\.[0-9]*)?$");
 		Matcher m = p.matcher(value);
 		if (m.find()) {
@@ -157,6 +162,7 @@ public class Variable {
 	}
 	
 	protected boolean isInteger(String value) {
+		if (value == null || value.length() == 0) return false;
 		Pattern p = Pattern.compile("^-?[0-9]*$");
 		Matcher m = p.matcher(value);
 		if (m.find()) {

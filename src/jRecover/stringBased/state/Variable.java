@@ -58,9 +58,9 @@ public class Variable {
 		StringBuffer rhs = rhsV.getFormula();
 		StringBuffer result = new StringBuffer("(ite (");
 		if (isMax) {
-			result.append(lhs).append("> ");
+			result.append("> ");
 		} else {
-			result.append(lhs).append("< ");
+			result.append("< ");
 		}
 		result.append(lhs).append(" ").append(rhs).append(") ").append(lhs).append(" ").append(rhs).append(")"); 
 		

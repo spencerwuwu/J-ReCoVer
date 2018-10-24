@@ -11,7 +11,7 @@
 		for (IntWritable i: values){
 			sum += i.get();
 			if (k * KEY_NUMBER < j){
-				Thread.sleep(delay * 1000);
+				//Thread.sleep(delay * 1000);
 				k++;
 			}
 			j+=i.get();

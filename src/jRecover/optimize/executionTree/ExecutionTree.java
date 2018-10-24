@@ -29,7 +29,6 @@ public class ExecutionTree {
 	private boolean mUseNextBeforeLoop = false;
 	private boolean mBefore = true;
 	private boolean mNoLoop = false;
-	private static int mTempIndex = 0;
 	Option mOption;
 	//private int mBeforeLoopDegree = 0;
 	
@@ -391,7 +390,7 @@ public class ExecutionTree {
 						Variable lhsV = str2Var(valueL, node.getLocalVars());
 						Variable rhsV = str2Var(valueR, node.getLocalVars());
 
-						node.setVar(target, lhsV.subtractVariable(lhsV, rhsV));
+						node.setVar(target, new Variable("-", lhsV, rhsV));
 					}
 					log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + lhs + " -> " +  valueL + " compareTo(" + valueR + ")");
 					resultNodes.add(node);
@@ -462,24 +461,15 @@ public class ExecutionTree {
 					Variable a = str2Var(tmp[0], node.getLocalVars());
 					Variable b = str2Var(tmp[2], node.getLocalVars());
 					if (tmp[1].contains("+")) {
-						node.setVar(target, a.addVariable(a, b));
+						node.setVar(target, new Variable("+", a, b));
 					} else if (tmp[1].contains("cmp") || tmp[1].contains("-")) {
-						node.setVar(target, a.subtractVariable(a, b));
+						node.setVar(target, new Variable("-", a, b));
 					} else if (tmp[1].contains("*")) {
-						String newVar = "_" + (mTempIndex++) + "_t";
-						node.setVar(newVar, a.multipleVariable(a, b));
-						node.setVar(target, new Variable(newVar));
-						mVarsType.put(newVar, "double");
+						node.setVar(target, new Variable("*", a, b));
 					} else if (tmp[1].contains("/")) {
-						String newVar = "_" + (mTempIndex++) + "_t";
-						node.setVar(newVar, a.divideVariable(a, b));
-						node.setVar(target, new Variable(newVar));
-						mVarsType.put(newVar, "double");
+						node.setVar(target, new Variable("div", a, b));
 					} else if (tmp[1].contains("%")) {
-						String newVar = "_" + (mTempIndex++) + "_t";
-						node.setVar(newVar, a.remainderVariable(a, b));
-						node.setVar(target, new Variable(newVar));
-						mVarsType.put(newVar, "double");
+						node.setVar(target, new Variable("rem", a, b));
 					}
 				} else {
 					node.setVar(target, str2Var(ass_s, node.getLocalVars()));
@@ -520,13 +510,13 @@ public class ExecutionTree {
 	protected ExecutionTreeNode performIdentityStmt(ExecutionTreeNode node, Unit u) {
 		DefinitionStmt ds = (DefinitionStmt) u;
 		String var = ds.getLeftOp().toString();
-		Value assignment = ds.getRightOp();
+		//Value assignment = ds.getRightOp();
 		// Preserve only org.apache.hadoop.io.'IntWritable and marked it as parameter'
-		String assignment_tail = "@parameter."+assignment.toString().split("\\.(?=[^\\.]+$)")[1]; 
+		//String assignment_tail = "@parameter."+assignment.toString().split("\\.(?=[^\\.]+$)")[1]; 
 		
 		log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var + " -> " + var + "_v");
 		//st.update(var.toString(), assignment_tail);
-		node.setVar(var.toString(), new Variable(var + "_v"));
+		node.setVar(var, new Variable(var));
 		return node;
 	}
 
@@ -543,7 +533,7 @@ public class ExecutionTree {
 		String lhs = conditionStmt.getOp1().toString();
 		String rhs =  conditionStmt.getOp2().toString();
 		String op =  conditionStmt.getSymbol().toString().replaceAll("\\s+", "");
-		if (parent.getLocalVars().get(lhs).getValue().containsKey("hasNext")) {
+		if (parent.getLocalVars().get(lhs).getValue().containsKey("hasNext_v")) {
 			log("Actually we didn't");
 			parent.setNextLine(parent.getNextLine() + 1);
 			returnList.add(parent);

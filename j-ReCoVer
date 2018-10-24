@@ -249,7 +249,7 @@ def parse_checker_output(filename):
 def run_checker(global_path, path, p_name):
     target = path + "target/New-1.0.jar"
     filename = global_path + ".fields/" + p_name + "_checker"
-    cmd = "java -jar -Xms2G -Xmx2G " + global_path + "j-recover.jar " + target + " autoGenerator -o -s > " + filename 
+    cmd = "java -jar -Xms2G -Xmx2G " + global_path + "j-recover.jar " + target + " autoGenerator -s > " + filename 
     proc = Popen(cmd, shell=True, stdout=PIPE, preexec_fn=os.setsid)
     result = wait_timeout(proc, TIMEOUT)
 

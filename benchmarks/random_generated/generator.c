@@ -100,12 +100,14 @@ void push_oper(Array* array, char* operation, int is_binary) {
 void init_vars() {
     char c = 'a';
     for (int i = 0; i < VAR_NUM; i++) {
-        char* str = malloc(2);
+        char* str = malloc(5);
         str[0] = c;
-        str[1] = '\0';
+        str[1] = i / 100 + '0';
+        str[2] = (i % 100) / 10 + '0';
+        str[3] = (i % 10) + '0';
+        str[4] = '\0';
         push_element(Vars, str);
         free(str);
-        c += 1;
     }
 }
 
@@ -237,6 +239,24 @@ void sum_up_vars() {
 }
 
 char* generate_normal_line() {
+    // 1% have *
+    if (get_random(100) == 1) {
+        int lhs_i = get_random(Vars->size);
+        char** rhs = malloc(sizeof(char*) * 2);
+        for (int i = 0; i < 2; i++) {
+            int rhs_i = get_random(Vars->size + 1);
+            if (rhs_i == Vars->size) asprintf(&rhs[i], "%d", get_random(10) - 5);
+            else rhs[i] = strdup(Vars->elements[rhs_i]);
+        }
+        char *result;
+        asprintf(&result, "%s = %s * %s;\n", 
+                Vars->elements[lhs_i], rhs[0], rhs[1]);
+        free(rhs[0]);
+        free(rhs[1]);
+        free(rhs);
+        return result;
+    }
+
     int lhs_i = get_random(Vars->size);
     int op_i = get_random(Opers->size);
     if (Opers->is_binary[op_i] == 1) {

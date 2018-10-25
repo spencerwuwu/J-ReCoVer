@@ -34,6 +34,7 @@ RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 github_50-250_556_p0.java:
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 

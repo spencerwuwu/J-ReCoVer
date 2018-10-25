@@ -290,9 +290,9 @@ public class OptimizeResolver {
 						continue;
 					}
 					if (mOutputRelated.containsKey(var) && mOutputRelated.get(var)) {
-						mOutputRelated.put(value, true);
+						if (mOutputRelated.containsKey(value)) mOutputRelated.put(value, true);
 					} else if (mOutputRelated.containsKey(value) && mOutputRelated.get(value)){
-						mOutputRelated.put(var, true);
+						if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, true);
 					}
 				}
 			}
@@ -323,9 +323,9 @@ public class OptimizeResolver {
 						continue;
 					}
 					if (mOutputRelated.containsKey(var) && mOutputRelated.get(var)) {
-						mOutputRelated.put(value, true);
+						if (mOutputRelated.containsKey(value)) mOutputRelated.put(value, true);
 					} else if (mOutputRelated.containsKey(value) && mOutputRelated.get(value)){
-						mOutputRelated.put(var, true);
+						if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, true);
 					}
 				}
 			}
@@ -362,13 +362,13 @@ public class OptimizeResolver {
 			//if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, true);
 			if (mOutputRelated.containsKey(var) && mOutputRelated.get(var)) {
 				for (String str : ass) {
-					mOutputRelated.put(str, true);
+					if (mOutputRelated.containsKey(str)) mOutputRelated.put(str, true);
 				}
 			} else {
 				for (String str : ass) 
 					if (mOutputRelated.containsKey(str) 
 							&& mOutputRelated.get(str)) 
-						mOutputRelated.put(var, true);
+					if (mOutputRelated.containsKey(var)) mOutputRelated.put(var, true);
 			}
 		}
 	}
@@ -380,8 +380,8 @@ public class OptimizeResolver {
 			key = key.replace("(", "");
 			value = value.replace(")", "");
 			value = value.replace(" ", "");
-			mOutputRelated.put(value, true);
-			mOutputRelated.put(key, true);
+			if (mOutputRelated.containsKey(value)) mOutputRelated.put(value, true);
+			if (mOutputRelated.containsKey(key)) mOutputRelated.put(key, true);
 			return;
 		} else {
 			// virtualinvoke $r7.<org.apache.hadoop.io.IntWritable: void set(int)>(i0);
@@ -392,13 +392,13 @@ public class OptimizeResolver {
 
 			if (mOutputRelated.containsKey(key)) {
 				if (mOutputRelated.get(key)) {
-					mOutputRelated.put(value, true);
+					if (mOutputRelated.containsKey(value)) mOutputRelated.put(value, true);
 					return;
 				}
 			}
 			if (mOutputRelated.containsKey(value)) {
 				if (mOutputRelated.get(value)) {
-					mOutputRelated.put(key, true);
+					if (mOutputRelated.containsKey(key)) mOutputRelated.put(key, true);
 				}
 			}
 		}
@@ -441,7 +441,6 @@ public class OptimizeResolver {
 				valueName = valueName.split("\\s+")[1].replaceAll(">", "");
 			}
 			String type = value.getType().toString();
-			String localVar = valueName + "_v";
 			mVarsType.put(valueName, type);
 			mLocalVars.put(valueName, new Variable(valueName));
 			log("Variable " + type + " " + valueName);

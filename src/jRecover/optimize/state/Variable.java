@@ -11,8 +11,8 @@ public class Variable {
 	
 	/*
 	 * Name of value:
-	 * xx_v		-> initial symbolic value
-	 * others	-> global variable or number
+	 * xx_v		-> symbolic value
+	 * others	-> number or formula
 	 */
 	
 	public Variable(String initValue) {
@@ -26,6 +26,15 @@ public class Variable {
 				mValue.put(initValue + "_v", 1);
 			else
 				mValue.put("0", 0);
+		}
+	}
+	
+	// Constructor for number
+	public Variable(String value, boolean isInteger) {
+		if (isInteger) {
+			mValue.put("1", Integer.parseInt(value));
+		} else {
+			mValue.put(value, 1);
 		}
 	}
 	
@@ -153,7 +162,11 @@ public class Variable {
 
 	protected boolean isNumber(String value) {
 		if (value == null || value.length() == 0) return false;
-		Pattern p = Pattern.compile("^-?[0-9]*(\\.[0-9]*)?$");
+		if (value.length() > 10) {
+			char a = value.charAt(2);
+			if ((a > '9' || a < '0') && a != '.') return false;
+		}
+		Pattern p = Pattern.compile("^-?[0-9]+(\\.[0-9]+)?$");
 		Matcher m = p.matcher(value);
 		if (m.find()) {
 			return true;
@@ -162,7 +175,11 @@ public class Variable {
 	}
 	
 	protected boolean isInteger(String value) {
-		if (value == null || value.length() == 0) return false;
+		if (value == null || value.length() == 0 || value.length() >= 9) return false;
+		if (value.length() > 10) {
+			char a = value.charAt(2);
+			if ((a > '9' || a < '0') && a != '.') return false;
+		}
 		Pattern p = Pattern.compile("^-?[0-9]*$");
 		Matcher m = p.matcher(value);
 		if (m.find()) {

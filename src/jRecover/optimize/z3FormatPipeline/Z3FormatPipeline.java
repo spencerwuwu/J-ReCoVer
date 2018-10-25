@@ -68,7 +68,7 @@ public class Z3FormatPipeline {
 		}
 		
 		for (String formula : mPipeContent) {
-			//System.out.print(formula);
+			////System.out.print(formula);
 			byte[] bytes = formula.getBytes();
 			int read = 0;
 			do {

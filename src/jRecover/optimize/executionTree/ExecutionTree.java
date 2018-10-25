@@ -386,7 +386,7 @@ public class ExecutionTree {
 						ge.addConstraint(params[0] + " >= " + params[1]);
 						ge.addCondition(new Condition(">=", valueL, valueR, false));
 						ge.setVar(target, valueL);
-						ExecutionTreeNode lt = new ExecutionTreeNode(node);
+						ExecutionTreeNode lt = node;
 						lt.addConstraint(params[0] + " < " + params[1]);
 						lt.addCondition(new Condition("<", valueL, valueR, false));
 						lt.setVar(target, valueR);
@@ -399,7 +399,7 @@ public class ExecutionTree {
 						ge.addConstraint(params[0] + " >= " + params[1]);
 						ge.addCondition(new Condition(">=", valueL, valueR, false));
 						ge.setVar(target, valueR);
-						ExecutionTreeNode lt = new ExecutionTreeNode(node);
+						ExecutionTreeNode lt = node;
 						lt.addConstraint(params[0] + "<" + params[1]);
 						lt.addCondition(new Condition("<", valueL, valueR, false));
 						lt.setVar(target, valueL);
@@ -434,15 +434,20 @@ public class ExecutionTree {
 					Variable a = str2Var(tmp[0], node.getLocalVars());
 					Variable b = str2Var(tmp[2], node.getLocalVars());
 					if (tmp[1].contains("+")) {
-						node.setVar(target, new Variable("+", a, b));
+						//node.setVar(target, new Variable("+", a, b));
+						node.setVar(target, a.operate("+", b));
 					} else if (tmp[1].contains("cmp") || tmp[1].contains("-")) {
-						node.setVar(target, new Variable("-", a, b));
+						//node.setVar(target, new Variable("-", a, b));
+						node.setVar(target, a.operate("-", b));
 					} else if (tmp[1].contains("*")) {
-						node.setVar(target, new Variable("*", a, b));
+						//node.setVar(target, new Variable("*", a, b));
+						node.setVar(target, a.operate("*", b));
 					} else if (tmp[1].contains("/")) {
-						node.setVar(target, new Variable("div", a, b));
+						//node.setVar(target, new Variable("div", a, b));
+						node.setVar(target, a.operate("div", b));
 					} else if (tmp[1].contains("%")) {
-						node.setVar(target, new Variable("rem", a, b));
+						//node.setVar(target, new Variable("rem", a, b));
+						node.setVar(target, a.operate("rem", b));
 					}
 				} else {
 					node.setVar(target, str2Var(ass_s, node.getLocalVars()));
@@ -512,7 +517,7 @@ public class ExecutionTree {
 			returnList.add(parent);
 	 	} else {
 	 		ExecutionTreeNode ifBranch = new ExecutionTreeNode(parent);
-	 		ExecutionTreeNode elseBranch = new ExecutionTreeNode(parent);
+	 		ExecutionTreeNode elseBranch = parent;
 	 		
 			ifBranch.setNextLine(unitIndexes.get(goto_target));
 			elseBranch.setNextLine(parent.getNextLine() + 1);

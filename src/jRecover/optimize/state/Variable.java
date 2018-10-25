@@ -98,6 +98,58 @@ public class Variable {
 		} 
 	}
 
+	public Variable operate(String operator, Variable v2) {
+		if (operator == "+") {
+			for (String key : v2.getValue().keySet()) {
+				if (mValue.containsKey(key)) {
+					int value = mValue.get(key) + v2.getValue().get(key);
+					mValue.put(key, value);
+				} else {
+					int value = v2.getValue().get(key);
+					mValue.put(key, value);
+				}
+			}
+		} else if (operator == "-"){
+			for (String key : v2.getValue().keySet()) {
+				if (mValue.containsKey(key)) {
+					int value = mValue.get(key) - v2.getValue().get(key);
+					mValue.put(key, value);
+				} else {
+					int value = -v2.getValue().get(key);
+					mValue.put(key, value);
+				}
+			}
+		} else if (operator == "*"){
+			StringBuffer self = getFormula();
+			StringBuffer rhs = v2.getFormula();
+			if (isInteger(rhs.toString())) {
+				Map<String, Integer> tmp = mValue;
+				mValue.clear();
+				int mulend = Integer.parseInt(rhs.toString());
+				for (String key : tmp.keySet()) {
+					mValue.put(key, tmp.get(key) * mulend);
+				}
+			} else if (isInteger(self.toString())) {
+				mValue.clear();
+				int mulend = Integer.parseInt(self.toString());
+				for (String key : v2.getValue().keySet()) {
+					mValue.put(key, v2.getValue().get(key) * mulend);
+				}
+			} else {
+				mValue.clear();
+				mValue.put(self.insert(0, "(* ").append(" ").append(rhs).append(")").toString(), 1);
+			}
+		} else {
+			StringBuffer lhs = getFormula();
+			StringBuffer rhs = v2.getFormula();
+			lhs.insert(0, "(" + operator + " ").append(" ").append(rhs).append(")");
+				mValue.clear();
+			mValue.put(lhs.toString(), 1);
+		} 
+		
+		return this;
+	}
+
 	public Map<String, Integer> getValue() {
 		return mValue;
 	}

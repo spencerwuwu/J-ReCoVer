@@ -9,7 +9,7 @@ import jRecover.optimize.state.Condition;
 import jRecover.optimize.state.Variable;
 
 public class ExecutionTreeNode {
-	private List<String> mConditions;
+	private List<Condition> mConditions;
 	private List<String> mConstraints;
 	protected Map<String, Variable> mLocalVars;
 	//private State mState;
@@ -21,14 +21,14 @@ public class ExecutionTreeNode {
 	public ExecutionTreeNode() {
 		//mState = null;
 		mNextline = 0;
-		mConditions = new ArrayList<String>();
+		mConditions = new ArrayList<Condition>();
 		mConstraints = new ArrayList<String>();
 		mLocalVars = new HashMap<String, Variable>();
 		mReturnFlag = false;
 	}
 
-	public ExecutionTreeNode(List<String> conditions, List<String> constraints, Map<String, Variable> vars, int newNextLine, boolean newReturnFlag) {
-		mConditions = new ArrayList<String>();
+	public ExecutionTreeNode(List<Condition> conditions, List<String> constraints, Map<String, Variable> vars, int newNextLine, boolean newReturnFlag) {
+		mConditions = new ArrayList<Condition>();
 		if (conditions != null && !conditions.isEmpty()) {
 			mConditions.addAll(conditions);
 		}
@@ -44,12 +44,12 @@ public class ExecutionTreeNode {
 
 	public ExecutionTreeNode(ExecutionTreeNode node) {
 		if (node.getConditions() != null) {
-			mConditions = new ArrayList<String>();
-			for (String cond : node.getConditions()) {
+			mConditions = new ArrayList<Condition>();
+			for (Condition cond : node.getConditions()) {
 				mConditions.add(cond);
 			}
 		} else
-			mConditions = new ArrayList<String>();
+			mConditions = new ArrayList<Condition>();
 
 		if (node.getConstraints() != null) {
 			mConstraints = new ArrayList<String>();
@@ -59,11 +59,12 @@ public class ExecutionTreeNode {
 		} else
 			mConstraints = new ArrayList<String>();
 		
-		//mState = new State(newState);
+		// mState = new State(newState);
 		if (node.getLocalVars() != null) {
 			mLocalVars = new HashMap<String, Variable>();
-			for (String key : node.getLocalVars().keySet()) {
-				mLocalVars.put(key, new Variable(node.getLocalVars().get(key)));
+			Map<String, Variable> nodeV = node.getLocalVars();
+			for (String key : nodeV.keySet()) {
+				mLocalVars.put(key, new Variable(nodeV.get(key)));
 			}
 		} else
 			mLocalVars = new HashMap<String, Variable>();
@@ -84,7 +85,7 @@ public class ExecutionTreeNode {
 		mLocalVars.get(name).updateAs(var);
 	}
 	
-	public List<String> getConditions(){
+	public List<Condition> getConditions(){
 		return mConditions;
 	}
 	
@@ -92,13 +93,13 @@ public class ExecutionTreeNode {
 		return mConstraints;
 	}
 	
-	public void setConditions(List<String> constraintList) {
-		mConditions = new ArrayList<String>();
+	public void setConditions(List<Condition> constraintList) {
+		mConditions = new ArrayList<Condition>();
 		if (constraintList != null && !constraintList.isEmpty()) mConditions.addAll(constraintList);
 	}
 	
 	public void addCondition(Condition newConstraint) {
-		mConditions.add(newConstraint.getFormula());
+		mConditions.add(newConstraint);
 	}
 
 	public void addConstraint(String constraint) {

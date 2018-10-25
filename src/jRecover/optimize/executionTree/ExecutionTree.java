@@ -1,7 +1,7 @@
 package jRecover.optimize.executionTree;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -12,6 +12,7 @@ import jRecover.color.Color;
 import jRecover.optimize.state.Condition;
 import jRecover.optimize.state.UnitSet;
 import jRecover.optimize.state.Variable;
+import jRecover.optimize.z3FormatPipeline.Z3Pipeline;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.*;
@@ -71,7 +72,7 @@ public class ExecutionTree {
 
 		currentNodes.add(mRoot);
 		while (!currentNodes.isEmpty()) {
-			logAll(new Integer(currentNodes.size()).toString());
+			logAll("Concurrent nodes: " + new Integer(currentNodes.size()).toString());
 			for (ExecutionTreeNode currentNode : currentNodes) {
 				executeNode(currentNode, endNodes, newNodes);
 			}
@@ -140,8 +141,8 @@ public class ExecutionTree {
 			} else if (determineUnitState == 2) {
 				Unit newUnit=us.getUnit();
 				if (newUnit instanceof IfStmt) {
-					log("Split the tree here.");
 					List<ExecutionTreeNode> newLeafNodes = performIfStmt(currentNode, newUnit, mUnitIndexes);
+					if (newLeafNodes.size() > 1) log("Split the tree here.");
 					for (ExecutionTreeNode node: newLeafNodes) {
 						//currentNode.mChildren.add(node);
 						newNodes.add(node);
@@ -512,7 +513,6 @@ public class ExecutionTree {
 		String rhs =  conditionStmt.getOp2().toString();
 		String op =  conditionStmt.getSymbol().toString().replaceAll("\\s+", "");
 		if (parent.getLocalVars().get(lhs).getValue().containsKey("hasNext_v")) {
-			log("Actually we didn't");
 			parent.setNextLine(parent.getNextLine() + 1);
 			returnList.add(parent);
 	 	} else {
@@ -529,8 +529,20 @@ public class ExecutionTree {
 			
 			if (unitIndexes.get(goto_target) <= parent.getNextLine()) ifBranch.setReturnFlag(true);
 			
-			returnList.add(ifBranch);
-			returnList.add(elseBranch);
+			try {
+				if (new Z3Pipeline(ifBranch, mVarsType, mOption).getResult()) {
+					returnList.add(ifBranch);
+				} else {
+					log("ifBranch discarded.");
+				}
+				if (new Z3Pipeline(elseBranch, mVarsType, mOption).getResult()) {
+					returnList.add(elseBranch);
+				} else {
+					log("elseBranch discarded.");
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 	 	}
 		return returnList;
 	}
@@ -585,7 +597,10 @@ public class ExecutionTree {
 				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + varK + " -> " + valueK);
 			}
 		// handling value set for ref of Writable
-		} else if (us.getUnit().toString().contains("Writable") && us.getUnit().toString().contains("org.apache.hadoop.io")) {
+		} else if (us.getUnit().toString().contains("Writable") 
+				&& us.getUnit().toString().contains("org.apache.hadoop.io")
+				&& !us.getUnit().toString().contains("get")
+				) {
 			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
 			String value = us.getUnit().toString().split(">")[1];
 			value = value.replace(")", "");

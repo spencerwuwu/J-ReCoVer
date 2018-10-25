@@ -9,10 +9,9 @@ import jRecover.optimize.state.Condition;
 import jRecover.optimize.state.Variable;
 
 public class ExecutionTreeNode {
-	private List<Condition> mConditions;
+	private List<String> mConditions;
 	private List<String> mConstraints;
 	protected Map<String, Variable> mLocalVars;
-	//private State mState;
 	private String mBranchInfo;
 	private int mNextline;
 	private boolean mReturnFlag = false;
@@ -21,21 +20,20 @@ public class ExecutionTreeNode {
 	public ExecutionTreeNode() {
 		//mState = null;
 		mNextline = 0;
-		mConditions = new ArrayList<Condition>();
+		mConditions = new ArrayList<String>();
 		mConstraints = new ArrayList<String>();
 		mLocalVars = new HashMap<String, Variable>();
 		mReturnFlag = false;
 	}
 
-	public ExecutionTreeNode(List<Condition> conditions, List<String> constraints, Map<String, Variable> vars, int newNextLine, boolean newReturnFlag) {
-		mConditions = new ArrayList<Condition>();
+	public ExecutionTreeNode(List<String> conditions, List<String> constraints, Map<String, Variable> vars, int newNextLine, boolean newReturnFlag) {
+		mConditions = new ArrayList<String>();
 		if (conditions != null && !conditions.isEmpty()) {
 			mConditions.addAll(conditions);
 		}
 		
 		mConstraints = new ArrayList<String>();
 		if (constraints != null && !constraints.isEmpty()) mConstraints.addAll(constraints);
-		//mState = new State(newState);
 		mLocalVars = new HashMap<String, Variable>(vars);
 
 		mNextline = newNextLine;
@@ -44,12 +42,12 @@ public class ExecutionTreeNode {
 
 	public ExecutionTreeNode(ExecutionTreeNode node) {
 		if (node.getConditions() != null) {
-			mConditions = new ArrayList<Condition>();
-			for (Condition cond : node.getConditions()) {
+			mConditions = new ArrayList<String>();
+			for (String cond : node.getConditions()) {
 				mConditions.add(cond);
 			}
 		} else
-			mConditions = new ArrayList<Condition>();
+			mConditions = new ArrayList<String>();
 
 		if (node.getConstraints() != null) {
 			mConstraints = new ArrayList<String>();
@@ -85,7 +83,7 @@ public class ExecutionTreeNode {
 		mLocalVars.get(name).updateAs(var);
 	}
 	
-	public List<Condition> getConditions(){
+	public List<String> getConditions(){
 		return mConditions;
 	}
 	
@@ -93,13 +91,13 @@ public class ExecutionTreeNode {
 		return mConstraints;
 	}
 	
-	public void setConditions(List<Condition> constraintList) {
-		mConditions = new ArrayList<Condition>();
+	public void setConditions(List<String> constraintList) {
+		mConditions = new ArrayList<String>();
 		if (constraintList != null && !constraintList.isEmpty()) mConditions.addAll(constraintList);
 	}
 	
 	public void addCondition(Condition newConstraint) {
-		mConditions.add(newConstraint);
+		mConditions.add(newConstraint.getFormula());
 	}
 
 	public void addConstraint(String constraint) {

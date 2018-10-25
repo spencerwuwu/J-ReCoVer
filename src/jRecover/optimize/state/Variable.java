@@ -123,7 +123,7 @@ public class Variable {
 			StringBuffer self = getFormula();
 			StringBuffer rhs = v2.getFormula();
 			if (isInteger(rhs.toString())) {
-				Map<String, Integer> tmp = mValue;
+				Map<String, Integer> tmp = new HashMap<String, Integer>(mValue);
 				mValue.clear();
 				int mulend = Integer.parseInt(rhs.toString());
 				for (String key : tmp.keySet()) {
@@ -160,10 +160,8 @@ public class Variable {
 			if (list.get(key) == 0) continue;
 			else {
 				int value = list.get(key);
-				if (!isNumber(key)
-						&& !key.contains("hasNext")) {
+				if (!key.contains("hasNext")) {
 					if (key.contains("_v")) key = key.replace("_v", "_" + stage + "_r" + round);
-					else key = key + "_" + stage + "_r" + round;
 				}
 				if (var.length() == 0) {
 					if (value == 1)
@@ -193,16 +191,25 @@ public class Variable {
 			if (mValue.get(key) == 0) continue;
 			else {
 				int value = mValue.get(key);
+				if (value == 0) continue;
+
 				if (var.length() == 0) {
 					if (value == 1)
 						var.append(key);
-					else
-						var.insert(0, "(* ").append(value).append(" " + key + ")");
+					else {
+						if (key == "1") var.append(value);
+						else
+							var.insert(0, "(* ").append(value).append(" " + key + ")");
+					}
 				} else {
 					if (value == 1)
 						var.insert(0, "(+ ").append(" " + key + ")");
-					else
+					else {
+						if (key == "1")
+							var.insert(0, "(+ ").append(" " + value + ")");
+						else
 						var.insert(0, "(+ ").append(" (* ").append(value).append(" " + key + "))");
+					}
 				}
 			}
 		}

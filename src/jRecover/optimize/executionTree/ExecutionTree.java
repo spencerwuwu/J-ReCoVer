@@ -71,6 +71,7 @@ public class ExecutionTree {
 
 		currentNodes.add(mRoot);
 		while (!currentNodes.isEmpty()) {
+			logAll(new Integer(currentNodes.size()).toString());
 			for (ExecutionTreeNode currentNode : currentNodes) {
 				executeNode(currentNode, endNodes, newNodes);
 			}
@@ -250,51 +251,17 @@ public class ExecutionTree {
 		}
 		return 4;
 	}
-	protected String parseLong(String value){
-		String values[] = value.split("\\s+");
-
-		// parse long 123L -> 123
-		Pattern p = Pattern.compile("^-?[0-9]+L$");
-		int i = 0;
-		while (i < values.length) {
-			Matcher m = p.matcher(values[i]);
-			if (m.find()) {
-				values[i] = values[i].split("L")[0];
-			}
-			i += 1;
-		}
-		String result = "";
-		for (String str : values) {
-			if (result.length() == 0) result = str;
-			else result = result + " " + str;
-		}
-		
-		return result;
-	}
-	protected String parseFloat(String value){
-		String values[] = value.split("\\s+");
-
-		// parse float -123.2F -> 123
-		Pattern p = Pattern.compile("^-?[0-9]+.[0-9]+F$");
-		int i = 0;
-		while (i < values.length) {
-			Matcher m = p.matcher(values[i]);
-			if (m.find()) {
-				values[i] = values[i].split("F")[0];
-			}
-			i += 1;
-		}
-		String result = "";
-		for (String str : values) {
-			if (result.length() == 0) result = str;
-			else result = result + " " + str;
-		}
-		
-		return result;
+	
+	protected String parseExpon(String value) {
+		return new Long(Double.valueOf(value).longValue()).toString();
 	}
 	
 	protected boolean checkNumber(String value) {
-		Pattern p = Pattern.compile("^-?[0-9]*(\\.[0-9]*)?$");
+		if (value.length() > 10) {
+			char a = value.charAt(1);
+			if ((a > '9' || a < '0') && a != '.') return false;
+		}
+		Pattern p = Pattern.compile("^-?[0-9]*(\\.[0-9]+(E[0-9]+)?F?)?L?$");
 		Matcher m = p.matcher(value);
 		if (m.find()) {
 			return true;
@@ -303,11 +270,17 @@ public class ExecutionTree {
 	}
 	
 	protected Variable str2Var(String value, Map<String, Variable> vList) {
-		value = parseLong(value);
-		value = parseFloat(value);
+		if (checkNumber(value)) {
+			if (value.contains("E")) return new Variable(parseExpon(value), false);
+			// parse float 123L -> 123L
+			if (value.contains("L")) return new Variable(value.split("L")[0], true);
+			// parse float -123.2F -> -123.2
+			if (value.contains("F")) return new Variable(value.split("F")[0], false);
+			return new Variable(value, !value.contains("."));
+		}
 		if (vList.containsKey(value)) {
 			return new Variable(vList.get(value));
-		} else if (!checkNumber(value)) {
+		} else {
 			if (value.contains("new ")) {
 				return new Variable("null");
 			} else {
@@ -549,6 +522,8 @@ public class ExecutionTree {
 			elseBranch.addConstraint("! " + conditionStmt.toString());
 			elseBranch.addCondition(new Condition(op, str2Var(lhs, parent.getLocalVars()), str2Var(rhs, parent.getLocalVars()), true));
 			
+			if (unitIndexes.get(goto_target) <= parent.getNextLine()) ifBranch.setReturnFlag(true);
+			
 			returnList.add(ifBranch);
 			returnList.add(elseBranch);
 	 	}
@@ -592,7 +567,6 @@ public class ExecutionTree {
 			valueK = valueK.replace("(", "");
 
 			String keyV = "outV" + currentNode.getNextLine();
-			//newState.update(var, value);
 			currentNode.setVar(keyV, str2Var(valueV, currentNode.getLocalVars()));
 			mVarsType.put(keyV, "double");
 			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + keyV + " -> " + valueV);

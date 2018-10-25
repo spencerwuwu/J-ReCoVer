@@ -6,10 +6,7 @@ import java.util.Map;
 
 import jRecover.Option;
 import jRecover.color.Color;
-import jRecover.optimize.executionTree.ExecutionTree;
 import jRecover.optimize.executionTree.ExecutionTreeNode;
-import jRecover.optimize.state.Condition;
-import jRecover.optimize.state.Variable;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -21,7 +18,6 @@ import java.io.PipedOutputStream;
 
 public class Z3FormatPipeline {
 	Map<String, String> mTypeTable;
-	List<String> mGlobalVariables = new ArrayList<String>();
 	List<ExecutionTreeNode> mBeforeNodes = new ArrayList<ExecutionTreeNode>();
 	List<ExecutionTreeNode> mInnerNodes = new ArrayList<ExecutionTreeNode>();
 	Map<String, Boolean>mVariables = new HashMap<String, Boolean>();
@@ -218,13 +214,26 @@ public class Z3FormatPipeline {
 		//return "(and " + condition + " " + value + ")\n";
 	}
 	
+	/*
+	protected StringBuffer generateConditions(List<Condition> cList, int stage, int round) {
+		StringBuffer conditions = new StringBuffer("");
+		for (Condition condition : cList) {
+			if (conditions.length() == 0) {
+				conditions.append(condition.getFormula(stage, round));
+			} else {
+				conditions.insert(0, "(and ").append(condition.getFormula(stage, round)).append(")");
+			}
+		}
+		return conditions;
+	}
+	*/
 	protected StringBuffer generateConditions(List<String> cList, int stage, int round) {
 		StringBuffer conditions = new StringBuffer("");
 		for (String condition : cList) {
 			if (conditions.length() == 0) {
-				conditions.append(condition.replaceAll("_v", ("_" + stage + "_r" + round)));
+				conditions.append(condition.replace("_v", ("_" + stage + "_r" +  round)));
 			} else {
-				conditions.insert(0, "(and ").append(condition.replaceAll("_v", ("_" + stage + "_r" + round))).append(")");
+				conditions.insert(0, "(and ").append(condition.replace("_v", ("_" + stage + "_r" +  round))).append(")");
 			}
 		}
 		return conditions;
@@ -233,8 +242,6 @@ public class Z3FormatPipeline {
 	protected void variableTypeDeclare() {
 		/*
 		  initialize variable
-		  initial version would be the same, but internal version(_1, _2) maybe not.
-		  result formula wouldn't take variable with '$' into account.
 		*/
 		for (String variable : mTypeTable.keySet()) {
 			String type = mTypeTable.get(variable);

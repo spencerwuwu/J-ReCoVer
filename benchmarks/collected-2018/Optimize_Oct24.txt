@@ -94,7 +94,7 @@ RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 github_50-250_22_p0.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
@@ -218,11 +218,6 @@ RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
-googleCode_50-250_2_p0.java:
-RESULT: Proved to be commutative
-RESULT: Cannot find a counterexample in 500 tests
----------
-
 github_50-250_665_p0.java:
 RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
@@ -230,7 +225,7 @@ RESULT: Cannot find a counterexample in 500 tests
 
 bitbucket_50-250_98_p0.java:
 RESULT: Proved to be commutative
-RESULT: Cannot find a counterexample from these testcases:
+RESULT: Cannot find a counterexample in 34 tests
 ---------
 
 github2_50-250_179_p0.java:
@@ -328,11 +323,6 @@ RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
-googleCode_50-250_15_p0.java:
-RESULT: Proved to be commutative
-RESULT: Cannot find a counterexample from these testcases:
----------
-
 github_50-250_446_p0.java:
 RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
@@ -420,12 +410,7 @@ RESULT: Cannot find a counterexample in 500 tests
 
 bitbucket_50-250_93_p0.java:
 RESULT: Proved to be commutative
-RESULT: Cannot find a counterexample in 28 tests
----------
-
-googleCode_50-250_0_p0.java:
-RESULT: CANNOT prove to be commutative
-RESULT: Counterexample found:
+RESULT: Cannot find a counterexample from these testcases:
 ---------
 
 bitbucket_250-450_50_p0.java:
@@ -480,7 +465,7 @@ RESULT: Counterexample found:
 
 bitbucket_50-250_166_p0.java:
 RESULT: Proved to be commutative
-RESULT: Cannot find a counterexample in 53 tests
+RESULT: Cannot find a counterexample in 56 tests
 ---------
 
 github_50-250_244_p0.java:
@@ -708,11 +693,6 @@ RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
-github_1250-1450_0_p0.java:
-RESULT: CANNOT prove to be commutative
-RESULT: Counterexample found:
----------
-
 bitbucket_50-250_144_p0.java:
 RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
@@ -744,11 +724,6 @@ RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 github_50-250_157_p0.java:
-RESULT: Proved to be commutative
-RESULT: Cannot find a counterexample in 500 tests
----------
-
-googleCode_50-250_42_p0.java:
 RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
@@ -859,11 +834,6 @@ RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 github_50-250_321_p0.java:
-RESULT: Proved to be commutative
-RESULT: Cannot find a counterexample in 500 tests
----------
-
-googleCode_50-250_1_p0.java:
 RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------

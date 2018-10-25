@@ -11,8 +11,8 @@ public class Variable {
 	
 	/*
 	 * Name of value:
-	 * xx_v		-> initial symbolic value
-	 * others	-> global variable or number
+	 * xx_v		-> symbolic value
+	 * others	-> number or formula
 	 */
 	
 	public Variable(String initValue) {
@@ -21,8 +21,21 @@ public class Variable {
 				mValue.put("1", Integer.parseInt(initValue));
 			else 
 				mValue.put(initValue, 1);
-		} else
-			mValue.put(initValue + "_v", 1);
+		} else {
+			if (initValue.length() != 0)
+				mValue.put(initValue + "_v", 1);
+			else
+				mValue.put("0", 0);
+		}
+	}
+	
+	// Constructor for number
+	public Variable(String value, boolean isInteger) {
+		if (isInteger) {
+			mValue.put("1", Integer.parseInt(value));
+		} else {
+			mValue.put(value, 1);
+		}
 	}
 	
 	public Variable(Map<String, Integer> list) {
@@ -85,6 +98,58 @@ public class Variable {
 		} 
 	}
 
+	public Variable operate(String operator, Variable v2) {
+		if (operator == "+") {
+			for (String key : v2.getValue().keySet()) {
+				if (mValue.containsKey(key)) {
+					int value = mValue.get(key) + v2.getValue().get(key);
+					mValue.put(key, value);
+				} else {
+					int value = v2.getValue().get(key);
+					mValue.put(key, value);
+				}
+			}
+		} else if (operator == "-"){
+			for (String key : v2.getValue().keySet()) {
+				if (mValue.containsKey(key)) {
+					int value = mValue.get(key) - v2.getValue().get(key);
+					mValue.put(key, value);
+				} else {
+					int value = -v2.getValue().get(key);
+					mValue.put(key, value);
+				}
+			}
+		} else if (operator == "*"){
+			StringBuffer self = getFormula();
+			StringBuffer rhs = v2.getFormula();
+			if (isInteger(rhs.toString())) {
+				Map<String, Integer> tmp = new HashMap<String, Integer>(mValue);
+				mValue.clear();
+				int mulend = Integer.parseInt(rhs.toString());
+				for (String key : tmp.keySet()) {
+					mValue.put(key, tmp.get(key) * mulend);
+				}
+			} else if (isInteger(self.toString())) {
+				mValue.clear();
+				int mulend = Integer.parseInt(self.toString());
+				for (String key : v2.getValue().keySet()) {
+					mValue.put(key, v2.getValue().get(key) * mulend);
+				}
+			} else {
+				mValue.clear();
+				mValue.put(self.insert(0, "(* ").append(" ").append(rhs).append(")").toString(), 1);
+			}
+		} else {
+			StringBuffer lhs = getFormula();
+			StringBuffer rhs = v2.getFormula();
+			lhs.insert(0, "(" + operator + " ").append(" ").append(rhs).append(")");
+				mValue.clear();
+			mValue.put(lhs.toString(), 1);
+		} 
+		
+		return this;
+	}
+
 	public Map<String, Integer> getValue() {
 		return mValue;
 	}
@@ -95,10 +160,8 @@ public class Variable {
 			if (list.get(key) == 0) continue;
 			else {
 				int value = list.get(key);
-				if (!isNumber(key)
-						&& !key.contains("hasNext")) {
+				if (!key.contains("hasNext")) {
 					if (key.contains("_v")) key = key.replace("_v", "_" + stage + "_r" + round);
-					else key = key + "_" + stage + "_r" + round;
 				}
 				if (var.length() == 0) {
 					if (value == 1)
@@ -128,16 +191,25 @@ public class Variable {
 			if (mValue.get(key) == 0) continue;
 			else {
 				int value = mValue.get(key);
+				if (value == 0) continue;
+
 				if (var.length() == 0) {
 					if (value == 1)
 						var.append(key);
-					else
-						var.insert(0, "(* ").append(value).append(" " + key + ")");
+					else {
+						if (key == "1") var.append(value);
+						else
+							var.insert(0, "(* ").append(value).append(" " + key + ")");
+					}
 				} else {
 					if (value == 1)
 						var.insert(0, "(+ ").append(" " + key + ")");
-					else
+					else {
+						if (key == "1")
+							var.insert(0, "(+ ").append(" " + value + ")");
+						else
 						var.insert(0, "(+ ").append(" (* ").append(value).append(" " + key + "))");
+					}
 				}
 			}
 		}
@@ -148,7 +220,12 @@ public class Variable {
 	
 
 	protected boolean isNumber(String value) {
-		Pattern p = Pattern.compile("^-?[0-9]*(\\.[0-9]*)?$");
+		if (value == null || value.length() == 0) return false;
+		if (value.length() > 10) {
+			char a = value.charAt(2);
+			if ((a > '9' || a < '0') && a != '.') return false;
+		}
+		Pattern p = Pattern.compile("^-?[0-9]+(\\.[0-9]+)?$");
 		Matcher m = p.matcher(value);
 		if (m.find()) {
 			return true;
@@ -157,6 +234,11 @@ public class Variable {
 	}
 	
 	protected boolean isInteger(String value) {
+		if (value == null || value.length() == 0 || value.length() >= 9) return false;
+		if (value.length() > 10) {
+			char a = value.charAt(2);
+			if ((a > '9' || a < '0') && a != '.') return false;
+		}
 		Pattern p = Pattern.compile("^-?[0-9]*$");
 		Matcher m = p.matcher(value);
 		if (m.find()) {

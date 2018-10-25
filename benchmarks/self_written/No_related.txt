@@ -1,0 +1,80 @@
+initial_variable.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+basic_MAD1.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+max_even_odd.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Counterexample found:
+---------
+
+basic_sum.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+deep_branches.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Counterexample found:
+---------
+
+tricky_avg.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+basic_max.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+basic_MAD2.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+basic_rangesum.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Counterexample found:
+---------
+
+basic_avg.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+basic_SD.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+basic_sep.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+basic_dis.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+sum_even_odd.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+range.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Cannot find a counterexample in 500 tests
+---------
+
+tcp_waittime.java:
+RESULT: CANNOT prove to be commutative
+RESULT: Counterexample found:
+---------
+

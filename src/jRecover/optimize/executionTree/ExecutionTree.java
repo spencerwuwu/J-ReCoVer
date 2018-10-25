@@ -1,7 +1,7 @@
 package jRecover.optimize.executionTree;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -12,6 +12,7 @@ import jRecover.color.Color;
 import jRecover.optimize.state.Condition;
 import jRecover.optimize.state.UnitSet;
 import jRecover.optimize.state.Variable;
+import jRecover.optimize.z3FormatPipeline.Z3Pipeline;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.*;
@@ -71,6 +72,7 @@ public class ExecutionTree {
 
 		currentNodes.add(mRoot);
 		while (!currentNodes.isEmpty()) {
+			logAll("Concurrent nodes: " + new Integer(currentNodes.size()).toString());
 			for (ExecutionTreeNode currentNode : currentNodes) {
 				executeNode(currentNode, endNodes, newNodes);
 			}
@@ -139,8 +141,8 @@ public class ExecutionTree {
 			} else if (determineUnitState == 2) {
 				Unit newUnit=us.getUnit();
 				if (newUnit instanceof IfStmt) {
-					log("Split the tree here.");
 					List<ExecutionTreeNode> newLeafNodes = performIfStmt(currentNode, newUnit, mUnitIndexes);
+					if (newLeafNodes.size() > 1) log("Split the tree here.");
 					for (ExecutionTreeNode node: newLeafNodes) {
 						//currentNode.mChildren.add(node);
 						newNodes.add(node);
@@ -250,51 +252,17 @@ public class ExecutionTree {
 		}
 		return 4;
 	}
-	protected String parseLong(String value){
-		String values[] = value.split("\\s+");
-
-		// parse long 123L -> 123
-		Pattern p = Pattern.compile("^-?[0-9]+L$");
-		int i = 0;
-		while (i < values.length) {
-			Matcher m = p.matcher(values[i]);
-			if (m.find()) {
-				values[i] = values[i].split("L")[0];
-			}
-			i += 1;
-		}
-		String result = "";
-		for (String str : values) {
-			if (result.length() == 0) result = str;
-			else result = result + " " + str;
-		}
-		
-		return result;
-	}
-	protected String parseFloat(String value){
-		String values[] = value.split("\\s+");
-
-		// parse float -123.2F -> 123
-		Pattern p = Pattern.compile("^-?[0-9]+.[0-9]+F$");
-		int i = 0;
-		while (i < values.length) {
-			Matcher m = p.matcher(values[i]);
-			if (m.find()) {
-				values[i] = values[i].split("F")[0];
-			}
-			i += 1;
-		}
-		String result = "";
-		for (String str : values) {
-			if (result.length() == 0) result = str;
-			else result = result + " " + str;
-		}
-		
-		return result;
+	
+	protected String parseExpon(String value) {
+		return new Long(Double.valueOf(value).longValue()).toString();
 	}
 	
 	protected boolean checkNumber(String value) {
-		Pattern p = Pattern.compile("^-?[0-9]*(\\.[0-9]*)?$");
+		if (value.length() > 10) {
+			char a = value.charAt(1);
+			if ((a > '9' || a < '0') && a != '.') return false;
+		}
+		Pattern p = Pattern.compile("^-?[0-9]*(\\.[0-9]+(E[0-9]+)?F?)?L?$");
 		Matcher m = p.matcher(value);
 		if (m.find()) {
 			return true;
@@ -303,11 +271,17 @@ public class ExecutionTree {
 	}
 	
 	protected Variable str2Var(String value, Map<String, Variable> vList) {
-		value = parseLong(value);
-		value = parseFloat(value);
+		if (checkNumber(value)) {
+			if (value.contains("E")) return new Variable(parseExpon(value), false);
+			// parse float 123L -> 123L
+			if (value.contains("L")) return new Variable(value.split("L")[0], true);
+			// parse float -123.2F -> -123.2
+			if (value.contains("F")) return new Variable(value.split("F")[0], false);
+			return new Variable(value, !value.contains("."));
+		}
 		if (vList.containsKey(value)) {
 			return new Variable(vList.get(value));
-		} else if (!checkNumber(value)) {
+		} else {
 			if (value.contains("new ")) {
 				return new Variable("null");
 			} else {
@@ -413,7 +387,7 @@ public class ExecutionTree {
 						ge.addConstraint(params[0] + " >= " + params[1]);
 						ge.addCondition(new Condition(">=", valueL, valueR, false));
 						ge.setVar(target, valueL);
-						ExecutionTreeNode lt = new ExecutionTreeNode(node);
+						ExecutionTreeNode lt = node;
 						lt.addConstraint(params[0] + " < " + params[1]);
 						lt.addCondition(new Condition("<", valueL, valueR, false));
 						lt.setVar(target, valueR);
@@ -426,7 +400,7 @@ public class ExecutionTree {
 						ge.addConstraint(params[0] + " >= " + params[1]);
 						ge.addCondition(new Condition(">=", valueL, valueR, false));
 						ge.setVar(target, valueR);
-						ExecutionTreeNode lt = new ExecutionTreeNode(node);
+						ExecutionTreeNode lt = node;
 						lt.addConstraint(params[0] + "<" + params[1]);
 						lt.addCondition(new Condition("<", valueL, valueR, false));
 						lt.setVar(target, valueL);
@@ -461,15 +435,20 @@ public class ExecutionTree {
 					Variable a = str2Var(tmp[0], node.getLocalVars());
 					Variable b = str2Var(tmp[2], node.getLocalVars());
 					if (tmp[1].contains("+")) {
-						node.setVar(target, new Variable("+", a, b));
+						//node.setVar(target, new Variable("+", a, b));
+						node.setVar(target, a.operate("+", b));
 					} else if (tmp[1].contains("cmp") || tmp[1].contains("-")) {
-						node.setVar(target, new Variable("-", a, b));
+						//node.setVar(target, new Variable("-", a, b));
+						node.setVar(target, a.operate("-", b));
 					} else if (tmp[1].contains("*")) {
-						node.setVar(target, new Variable("*", a, b));
+						//node.setVar(target, new Variable("*", a, b));
+						node.setVar(target, a.operate("*", b));
 					} else if (tmp[1].contains("/")) {
-						node.setVar(target, new Variable("div", a, b));
+						//node.setVar(target, new Variable("div", a, b));
+						node.setVar(target, a.operate("div", b));
 					} else if (tmp[1].contains("%")) {
-						node.setVar(target, new Variable("rem", a, b));
+						//node.setVar(target, new Variable("rem", a, b));
+						node.setVar(target, a.operate("rem", b));
 					}
 				} else {
 					node.setVar(target, str2Var(ass_s, node.getLocalVars()));
@@ -534,12 +513,11 @@ public class ExecutionTree {
 		String rhs =  conditionStmt.getOp2().toString();
 		String op =  conditionStmt.getSymbol().toString().replaceAll("\\s+", "");
 		if (parent.getLocalVars().get(lhs).getValue().containsKey("hasNext_v")) {
-			log("Actually we didn't");
 			parent.setNextLine(parent.getNextLine() + 1);
 			returnList.add(parent);
 	 	} else {
 	 		ExecutionTreeNode ifBranch = new ExecutionTreeNode(parent);
-	 		ExecutionTreeNode elseBranch = new ExecutionTreeNode(parent);
+	 		ExecutionTreeNode elseBranch = parent;
 	 		
 			ifBranch.setNextLine(unitIndexes.get(goto_target));
 			elseBranch.setNextLine(parent.getNextLine() + 1);
@@ -549,8 +527,22 @@ public class ExecutionTree {
 			elseBranch.addConstraint("! " + conditionStmt.toString());
 			elseBranch.addCondition(new Condition(op, str2Var(lhs, parent.getLocalVars()), str2Var(rhs, parent.getLocalVars()), true));
 			
-			returnList.add(ifBranch);
-			returnList.add(elseBranch);
+			if (unitIndexes.get(goto_target) <= parent.getNextLine()) ifBranch.setReturnFlag(true);
+			
+			try {
+				if (new Z3Pipeline(ifBranch, mVarsType, mOption).getResult()) {
+					returnList.add(ifBranch);
+				} else {
+					log("ifBranch discarded.");
+				}
+				if (new Z3Pipeline(elseBranch, mVarsType, mOption).getResult()) {
+					returnList.add(elseBranch);
+				} else {
+					log("elseBranch discarded.");
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 	 	}
 		return returnList;
 	}
@@ -592,7 +584,6 @@ public class ExecutionTree {
 			valueK = valueK.replace("(", "");
 
 			String keyV = "outV" + currentNode.getNextLine();
-			//newState.update(var, value);
 			currentNode.setVar(keyV, str2Var(valueV, currentNode.getLocalVars()));
 			mVarsType.put(keyV, "double");
 			log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + keyV + " -> " + valueV);
@@ -606,7 +597,10 @@ public class ExecutionTree {
 				log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + varK + " -> " + valueK);
 			}
 		// handling value set for ref of Writable
-		} else if (us.getUnit().toString().contains("Writable") && us.getUnit().toString().contains("org.apache.hadoop.io")) {
+		} else if (us.getUnit().toString().contains("Writable") 
+				&& us.getUnit().toString().contains("org.apache.hadoop.io")
+				&& !us.getUnit().toString().contains("get")
+				) {
 			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
 			String value = us.getUnit().toString().split(">")[1];
 			value = value.replace(")", "");

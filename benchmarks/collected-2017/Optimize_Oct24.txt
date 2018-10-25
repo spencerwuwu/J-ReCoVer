@@ -29,7 +29,7 @@ RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 context0_90_7_19.java:
-RESULT: Proved to be commutative
+RESULT: CANNOT prove to be commutative
 RESULT: Counterexample found:
 ---------
 
@@ -44,7 +44,7 @@ RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 context0_90_2_1.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
@@ -245,7 +245,7 @@ RESULT: Cannot find a counterexample in 500 tests
 
 context141_200_30_8.java:
 RESULT: Proved to be commutative
-RESULT: Finder timeout
+RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 context0_90_14_7.java:
@@ -299,7 +299,7 @@ RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 collector91_140_1_11.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 

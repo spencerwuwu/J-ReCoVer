@@ -5,7 +5,7 @@ public void reduce(Text key, Iterator<IntWritable> iter,
         OutputCollector<Text, DoubleWritable> output, Reporter reporter) throws IOException {
     int cnt = 0;
     int mad = 0;
-    double avg = (double)(Math.random() * 1000 + 1) - 500;
+    double avg = 50;
 
     while(iter.hasNext()) {
         int cur = iter.next().get();

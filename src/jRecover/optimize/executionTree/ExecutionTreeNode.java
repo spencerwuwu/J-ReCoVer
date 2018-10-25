@@ -12,7 +12,6 @@ public class ExecutionTreeNode {
 	private List<String> mConditions;
 	private List<String> mConstraints;
 	protected Map<String, Variable> mLocalVars;
-	//private State mState;
 	private String mBranchInfo;
 	private int mNextline;
 	private boolean mReturnFlag = false;
@@ -35,7 +34,6 @@ public class ExecutionTreeNode {
 		
 		mConstraints = new ArrayList<String>();
 		if (constraints != null && !constraints.isEmpty()) mConstraints.addAll(constraints);
-		//mState = new State(newState);
 		mLocalVars = new HashMap<String, Variable>(vars);
 
 		mNextline = newNextLine;
@@ -59,11 +57,12 @@ public class ExecutionTreeNode {
 		} else
 			mConstraints = new ArrayList<String>();
 		
-		//mState = new State(newState);
+		// mState = new State(newState);
 		if (node.getLocalVars() != null) {
 			mLocalVars = new HashMap<String, Variable>();
-			for (String key : node.getLocalVars().keySet()) {
-				mLocalVars.put(key, new Variable(node.getLocalVars().get(key)));
+			Map<String, Variable> nodeV = node.getLocalVars();
+			for (String key : nodeV.keySet()) {
+				mLocalVars.put(key, new Variable(nodeV.get(key)));
 			}
 		} else
 			mLocalVars = new HashMap<String, Variable>();

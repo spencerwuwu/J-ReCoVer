@@ -162,15 +162,17 @@ public class Z3FormatPipeline {
 		// Generate formula for each variable in each round
 		for (String key : mVariables.keySet()) {
 			StringBuffer finalValue = new StringBuffer("");
+			StringBuffer beforeValue = new StringBuffer("");
+			StringBuffer innerValue = new StringBuffer("");
 			for (ExecutionTreeNode node : mBeforeNodes) {
 				if (node.getLocalVars().get(key) == null) continue;
 				StringBuffer value = combineValueCondition(node, key, stage, round);
 				if (value.length() == 0) continue;
 				
-				if (finalValue.length() == 0) {
-					finalValue.append(value);
+				if (beforeValue.length() == 0) {
+					beforeValue.append(value);
 				} else {
-					finalValue.insert(0, "(or ").append(" ").append(value).append(")\n");
+					beforeValue.insert(0, "(or ").append(" ").append(value).append(")\n");
 				}
 			}
 			if (!mNoLoop) {
@@ -179,14 +181,19 @@ public class Z3FormatPipeline {
 					StringBuffer value = combineValueCondition(node, key, stage, round);
 					if (value.length() == 0) continue;
 
-					if (finalValue.length() == 0) {
-						finalValue.append(value);
+					if (innerValue.length() == 0) {
+						innerValue.append(value);
 					} else {
-						finalValue.insert(0, "(or ").append(" ").append(value).append(")\n");
+						innerValue.insert(0, "(or ").append(" ").append(value).append(")\n");
 					}
 				}
 			}
-			if (finalValue.length() == 0) continue;
+			if (beforeValue.length() == 0 && innerValue.length() == 0) continue;
+			else {
+				if (beforeValue.length() == 0) beforeValue.append("(= beforeLoop_").append(stage - 1).append("_r").append(round).append(" 1)");
+				if (innerValue.length() == 0) innerValue.append("(not (= beforeLoop_").append(stage - 1).append("_r").append(round).append(" 1))");
+				finalValue.append("(or ").append(beforeValue).append(" ").append(innerValue).append(")\n");
+			}
 			
 			//if (mOutputRelated.get(key)) {
 				if (finalValue.lastIndexOf("hasNext") >= 0) {

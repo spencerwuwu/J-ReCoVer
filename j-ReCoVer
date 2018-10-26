@@ -310,7 +310,7 @@ def run_finder(global_path, path, p_name):
     filename = global_path + ".fields/" + p_name + "_finder"
     cmd = "java -jar " + path + "target/New-1.0.jar" + " > " + filename
     process = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
-    result = wait_timeout(process, TIMEOUT)
+    result = wait_timeout(process, 10)
 
     if not result:
         print "RESULT: Finder timeout"

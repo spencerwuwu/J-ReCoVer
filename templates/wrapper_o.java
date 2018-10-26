@@ -26,9 +26,11 @@ T1
     T4
     > {
 
+        static Size J_RECOVER_ITER_NUM = new Size();
         public static void main(String[] args) {
             int length = 5;
             while (length < 15) {
+                J_RECOVER_ITER_NUM.set(length);
                 for (int i = 0; i < Common.maxcount; i++){  
                     INPUT0
                     for (int j = 0; j < length; j++) {

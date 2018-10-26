@@ -2,8 +2,6 @@
 We generated and collected several reducer benchmarks here.
 
 In ```collected-2018```, we used [searchcode API](https://searchcode.com/api/) to look for reduce programs.
-We search with the keyword ```public void reduce```, then collected the results which the type of 
-```value``` parameter are numbers.
 
 ```self_written``` are some interesting reducer written by ourselves.
 

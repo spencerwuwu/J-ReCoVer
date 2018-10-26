@@ -50,7 +50,7 @@ def main():
             write_ans2set(Matrix, Count, set_index, ans)
             continue
         elif "timeout" in log:
-            ans = 300
+            ans = 300 
             print ans
             write_ans2set(Matrix, Count, set_index, ans)
             continue

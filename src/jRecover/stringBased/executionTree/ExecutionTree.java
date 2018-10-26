@@ -1,7 +1,7 @@
 package jRecover.stringBased.executionTree;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -11,6 +11,7 @@ import jRecover.Option;
 import jRecover.color.Color;
 import jRecover.stringBased.state.UnitSet;
 import jRecover.stringBased.state.Variable;
+import jRecover.stringBased.z3FormatPipeline.Z3Pipeline;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.*;
@@ -28,9 +29,7 @@ public class ExecutionTree {
 	private boolean mUseNextBeforeLoop = false;
 	private boolean mBefore = true;
 	private boolean mNoLoop = false;
-	private static int mTempIndex = 0;
 	Option mOption;
-	//private int mBeforeLoopDegree = 0;
 	
 
 	public ExecutionTree(ExecutionTreeNode node, List<UnitSet> units, Map<Unit, Integer> unitIndexes, 
@@ -441,7 +440,6 @@ public class ExecutionTree {
 					} else if (tmp[1].contains("/")) {
 						node.setVar(target, a.divideVariable(a, b));
 					} else if (tmp[1].contains("%")) {
-						String newVar = "_" + (mTempIndex++) + "_t";
 						node.setVar(target, a.remainderVariable(a, b));
 					}
 				} else {
@@ -480,9 +478,9 @@ public class ExecutionTree {
 	protected ExecutionTreeNode performIdentityStmt(ExecutionTreeNode node, Unit u) {
 		DefinitionStmt ds = (DefinitionStmt) u;
 		String var = ds.getLeftOp().toString();
-		Value assignment = ds.getRightOp();
+		//Value assignment = ds.getRightOp();
 		// Preserve only org.apache.hadoop.io.'IntWritable and marked it as parameter'
-		String assignment_tail = "@parameter."+assignment.toString().split("\\.(?=[^\\.]+$)")[1]; 
+		//String assignment_tail = "@parameter."+assignment.toString().split("\\.(?=[^\\.]+$)")[1]; 
 		
 		log(Color.ANSI_GREEN + "assign: " + Color.ANSI_RESET + var + " -> " + var + "_v");
 		//st.update(var.toString(), assignment_tail);
@@ -519,8 +517,22 @@ public class ExecutionTree {
 			elseBranch.addConstraint("! " + conditionStmt.toString());
 			elseBranch.addCondition(op, str2Var(lhs, parent.getLocalVars()), str2Var(rhs, parent.getLocalVars()), true);
 			
-			returnList.add(ifBranch);
-			returnList.add(elseBranch);
+			if (unitIndexes.get(goto_target) <= parent.getNextLine()) ifBranch.setReturnFlag(true);
+			
+			try {
+				if (new Z3Pipeline(ifBranch, mVarsType, mOption).getResult()) {
+					returnList.add(ifBranch);
+				} else {
+					log("ifBranch discarded.");
+				}
+				if (new Z3Pipeline(elseBranch, mVarsType, mOption).getResult()) {
+					returnList.add(elseBranch);
+				} else {
+					log("elseBranch discarded.");
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 	 	}
 		return returnList;
 	}

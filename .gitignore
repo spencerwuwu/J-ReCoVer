@@ -6,10 +6,8 @@ reducer.java
 
 benchmarks/collected-2018/base/
 benchmarks/collected-2018/parse
-benchmarks/collected-2017/*.log
 benchmarks/collected-2018/*.log
 benchmarks/self_written/*.log
 benchmarks/random_generated/*.log
-benchmarks/random_generated/s2
 benchmarks/random_generated/s1
 benchmarks/random_generated/generator

@@ -6,6 +6,7 @@ type1 = "Proved to be commutative"
 type2 = "CANNOT prove to be commutative. Counterexample found"
 type3 = "CANNOT prove to be commutative. Cannot find a counterexample"
 type4 = "Proved to be commutative. Counterexample found"
+timeout = "timeout"
 
 def parse_param1(target):
     tokens = target.split(" ")
@@ -73,17 +74,24 @@ def write2seed(seed_f, java, result):
     seed_f.write(":comment => \"\", ")
 
     output = 0
-    if type4 in result:
+    if timeout in result:
+        result = "Unknown."
+        seed_f.write(":result_type => 3, ")
+        output = 3
+    elif type4 in result:
+        result = "Unknown."
         seed_f.write(":result_type => 3, ")
         output = 3
     elif type1 in result:
-        result = "Proved to be commutative."
+        result = "Commutative."
         seed_f.write(":result_type => 1, ")
         output = 1
     elif type2 in result:
+        result = "Not commutative."
         seed_f.write(":result_type => 2, ")
         output = 2
     else:
+        result = "Unknown."
         seed_f.write(":result_type => 3, ")
         output = 3
     seed_f.write(":result => \"" + result + "\"")
@@ -93,7 +101,7 @@ def write2seed(seed_f, java, result):
 
 
 def main(f):
-    seed_f = open("2_benchmarks2018.rb", "w")
+    seed_f = open("1_benchmarks2018.rb", "w")
     log_f = open(f, "r")
 
     java = ""

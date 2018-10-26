@@ -61,6 +61,7 @@ V cmp V1
 ```
 where **V** is chosen from the variable set. **V1 V2** can be either a variable or a number. **b_op** includes “+ - * / %”,  **u_op** includes “+= -= *= /=”, and **cmp** includes “== != >= <= > <”.
 
-For the scalability experiment we remove “* / %” because these operations would be too hard for SMT solver.
+For the scalability experiment we remove “/ %” because these operations would be too hard for SMT solver.   
+For "*" it has a 1% chance to be used and it is always **V * N** where N is an integer.
 
 

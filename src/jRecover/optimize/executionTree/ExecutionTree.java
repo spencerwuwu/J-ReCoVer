@@ -573,7 +573,7 @@ public class ExecutionTree {
 		if(us.getUnit().toString().contains("OutputCollector") || us.getUnit().toString().contains("Context")) {
 			String key = (us.getUnit().toString().split("\\s+")[1]).split("\\.")[0];
 			String valueV = (us.getUnit().toString().split(">")[1]).split(",")[1];
-			valueV = valueV.replace(")", "");
+			valueV = valueV.replace(")", "").replaceAll("\\s+", "");
 
 			//newState.update(key, value);
 			currentNode.setVar(key, str2Var(valueV, currentNode.getLocalVars()));
@@ -581,7 +581,7 @@ public class ExecutionTree {
 
 			// Assign valueK and value from output.collect(valueK, value) to individual variables
 			String valueK = (us.getUnit().toString().split(">")[1]).split(",")[0];
-			valueK = valueK.replace("(", "");
+			valueK = valueK.replace("(", "").replaceAll("\\s+", "");
 
 			String keyV = "outV" + currentNode.getNextLine();
 			currentNode.setVar(keyV, str2Var(valueV, currentNode.getLocalVars()));

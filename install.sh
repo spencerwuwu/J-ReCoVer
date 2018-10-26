@@ -44,4 +44,4 @@ build_jrecover
 fetch_wrapper
 
 echo ""
-echo "Complete installation in BUILD/"
+echo "Complete installation"

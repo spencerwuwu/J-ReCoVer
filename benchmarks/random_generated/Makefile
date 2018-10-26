@@ -13,7 +13,7 @@ $(GENERATOR): generator.c
 	$(CC) $^ $(CFLAGS) -o $(GENERATOR)
 
 $(GENERATOR-DEBUG): generator.c
-	$(CC) $^ $(CFLAGS) $(DEBUG) -o $(GENERATOR)
+	$(CC) $^ $(CFLAGS) $(DEBUG) -o $(GENERATOR-DEBUG)
 
 clean:
 	$(RM) $(GENERATOR) $(GENERATOR-DEBUG)

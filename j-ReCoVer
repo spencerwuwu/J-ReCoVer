@@ -8,7 +8,7 @@ import subprocess, threading
 
 Reducer = "reducer.java"
 Mvn = "mvn package -q -Dmaven.test.skip=true -B"
-TIMEOUT = 360
+TIMEOUT = 300
 
 def error_exit(path):
     os.system("rm -rf " + path)
@@ -261,6 +261,7 @@ def run_checker(global_path, path, p_name):
     else:
         print "RESULT: Checker timeout"
         os.system("rm -rf " + filename)
+        #os.system("ps aux | grep jar | awk '{system(\"kill -9 \" $2)}'")
         return False
 
     os.system("rm -rf " + filename)

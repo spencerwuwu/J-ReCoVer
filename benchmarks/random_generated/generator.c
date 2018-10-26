@@ -222,7 +222,7 @@ void destroy_Array(Array* array) {
 
 void write_init_vars() {
     for(int i = 0; i < Vars->size; i++) {
-        writeline("double ");
+        writeline("int ");
         writeline(Vars->elements[i]);
         writeline(" = 0;\n");
     }
@@ -243,11 +243,9 @@ char* generate_normal_line() {
     if (get_random(100) == 1) {
         int lhs_i = get_random(Vars->size);
         char** rhs = malloc(sizeof(char*) * 2);
-        for (int i = 0; i < 2; i++) {
-            int rhs_i = get_random(Vars->size + 1);
-            if (rhs_i == Vars->size) asprintf(&rhs[i], "%d", get_random(10) - 5);
-            else rhs[i] = strdup(Vars->elements[rhs_i]);
-        }
+        int rhs_i = get_random(Vars->size);
+        rhs[0] = strdup(Vars->elements[rhs_i]);
+        asprintf(&rhs[1], "%d", get_random(10) - 5);
         char *result;
         asprintf(&result, "%s = %s * %s;\n", 
                 Vars->elements[lhs_i], rhs[0], rhs[1]);
@@ -296,6 +294,7 @@ char* generate_condition() {
     char *result;
     asprintf(&result, "%s %s %s", 
             Vars->elements[lhs_i], Cmps->elements[cmp_i], rhs);
+    free(rhs);
     return result;
 }
 
@@ -377,7 +376,7 @@ int main(int argc, char** argv) {
     push_element(Vars, "cur");
 
     writeline("public void reduce(Text prefix, Iterator<IntWritable> iter,\n \
-        OutputCollector<Text, DoubleWritable> output, Reporter reporter) throws IOException {\n");
+        OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {\n");
 
     write_init_vars();
 
@@ -397,7 +396,7 @@ int main(int argc, char** argv) {
 
     //writeline("double sum = 0;\n");
     // sum_up_vars();
-    writeline("output.collect(prefix, new DoubleWritable(");
+    writeline("output.collect(prefix, new IntWritable(");
     writeline(Vars->elements[get_random(Vars->size)]);
     writeline("));\n}\n");
 

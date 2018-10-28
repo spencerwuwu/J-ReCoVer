@@ -4,7 +4,7 @@ RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 standard_deviation.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
@@ -19,22 +19,22 @@ RESULT: Counterexample found:
 ---------
 
 tricky_avg.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 MAD2.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 max.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 dis.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
@@ -49,32 +49,32 @@ RESULT: Counterexample found:
 ---------
 
 range.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 avg.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 sum.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 sep.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
 floating_point.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Counterexample found:
 ---------
 
 MAD1.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Cannot find a counterexample in 500 tests
 ---------
 
@@ -84,7 +84,7 @@ RESULT: Counterexample found:
 ---------
 
 inner_loop.java:
-RESULT: CANNOT prove to be commutative
+RESULT: Proved to be commutative
 RESULT: Finder timeout
 ---------
 

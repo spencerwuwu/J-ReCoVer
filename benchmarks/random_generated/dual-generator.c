@@ -8,12 +8,8 @@
 #include <assert.h>
 
 /*
- * Generate random reudcer based on the
- * the following three params:
- * variable number, line number, if-else
- * numbers. The variable passed to the 
- * Outputcollector or Context is selected
- * randomly.
+ * Generate 2 random files, 
+ * for CBMC and J-ReCoVer.
  */
 
 /* 
@@ -33,7 +29,8 @@ typedef struct Array {
 Array* Vars = NULL;
 Array* Opers = NULL;
 Array* Cmps = NULL;
-int File_fd;
+int Java_fd;
+int Cbmc_fd;
 int* Line_types; 
 // Line_types:
 //  0 -> normal
@@ -46,6 +43,10 @@ int IF_NUM = 10;
 int BASELINE = 200;
 int LINE = 0;        
 
+char *Cbmc1_1 = NULL;
+char *Cbmc1_2 = NULL;
+char *Cbmc2_1 = NULL;
+char *Cbmc2_2 = NULL;
 
 /* 
  * Functions 
@@ -55,11 +56,36 @@ int writeline(char *str) {
     int length = strlen(str);
     char *ptr = str;
     while (size < length) {
-        int n = write(File_fd, ptr, length - size);
+        int n = write(Java_fd, ptr, length - size);
         ptr += n;
         size += n;
     }
     return size;
+}
+
+int write_cbmc(char *str) {
+    int size = 0;
+    int length = strlen(str);
+    char *ptr = str;
+    while (size < length) {
+        int n = write(Cbmc_fd, ptr, length - size);
+        ptr += n;
+        size += n;
+    }
+    return size;
+}
+
+int append2_cbmc(char *str, char** target) {
+    char* ptr = *target;
+    if (ptr == NULL) {
+        ptr = malloc(strlen(str) + 1);
+        strcat(ptr, str);
+        *target = ptr;
+    } else {
+        ptr = realloc(ptr, strlen(ptr) + strlen(str) + 1);
+        strcat(ptr, str);
+        *target = ptr;
+    }
 }
 
 int get_random(int max) {
@@ -232,8 +258,19 @@ void write_init_vars() {
         writeline("int ");
         writeline(Vars->elements[i]);
         writeline(" = 0;\n");
+
+        write_cbmc("int ");
+        write_cbmc(Vars->elements[i]);
+        write_cbmc("a, ");
+        write_cbmc(Vars->elements[i]);
+        write_cbmc("b;\n");
+        write_cbmc(Vars->elements[i]);
+        write_cbmc("a = ");
+        write_cbmc(Vars->elements[i]);
+        write_cbmc("b;\n");
     }
     writeline("\n");
+    write_cbmc("\n");
 }
 
 void sum_up_vars() {
@@ -254,11 +291,24 @@ char* generate_normal_line() {
         rhs[0] = strdup(Vars->elements[rhs_i]);
         asprintf(&rhs[1], "%d", get_random(10) - 5);
         char *result = NULL;
-        asprintf(&result, "%s = %s * %s;\n", 
+        asprintf(&result, "%s = %s * %s;\n\n", 
                 Vars->elements[lhs_i], rhs[0], rhs[1]);
+
+        char *resulta = NULL, *resultb = NULL;
+        asprintf(&resulta, "%sa = %sa * %s;\n", 
+                Vars->elements[lhs_i], rhs[0], rhs[1]);
+        asprintf(&resultb, "%sb = %sb * %s;\n", 
+                Vars->elements[lhs_i], rhs[0], rhs[1]);
+        append2_cbmc(resulta, &Cbmc1_1);
+        append2_cbmc(resulta, &Cbmc1_2);
+        append2_cbmc(resultb, &Cbmc2_1);
+        append2_cbmc(resultb, &Cbmc2_2);
+
         free(rhs[0]);
         free(rhs[1]);
         free(rhs);
+        free(resulta);
+        free(resultb);
         return result;
     }
 
@@ -266,27 +316,83 @@ char* generate_normal_line() {
     int op_i = get_random(Opers->size);
     if (Opers->is_binary[op_i] == 1) {
         char** rhs = malloc(sizeof(char*) * 2);
+        char** rhs_cbmca = malloc(sizeof(char*) * 2);
+        char** rhs_cbmcb = malloc(sizeof(char*) * 2);
+
         for (int i = 0; i < 2; i++) {
             int rhs_i = get_random(Vars->size + 1);
-            if (rhs_i == Vars->size) asprintf(&rhs[i], "%d", get_random(10) - 5);
-            else rhs[i] = strdup(Vars->elements[rhs_i]);
+            if (rhs_i == Vars->size) {
+                int num = get_random(10) - 5;
+                asprintf(&rhs[i], "%d", num);
+                asprintf(&rhs_cbmca[i], "%d", num);
+                asprintf(&rhs_cbmcb[i], "%d", num);
+            } else {
+                rhs[i] = strdup(Vars->elements[rhs_i]);
+                asprintf(&rhs_cbmca[i], "%sa", Vars->elements[rhs_i]);
+                asprintf(&rhs_cbmcb[i], "%sb", Vars->elements[rhs_i]);
+            }
         }
         char *result = NULL;
         asprintf(&result, "%s = %s %s %s;\n", 
                 Vars->elements[lhs_i], rhs[0], Opers->elements[op_i], rhs[1]);
+
+        char *resulta = NULL, *resultb = NULL;
+        asprintf(&resulta, "%sa = %s %s %s;\n", 
+                Vars->elements[lhs_i], rhs_cbmca[0], Opers->elements[op_i], rhs_cbmca[1]);
+        asprintf(&resultb, "%sb = %s %s %s;\n", 
+                Vars->elements[lhs_i], rhs_cbmcb[0], Opers->elements[op_i], rhs_cbmcb[1]);
+        append2_cbmc(resulta, &Cbmc1_1);
+        append2_cbmc(resulta, &Cbmc1_2);
+        append2_cbmc(resultb, &Cbmc2_1);
+        append2_cbmc(resultb, &Cbmc2_2);
+
         free(rhs[0]);
         free(rhs[1]);
         free(rhs);
+
+        free(rhs_cbmca[0]);
+        free(rhs_cbmca[1]);
+        free(rhs_cbmcb[0]);
+        free(rhs_cbmcb[1]);
+        free(rhs_cbmca);
+        free(rhs_cbmcb);
+        free(resulta);
+        free(resultb);
         return result;
+
     } else {
         int rhs_i = get_random(Vars->size + 1);
         char *rhs = NULL;
-        if (rhs_i == Vars->size) asprintf(&rhs, "%d", get_random(10) - 5);
-        else rhs = strdup(Vars->elements[rhs_i]);
+        char *rhs_cbmca = NULL, *rhs_cbmcb = NULL;
+        if (rhs_i == Vars->size) {
+            int num = get_random(10) - 5;
+            asprintf(&rhs, "%d", num);
+            asprintf(&rhs_cbmca, "%d", num);
+            asprintf(&rhs_cbmcb, "%d", num);
+        } else {
+            rhs = strdup(Vars->elements[rhs_i]);
+            asprintf(&rhs_cbmca, "%sa", Vars->elements[rhs_i]);
+            asprintf(&rhs_cbmcb, "%sb", Vars->elements[rhs_i]);
+        }
         char *result = NULL; 
         asprintf(&result, "%s %s %s;\n", 
                 Vars->elements[lhs_i], Opers->elements[op_i], rhs);
+
+        char *resulta = NULL, *resultb = NULL; 
+        asprintf(&resulta, "%sa %s %s;\n", 
+                Vars->elements[lhs_i], Opers->elements[op_i], rhs_cbmca);
+        asprintf(&resultb, "%sb %s %s;\n", 
+                Vars->elements[lhs_i], Opers->elements[op_i], rhs_cbmcb);
+        append2_cbmc(resulta, &Cbmc1_1);
+        append2_cbmc(resulta, &Cbmc1_2);
+        append2_cbmc(resultb, &Cbmc2_1);
+        append2_cbmc(resultb, &Cbmc2_2);
+
         free(rhs);
+        free(rhs_cbmca);
+        free(rhs_cbmcb);
+        free(resulta);
+        free(resultb);
         return result;
     }
 }
@@ -295,13 +401,36 @@ char* generate_condition() {
     int cmp_i = get_random(Cmps->size);
     int lhs_i = get_random(Vars->size);
     int rhs_i = get_random(Vars->size + 1);
-    char *rhs = NULL;
-    if (rhs_i == Vars->size) asprintf(&rhs, "%d", get_random(10) - 5);
-    else rhs = strdup(Vars->elements[rhs_i]);
-    char *result = NULL;
+    char *rhs = NULL, *rhs_cbmca = NULL, *rhs_cbmcb = NULL;
+
+    if (rhs_i == Vars->size) {
+        int num = get_random(10) - 5;
+        asprintf(&rhs, "%d", num);
+        asprintf(&rhs_cbmca, "%d", num);
+        asprintf(&rhs_cbmcb, "%d", num);
+    } else {
+        rhs = strdup(Vars->elements[rhs_i]);
+        asprintf(&rhs_cbmca, "%sa", Vars->elements[rhs_i]);
+        asprintf(&rhs_cbmcb, "%sb", Vars->elements[rhs_i]);
+    }
+    char *result = NULL, *resulta = NULL, *resultb = NULL;
     asprintf(&result, "%s %s %s", 
             Vars->elements[lhs_i], Cmps->elements[cmp_i], rhs);
+    asprintf(&resulta, "%sa %s %s", 
+            Vars->elements[lhs_i], Cmps->elements[cmp_i], rhs_cbmca);
+    asprintf(&resultb, "%sb %s %s", 
+            Vars->elements[lhs_i], Cmps->elements[cmp_i], rhs_cbmcb);
+
+    append2_cbmc(resulta, &Cbmc1_1);
+    append2_cbmc(resulta, &Cbmc1_2);
+    append2_cbmc(resultb, &Cbmc2_1);
+    append2_cbmc(resultb, &Cbmc2_2);
+
     free(rhs);
+    free(rhs_cbmca);
+    free(rhs_cbmcb);
+    free(resulta);
+    free(resultb);
     return result;
 }
 
@@ -313,14 +442,33 @@ void write_body_lines() {
             free(str);
         } else if (Line_types[i] == 1) {
             writeline("if (");
+            append2_cbmc("if (", &Cbmc1_1);
+            append2_cbmc("if (", &Cbmc2_1);
+            append2_cbmc("if (", &Cbmc1_2);
+            append2_cbmc("if (", &Cbmc2_2);
+
             char *str = generate_condition();
             writeline(str);
             writeline(") {\n");
             free(str);
+            append2_cbmc(") {\n", &Cbmc1_1);
+            append2_cbmc(") {\n", &Cbmc2_1);
+            append2_cbmc(") {\n", &Cbmc1_2);
+            append2_cbmc(") {\n", &Cbmc2_2);
+
         } else if (Line_types[i] == 2) {
             writeline("} else {\n");
+            append2_cbmc("} else {\n", &Cbmc1_1);
+            append2_cbmc("} else {\n", &Cbmc2_1);
+            append2_cbmc("} else {\n", &Cbmc1_2);
+            append2_cbmc("} else {\n", &Cbmc2_2);
+
         } else if (Line_types[i] == 3) {
             writeline("}\n");
+            append2_cbmc("}\n", &Cbmc1_1);
+            append2_cbmc("}\n", &Cbmc2_1);
+            append2_cbmc("}\n", &Cbmc1_2);
+            append2_cbmc("}\n", &Cbmc2_2);
         }
     }
 }
@@ -328,6 +476,7 @@ void write_body_lines() {
 int main(int argc, char** argv) {
     if (argc != 2 && argc != 5) {
         fprintf(stderr, "./generator filename <Variable Baseline If-else>\n");
+        fprintf(stderr, "2 files filename.java and filename.c will be generated\n");
         exit(1);
     }
     if (argc == 5) {
@@ -346,15 +495,20 @@ int main(int argc, char** argv) {
 
     LINE = (BASELINE + IF_NUM * 3);
 
+    char *target_java = NULL, *target_c = NULL;
+    asprintf(&target_java, "%s.java", argv[1]);
+    asprintf(&target_c, "%s.c", argv[1]);
+    Java_fd = open_filefd(target_java);
+    Cbmc_fd = open_filefd(target_c);
+
     srand(time(NULL));
-    File_fd = open_filefd(argv[1]);
     Vars = init_Array();
     Opers = init_Array();
     Cmps = init_Array();
 
     writeline("// Note: only +, - operations\n");
     writeline("// Parameters:\n");
-    char *str = NULL;
+    char *str;
     asprintf(&str, "//   Variables:   %d\n", VAR_NUM);
     writeline(str);
     free(str);
@@ -373,19 +527,14 @@ int main(int argc, char** argv) {
     init_cmps();
     init_line_types();
 
-    /*
-     * General use example heading:
-     *
-         writeline("public class test {\n \
-            public static void main(String []args) {\n");
-     */
-
     push_element(Vars, "cur");
 
     writeline("public void reduce(Text prefix, Iterator<IntWritable> iter,\n \
         OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {\n");
+    write_cbmc("int main() {\n");
 
     write_init_vars();
+    write_cbmc("int input0, input1;\n\n");
 
     writeline("while (iter.hasNext()) {\n");
     writeline("cur = iter.next().get();\n");
@@ -394,18 +543,31 @@ int main(int argc, char** argv) {
 
     writeline("}\n");
 
-    /*
-     * General use example ending:
-     *
-        writeline("}\n}\n");
-     *
-     */
-
-    //writeline("double sum = 0;\n");
-    // sum_up_vars();
     writeline("output.collect(prefix, new IntWritable(");
-    writeline(Vars->elements[get_random(Vars->size)]);
+    int return_index = get_random(Vars->size);
+    writeline(Vars->elements[return_index]);
     writeline("));\n}\n");
+
+    write_cbmc("// Round 1-1\n");
+    write_cbmc("cura = input0;\n");
+    write_cbmc(Cbmc1_1);
+    write_cbmc("\n// Round 1-2\n");
+    write_cbmc("cura = input1;\n");
+    write_cbmc(Cbmc1_2);
+    write_cbmc("\n// Round 2-1\n");
+    write_cbmc("curb = input1;\n");
+    write_cbmc(Cbmc2_1);
+    write_cbmc("\n// Round 2-2\n");
+    write_cbmc("curb = input0;\n");
+    write_cbmc(Cbmc2_1);
+
+    write_cbmc("\n");
+    write_cbmc("assert(");
+    write_cbmc(Vars->elements[return_index]);
+    write_cbmc("a == ");
+    write_cbmc(Vars->elements[return_index]);
+    write_cbmc("b);\n");
+    write_cbmc("return 0;\n}\n");
 
     destroy_Array(Vars);
     destroy_Array(Opers);
@@ -413,7 +575,14 @@ int main(int argc, char** argv) {
     free(Line_types);
     Line_types = NULL;
 
-    close(File_fd);
+    close(Java_fd);
+    close(Cbmc_fd);
+    free(target_java);
+    free(target_c);
+    free(Cbmc1_1);
+    free(Cbmc1_2);
+    free(Cbmc2_1);
+    free(Cbmc2_2);
 
     printf("Successly saved to %s\n", argv[1]);
     return 0;

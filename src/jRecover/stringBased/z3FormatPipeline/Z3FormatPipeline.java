@@ -111,8 +111,7 @@ public class Z3FormatPipeline {
 			stage += 1;
 		}
 
-		//mPipeContent.add("(assert (not (= input0_1 input0_2)))\n");
-		mPipeContent.add("(assert (not (= input0_0_r1 input0_1_r1)))\n");
+		//mPipeContent.add("(assert (not (= input0_0_r1 input0_1_r1)))\n");
 		mPipeContent.add("(assert (= input0_0_r1 input0_1_r2))\n");
 		mPipeContent.add("(assert (= input0_1_r1 input0_0_r2))\n");
 		

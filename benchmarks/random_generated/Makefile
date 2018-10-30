@@ -4,15 +4,18 @@ DGENERATOR=dual-generator
 DGENERATOR-DEBUG=dual-generator-debug
 BGENERATOR=bmc-generator
 BGENERATOR-DEBUG=bmc-generator-debug
+Z3=z3-bmc-generator
+Z3-DEBUG=z3-bmc-generator-debug
 
 CC = gcc
 WARNINGS = -Wall -Wextra -Werror -Wno-error=unused-parameter -Wmissing-declarations -Wmissing-variable-declarations
 CFLAGS   = -D_GNU_SOURCE -std=gnu11 
 DEBUG	 = -g
 
-all: $(GENERATOR) $(DGENERATOR) $(BGENERATOR)
-debug: $(GENERATOR-DEBUG) $(DGENERATOR-DEBUG) $(BGENERATOR-DEBUG)
+all: $(GENERATOR) $(DGENERATOR) $(BGENERATOR) $(Z3)
+debug: $(Z3-DEBUG)
 bmc: $(BGENERATOR)
+z3: $(Z3)
 
 $(GENERATOR): generator.c
 	$(CC) $^ $(CFLAGS) -o $(GENERATOR)
@@ -32,5 +35,11 @@ $(BGENERATOR): bmc-generator.c
 $(BGENERATOR-DEBUG): bmc-generator.c
 	$(CC) $^ $(CFLAGS) $(DEBUG) -o $(BGENERATOR-DEBUG)
 
+$(Z3): z3-bmc-generator.c
+	$(CC) $^ $(CFLAGS) -o $(Z3)
+
+$(Z3-DEBUG): z3-bmc-generator.c
+	$(CC) $^ $(CFLAGS) $(DEBUG) -o $(Z3-DEBUG)
+
 clean:
-	$(RM) $(GENERATOR) $(GENERATOR-DEBUG) $(DGENERATOR) $(DGENERATOR-DEBUG) $(BGENERATOR) $(BGENERATOR-DEBUG)
+	$(RM) $(GENERATOR) $(GENERATOR-DEBUG) $(DGENERATOR) $(DGENERATOR-DEBUG) $(BGENERATOR) $(BGENERATOR-DEBUG) $(Z3) $(Z3-DEBUG)

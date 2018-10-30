@@ -11,7 +11,8 @@ public class Option {
 			+ "    -c classpath    Set classpath (Optional if you had packed all libs into the jar)\n"
 			+ "    -j              Jimple mode, only output Jimple code\n"
 			+ "    -s              Silence mode, print out less log\n"
-			+ "    -o              Optimize mode for formula generation\n"
+			+ "    -z              Prints out only z3 formulas\n"
+			+ "    -o              Old version for formula generation\n"
 			+ " * Example:\n"
 			+ "     $ java -jar j-recover.jar your_jar.jar reducer_classname\n"
 			+ "   Jimple mode \n"
@@ -22,12 +23,14 @@ public class Option {
 	public boolean silence_flag;
 	public boolean jimple_flag;
 	public boolean optimize_flag;
+	public boolean z3_mode;
 	
 	public Option() {
 		cfg_flag = false;
 		silence_flag = false;
 		jimple_flag = false;
 		optimize_flag = true;
+		z3_mode = false;
 	}
 	
 	public void parse(String input) {
@@ -37,6 +40,8 @@ public class Option {
 			this.silence_flag = true;
 		} else if (input.equals("-o")) {
 			this.optimize_flag = false;
+		} else if (input.equals("-z")) {
+			this.z3_mode = true;
 		}
 	}
 	

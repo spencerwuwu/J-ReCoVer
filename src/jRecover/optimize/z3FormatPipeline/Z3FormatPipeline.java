@@ -55,6 +55,13 @@ public class Z3FormatPipeline {
 		
 		logAll("Starting z3...");
 		String result = "";
+
+		if (mOption.z3_mode) {
+			for (String formula : mPipeContent) {
+				System.out.print(formula);
+			}
+			return true;
+		}
 		try {
 			Process process = Runtime.getRuntime().exec("z3 -in");
 			mZt2pipe = process.getInputStream();
@@ -139,7 +146,7 @@ public class Z3FormatPipeline {
 					.append(key).append("_1_r2)) (not (= ").append(key).append("_2_r1 ").append(key).append("_2_r2))))\n"); 
 				}
 				continue;
-			} else if (!mOutputRelated.get(key)) continue;
+			} //else if (!mOutputRelated.get(key)) continue;
 
 			noVariable = false;
 			//if (mConditionRelated.get(key)) continue;
@@ -201,7 +208,6 @@ public class Z3FormatPipeline {
 				}
 				finalValue.insert(0, "(assert \n").append(")");
 				mPipeContent.add(finalValue + "\n");
-				//System.out.println(finalValue);
 			//}
 		}
 		
@@ -301,11 +307,13 @@ public class Z3FormatPipeline {
 	
 	
 	protected void logAll(String str) {
+		if (mOption.z3_mode) return;
 		if (!mOption.silence_flag) System.out.println(str);
 		else System.out.println("[ z3Pipe]  " + str);
 	}
 	
 	protected void log(String str) {
+		if (mOption.z3_mode) return;
 		if (!mOption.silence_flag) System.out.println(str);
 	}
 		

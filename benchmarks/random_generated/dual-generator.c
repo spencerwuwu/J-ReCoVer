@@ -171,7 +171,7 @@ void init_line_types() {
     if (IF_NUM <= 0) return;
 
     int if_else_end[3] = {IF_NUM, 0, 0};
-    int hierachy_stack[IF_NUM];
+    int hierachy_stack[IF_NUM + 1];
     int hierachy = 0;
     int total = IF_NUM * 3;
     int done = 0;
@@ -234,6 +234,7 @@ void init_line_types() {
 
         done++;
         current_line = target_line + 1;
+        assert(current_line <= LINE);
     }
     assert(hierachy == 0);
 }

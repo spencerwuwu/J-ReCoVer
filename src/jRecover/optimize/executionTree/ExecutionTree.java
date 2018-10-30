@@ -100,6 +100,7 @@ public class ExecutionTree {
 	}
 	
 	public void print() {
+		if (mOption.z3_mode) return;
 		int index = 0;
 		for (ExecutionTreeNode node : mEndNodes) {
 			if (mBefore) {
@@ -552,13 +553,11 @@ public class ExecutionTree {
 		Unit goto_target = gt_st.getTarget();
 		
 		if(unitIndexes.get(goto_target) > node.getNextLine()) {
-		    //System.out.println(Color.ANSI_GREEN + st.getCommandLineNo() + " goto " + Color.ANSI_RESET + goto_target);
 		    log(Color.ANSI_GREEN + node.getNextLine() + " goto " + Color.ANSI_RESET + goto_target);
 		    //node = new ExecutionTreeNode(null, st, 0, unitIndexes.get(goto_target), false);
 		    node.setNextLine(unitIndexes.get(goto_target));
 		}
 		else {
-			//System.out.println(Color.ANSI_GREEN +  st.getCommandLineNo() + " goto " + Color.ANSI_RESET + unitIndexes.get(goto_target) + " (Loop back, terminate)");
 			log(Color.ANSI_GREEN + node.getNextLine() + " goto " + Color.ANSI_RESET + unitIndexes.get(goto_target) + " (Loop back, terminate)");
 			//node = new ExecutionTreeNode(null, st, 0, st.getCommandLineNo(), true);
 		    node.setReturnFlag(true);
@@ -656,11 +655,13 @@ public class ExecutionTree {
 	}
 	
 	public void logAll(String str) {
+		if (mOption.z3_mode) return;
 		if (mOption.silence_flag) System.out.println("[  ETree]  " + str);
 		else System.out.println(str);
 	}
 	
 	public void log(String str) {
+		if (mOption.z3_mode) return;
 		if (!mOption.silence_flag) System.out.println(str);
 	}
 

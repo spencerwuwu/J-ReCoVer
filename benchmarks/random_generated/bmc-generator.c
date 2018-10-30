@@ -8,12 +8,9 @@
 #include <assert.h>
 
 /*
- * Generate random reudcer based on the
- * the following three params:
- * variable number, line number, if-else
- * numbers. The variable passed to the 
- * Outputcollector or Context is selected
- * randomly.
+ * Generate 2 files.
+ * A reducer program,
+ * and a bmc formula pre-form
  */
 
 /* 
@@ -33,7 +30,8 @@ typedef struct Array {
 Array* Vars = NULL;
 Array* Opers = NULL;
 Array* Cmps = NULL;
-int File_fd;
+int Java_fd;
+int Bmc_fd;
 int* Line_types; 
 // Line_types:
 //  0 -> normal
@@ -55,7 +53,19 @@ int writeline(char *str) {
     int length = strlen(str);
     char *ptr = str;
     while (size < length) {
-        int n = write(File_fd, ptr, length - size);
+        int n = write(Java_fd, ptr, length - size);
+        ptr += n;
+        size += n;
+    }
+    return size;
+}
+
+int write_pre(char *str) {
+    int size = 0;
+    int length = strlen(str);
+    char *ptr = str;
+    while (size < length) {
+        int n = write(Bmc_fd, ptr, length - size);
         ptr += n;
         size += n;
     }
@@ -107,12 +117,13 @@ void push_oper(Array* array, char* operation, int is_binary) {
 void init_vars() {
     char c = 'a';
     for (int i = 0; i < VAR_NUM; i++) {
-        char* str = malloc(5);
+        char* str = malloc(6);
         str[0] = c;
         str[1] = i / 100 + '0';
         str[2] = (i % 100) / 10 + '0';
         str[3] = (i % 10) + '0';
-        str[4] = '\0';
+        str[4] = '_';
+        str[5] = '\0';
         push_element(Vars, str);
         free(str);
     }
@@ -121,11 +132,11 @@ void init_vars() {
 void init_opers() {
     push_oper(Opers, "+", 1);
     push_oper(Opers, "-", 1);
-    //push_oper(Opers, "*", 1);
+    push_oper(Opers, "*", 1);
     //push_oper(Opers, "/", 1);
     //push_oper(Opers, "%", 1);
-    push_oper(Opers, "+=", 0);
-    push_oper(Opers, "-=", 0);
+    //push_oper(Opers, "+=", 0);
+    //push_oper(Opers, "-=", 0);
     //push_oper(Opers, "*=", 0);
     //push_oper(Opers, "/=", 0);
 }
@@ -233,6 +244,10 @@ void write_init_vars() {
         writeline("int ");
         writeline(Vars->elements[i]);
         writeline(" = 0;\n");
+
+        write_pre("VAR: ");
+        write_pre(Vars->elements[i]);
+        write_pre("\n");
     }
     writeline("\n");
 }
@@ -257,28 +272,43 @@ char* generate_normal_line() {
         char *result = NULL;
         asprintf(&result, "%s = %s * %s;\n", 
                 Vars->elements[lhs_i], rhs[0], rhs[1]);
+
+        char *bmc = NULL;
+        asprintf(&bmc, "(= %s  (* %s  %s ))\n", 
+                Vars->elements[lhs_i], rhs[0], rhs[1]);
+        write_pre(bmc);
+
         free(rhs[0]);
         free(rhs[1]);
         free(rhs);
+        free(bmc);
         return result;
     }
 
     int lhs_i = get_random(Vars->size);
     int op_i = get_random(Opers->size);
-    if (Opers->is_binary[op_i] == 1) {
-        char** rhs = malloc(sizeof(char*) * 2);
-        for (int i = 0; i < 2; i++) {
-            int rhs_i = get_random(Vars->size + 1);
-            if (rhs_i == Vars->size) asprintf(&rhs[i], "%d", get_random(10) - 5);
-            else rhs[i] = strdup(Vars->elements[rhs_i]);
-        }
-        char *result = NULL;
-        asprintf(&result, "%s = %s %s %s;\n", 
-                Vars->elements[lhs_i], rhs[0], Opers->elements[op_i], rhs[1]);
-        free(rhs[0]);
-        free(rhs[1]);
-        free(rhs);
-        return result;
+    //if (Opers->is_binary[op_i] == 1) {
+    char** rhs = malloc(sizeof(char*) * 2);
+    for (int i = 0; i < 2; i++) {
+        int rhs_i = get_random(Vars->size + 1);
+        if (rhs_i == Vars->size) asprintf(&rhs[i], "%d", get_random(10) - 5);
+        else rhs[i] = strdup(Vars->elements[rhs_i]);
+    }
+    char *result = NULL;
+    asprintf(&result, "%s = %s %s %s;\n", 
+            Vars->elements[lhs_i], rhs[0], Opers->elements[op_i], rhs[1]);
+
+    char *bmc = NULL;
+    asprintf(&bmc, "(= %s (%s %s %s ))\n", 
+            Vars->elements[lhs_i], Opers->elements[op_i], rhs[0], rhs[1]);
+    write_pre(bmc);
+
+    free(rhs[0]);
+    free(rhs[1]);
+    free(rhs);
+    free(bmc);
+    return result;
+    /*
     } else {
         int rhs_i = get_random(Vars->size + 1);
         char *rhs = NULL;
@@ -290,6 +320,7 @@ char* generate_normal_line() {
         free(rhs);
         return result;
     }
+    */
 }
 
 char* generate_condition() {
@@ -302,7 +333,28 @@ char* generate_condition() {
     char *result = NULL;
     asprintf(&result, "%s %s %s", 
             Vars->elements[lhs_i], Cmps->elements[cmp_i], rhs);
+
+    char *bmc = NULL;
+    char *cmp = Cmps->elements[cmp_i];
+    if (strlen(cmp) > 1) {
+        if (cmp[0] == '=' && cmp[1] == '=') {
+            asprintf(&bmc, "(= %s %s )\n", 
+                    Vars->elements[lhs_i], rhs);
+        } else if (cmp[0] == '=' && cmp[1] == '=') {
+            asprintf(&bmc, "(not (= %s %s ))\n", 
+                    Vars->elements[lhs_i], rhs);
+        } else {
+            asprintf(&bmc, "(%s %s %s )\n", 
+                    Vars->elements[lhs_i], cmp, rhs);
+        }
+    } else {
+        asprintf(&bmc, "(%s %s %s )\n", 
+                Vars->elements[lhs_i], cmp, rhs);
+    }
+
     free(rhs);
+    free(bmc);
+
     return result;
 }
 
@@ -314,13 +366,16 @@ void write_body_lines() {
             free(str);
         } else if (Line_types[i] == 1) {
             writeline("if (");
+            write_pre("IF: ");
             char *str = generate_condition();
             writeline(str);
             writeline(") {\n");
             free(str);
         } else if (Line_types[i] == 2) {
+            write_pre("ELSE:\n");
             writeline("} else {\n");
         } else if (Line_types[i] == 3) {
+            write_pre("END\n");
             writeline("}\n");
         }
     }
@@ -329,6 +384,7 @@ void write_body_lines() {
 int main(int argc, char** argv) {
     if (argc != 2 && argc != 5) {
         fprintf(stderr, "./generator filename <Variable Baseline If-else>\n");
+        fprintf(stderr, "2 files filename.java and filename.pre will be generated\n");
         exit(1);
     }
     if (argc == 5) {
@@ -347,8 +403,13 @@ int main(int argc, char** argv) {
 
     LINE = (BASELINE + IF_NUM * 3);
 
+    char *target_java = NULL, *target_bmc = NULL;
+    asprintf(&target_java, "%s.java", argv[1]);
+    asprintf(&target_bmc, "%s.pre", argv[1]);
+    Java_fd = open_filefd(target_java);
+    Bmc_fd = open_filefd(target_bmc);
+
     srand(time(NULL));
-    File_fd = open_filefd(argv[1]);
     Vars = init_Array();
     Opers = init_Array();
     Cmps = init_Array();
@@ -374,14 +435,8 @@ int main(int argc, char** argv) {
     init_cmps();
     init_line_types();
 
-    /*
-     * General use example heading:
-     *
-         writeline("public class test {\n \
-            public static void main(String []args) {\n");
-     */
 
-    push_element(Vars, "cur");
+    push_element(Vars, "cur_");
 
     writeline("public void reduce(Text prefix, Iterator<IntWritable> iter,\n \
         OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {\n");
@@ -389,21 +444,13 @@ int main(int argc, char** argv) {
     write_init_vars();
 
     writeline("while (iter.hasNext()) {\n");
-    writeline("cur = iter.next().get();\n");
+    writeline("cur_ = iter.next().get();\n");
 
     write_body_lines();
 
     writeline("}\n");
 
-    /*
-     * General use example ending:
-     *
-        writeline("}\n}\n");
-     *
-     */
 
-    //writeline("double sum = 0;\n");
-    // sum_up_vars();
     writeline("output.collect(prefix, new IntWritable(");
     writeline(Vars->elements[get_random(Vars->size)]);
     writeline("));\n}\n");
@@ -414,7 +461,10 @@ int main(int argc, char** argv) {
     free(Line_types);
     Line_types = NULL;
 
-    close(File_fd);
+    free(target_java);
+    free(target_bmc);
+    close(Java_fd);
+    close(Bmc_fd);
 
     printf("Successly saved to %s\n", argv[1]);
     return 0;

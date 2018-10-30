@@ -7,7 +7,7 @@ def write_set(log, Matrix, Count, w):
     index = 0
     while index < w:
         number = 0.0
-        log.write("test " + str(index * 10 + 10) + ":\n")
+        log.write("test " + str(index) + ":\n")
         for ans in Matrix[index]:
             log.write(str(ans) + "\n")
             number += ans
@@ -29,28 +29,32 @@ def write_ans2set(Matrix, Count, index, ans):
 def main():
     files = os.listdir("s2/")
     slog = open("output.log", "w")
-    w = (100) / 10
+    w = 10
     h = 10
     Matrix = [[0.0 for x in range(h)] for y in range(w)]
     Count = [0 for x in range(w)]
 
     for java in files:
+        if ".java" not in java:
+            continue
         print java
         cmd = "time ../../j-ReCoVer " + "s2/" + java + " | grep RESULT"
         #cmd = "time cat " + "s2/" + java + " | grep void"
 
-        set_index = (int(java.replace("test", "").split("_")[0])-10) / 10
+        set_index = (int(java.replace("test", "").split("_")[0]) - 1)
 
         proc = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         (log, result) = proc.communicate()
         print log
         if len(log.splitlines()) < 2:
             ans = 300
+            os.system("ps aux | grep z3 | awk '{system(\"kill -9 \" $2)}'")
             print ans
             write_ans2set(Matrix, Count, set_index, ans)
             continue
         elif "timeout" in log:
             ans = 300 
+            os.system("ps aux | grep z3 | awk '{system(\"kill -9 \" $2)}'")
             print ans
             write_ans2set(Matrix, Count, set_index, ans)
             continue

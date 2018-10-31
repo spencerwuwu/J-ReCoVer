@@ -393,7 +393,6 @@ void bmc_generator(int pre_line_num, char** pre_lines) {
     }
 
     declare_variable(stage_c);
-    printf("\n");
 
     char *final = generate_formula(stage_c);
     printf("%s\n", final);

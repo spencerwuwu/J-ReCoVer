@@ -24,11 +24,12 @@ def parse_line(line, rep):
     result = ""
     for seg in segs:
         if "_" in seg:
-            seg = seg + rep
+            seg = seg + "_" + rep
         if len(result) == 0:
             result = seg
         else:
             result = result + " " + seg
+    return result
 
 def find_output(filename):
     target = filename.replace(".pre", ".java")
@@ -53,18 +54,43 @@ def main(filename, formulas):
     tmp = []
 
     for line in target_f.splitlines():
-        if "declar" in line
+        if len(line) < 2:
+            continue
+
+        if "declare" in line:
             linea1 = parse_line(line, "a1")
             linea2 = parse_line(line, "a2")
-            lineb1 = parse_line(line, "b2")
+            lineb1 = parse_line(line, "b1")
             lineb2 = parse_line(line, "b2")
             formulas.append(linea1)
             formulas.append(linea2)
-            formulas.append(linea1)
+            formulas.append(lineb1)
             formulas.append(lineb2)
         elif "MINMAX" in line:
             vmin = line.split(" ")[1].split(":")[0]
             vmax = line.split(" ")[1].split(":")[1]
+            tmp.append("(= " + vmin + "_a2 " + vmax + "_a1 )")
+            tmp.append("(= " + vmin + "_b2 " + vmax + "_b1 )")
+            tmp.append("(not (= " + vmax + "_a2 " + vmax + "_b2 ))")
+        else:
+            linea1 = parse_line(line, "a1")
+            linea2 = parse_line(line, "a2")
+            lineb1 = parse_line(line, "b1")
+            lineb2 = parse_line(line, "b2")
+            formula = "(and (= cur_i0_a1 input0) (= cur_i0_a2 input1))\n"
+            formula = "(and (and (= cur_i0_a1 input0) (= cur_i0_a2 input1)) " + formula + ")\n"
+            formula = "(and (and (= cur_i0_b1 input1) (= cur_i0_b2 input0)) " + formula + ")\n"
+            for f in tmp:
+                formula = "(and " + formula + " " + f + ")\n"
+
+            formula = "(and " + formula + " " + linea1 + ")\n"
+            formula = "(and " + formula + " " + linea2 + ")\n"
+            formula = "(and " + formula + " " + lineb1 + ")\n"
+            formula = "(and " + formula + " " + lineb2 + ")\n"
+
+            formula = "(assert " + formula + ")\n"
+
+            formulas.append(formula)
 
 
 if __name__ == "__main__":
@@ -74,3 +100,13 @@ if __name__ == "__main__":
 
     formulas = []
     main(sys.argv[1], formulas)
+    formulas.append("(check-sat)\n")
+
+    cmd = "z3 -in"
+    proc = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    for line in formulas:
+        proc.stdin.write(line)
+    (log, result) = proc.communicate()
+    proc.stdin.close()
+    print log
+

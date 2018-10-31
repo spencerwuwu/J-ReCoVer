@@ -28,23 +28,23 @@ typedef struct Array {
 
 
 /* 
- * Global Variables 
+ * Static Variables 
  */
-Array* Vars = NULL;
-Array* Opers = NULL;
-Array* Cmps = NULL;
-int File_fd;
-int* Line_types; 
+static Array* Vars = NULL;
+static Array* Opers = NULL;
+static Array* Cmps = NULL;
+static int File_fd;
+static int* Line_types; 
 // Line_types:
 //  0 -> normal
 //  1 -> "if (--) {"
 //  2 -> "} else {"
 //  3 -> "}"
 
-int VAR_NUM = 7;
-int IF_NUM = 10;
-int BASELINE = 200;
-int LINE = 0;        
+static int VAR_NUM = 7;
+static int IF_NUM = 10;
+static int BASELINE = 200;
+static int LINE = 0;        
 
 
 /* 
@@ -71,7 +71,7 @@ int get_random(int max) {
 int open_filefd(char* filename) {
     int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0666);
     if (fd < 0) {
-        fprintf(stderr, "./generator filename <Variable Baseline If-else>\n");
+        fprintf(stderr, "File fd failed\n");
         exit(1);
     }
     return fd;

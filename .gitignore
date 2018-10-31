@@ -9,5 +9,6 @@ benchmarks/collected-2018/parse
 benchmarks/collected-2018/*.log
 benchmarks/self_written/*.log
 benchmarks/random_generated/*.log
-benchmarks/random_generated/s1
-benchmarks/random_generated/generator
+benchmarks/random_generated/*generator
+benchmarks/random_generated/*.java
+benchmarks/random_generated/*.pre

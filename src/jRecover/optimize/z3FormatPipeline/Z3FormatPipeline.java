@@ -146,7 +146,7 @@ public class Z3FormatPipeline {
 					.append(key).append("_1_r2)) (not (= ").append(key).append("_2_r1 ").append(key).append("_2_r2))))\n"); 
 				}
 				continue;
-			} //else if (!mOutputRelated.get(key)) continue;
+			} else if (!mOutputRelated.get(key)) continue;
 
 			noVariable = false;
 			//if (mConditionRelated.get(key)) continue;

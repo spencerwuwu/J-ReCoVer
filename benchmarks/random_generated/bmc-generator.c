@@ -25,24 +25,24 @@ typedef struct Array {
 
 
 /* 
- * Global Variables 
+ * Static Variables 
  */
-Array* Vars = NULL;
-Array* Opers = NULL;
-Array* Cmps = NULL;
-int Java_fd;
-int Bmc_fd;
-int* Line_types; 
+static Array* Vars = NULL;
+static Array* Opers = NULL;
+static Array* Cmps = NULL;
+static int Java_fd;
+static int Bmc_fd;
+static int* Line_types; 
 // Line_types:
 //  0 -> normal
 //  1 -> "if (--) {"
 //  2 -> "} else {"
 //  3 -> "}"
 
-int VAR_NUM = 7;
-int IF_NUM = 10;
-int BASELINE = 200;
-int LINE = 0;        
+static int VAR_NUM = 7;
+static int IF_NUM = 10;
+static int BASELINE = 200;
+static int LINE = 0;        
 
 
 /* 
@@ -81,7 +81,7 @@ int get_random(int max) {
 int open_filefd(char* filename) {
     int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0666);
     if (fd < 0) {
-        fprintf(stderr, "./generator filename <Variable Baseline If-else>\n");
+        fprintf(stderr, "file fd failed\n");
         exit(1);
     }
     return fd;
@@ -340,17 +340,18 @@ char* generate_condition() {
         if (cmp[0] == '=' && cmp[1] == '=') {
             asprintf(&bmc, "(= %s %s )\n", 
                     Vars->elements[lhs_i], rhs);
-        } else if (cmp[0] == '=' && cmp[1] == '=') {
+        } else if (cmp[0] == '!' && cmp[1] == '=') {
             asprintf(&bmc, "(not (= %s %s ))\n", 
                     Vars->elements[lhs_i], rhs);
         } else {
             asprintf(&bmc, "(%s %s %s )\n", 
-                    Vars->elements[lhs_i], cmp, rhs);
+                    cmp, Vars->elements[lhs_i], rhs);
         }
     } else {
         asprintf(&bmc, "(%s %s %s )\n", 
-                Vars->elements[lhs_i], cmp, rhs);
+                cmp, Vars->elements[lhs_i], rhs);
     }
+    write_pre(bmc);
 
     free(rhs);
     free(bmc);

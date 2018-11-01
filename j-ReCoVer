@@ -261,7 +261,6 @@ def run_checker(global_path, path, p_name):
     else:
         print "RESULT: Checker timeout"
         os.system("rm -rf " + filename)
-        #os.system("ps aux | grep jar | awk '{system(\"kill -9 \" $2)}'")
         return False
 
     os.system("rm -rf " + filename)
@@ -295,10 +294,10 @@ def parse_finder_output(filename):
         print "RESULT: Cannot find a counterexample in " + str(count) + " tests"
         print "Testcases were generated randomly."
         print ""
-        print "Following are the first 200 lines of testcases:"
+        print "Following are the first 50 lines of testcases:"
         i = 0
         for line in full_log.splitlines():
-            if i >= 200:
+            if i >= 50:
                 break
             else:
                 i += 1

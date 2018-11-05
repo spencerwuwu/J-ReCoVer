@@ -67,7 +67,8 @@ public class Z3Pipeline {
 			result = result + (char)i;
 		}
 		if (result.length() == 0) {
-			System.err.println("Error in z3\n");
+			if (!mOption.z3_mode) 
+				System.err.println("Error in z3\n");
 			return false;
 		}
 
@@ -117,11 +118,13 @@ public class Z3Pipeline {
 	}
 
 	protected void logAll(String str) {
+		if (mOption.z3_mode) return;
 		if (!mOption.silence_flag) System.out.println(str);
 		else System.out.println("[ z3Pipe]  " + str);
 	}
 	
 	protected void log(String str) {
+		if (mOption.z3_mode) return;
 		if (!mOption.silence_flag) System.out.println(str);
 	}
 }

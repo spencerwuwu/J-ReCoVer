@@ -119,18 +119,18 @@ public class OptimizeResolver {
 					try {
 						body.validate();
 					} catch (RuntimeException e) {
-						System.out.println("Unable to validate method body. Possible NullPointerException?");
+						logAll("Unable to validate method body. Possible NullPointerException?");
 						throw e;	
 					}
 				}
 			}
 		}
 
-		System.out.println("=======================================");	
+		logAll("=======================================");	
 		Set<JimpleBody> bodies = this.getCollectorSceneBodies(reducerClassname);
 		if (bodies.size() == 0) {
-			System.out.println("No reducer in classname");	
-			System.out.println("=======================================");	
+			logAll("No reducer in classname");	
+			logAll("=======================================");	
 			return;
 		}
 		
@@ -149,6 +149,20 @@ public class OptimizeResolver {
 
 	public void jimpleAnalysis(JimpleBody body) {
 		System.out.println(body.toString());
+		UnitGraph graph = new ExceptionalUnitGraph(body);
+		Iterator gIt = graph.iterator();
+		int lineCounter = 0;
+		int varCounter = 0;
+		while (gIt.hasNext()) {
+			Unit u = (Unit)gIt.next();
+			lineCounter += 1;
+		}
+		List<ValueBox> defBoxes = body.getDefBoxes();
+		for (ValueBox d: defBoxes) {
+			varCounter += 1;
+		}
+		System.out.println("=======================================");			
+		System.out.println("LINE/VARIABLE: " + lineCounter + "/" + varCounter);
 	}
 
 	public void completeAnalysis(JimpleBody body) throws IOException {
@@ -188,7 +202,7 @@ public class OptimizeResolver {
 		for(UnitSet us : units) {
 			String unit = us.getUnit().toString();
 			if (unit.contains("String")) {
-				if (!mOption.silence_flag) System.err.print(Color.ANSI_RED + unit.toString() 
+				if (!mOption.z3_mode && !mOption.silence_flag) System.err.print(Color.ANSI_RED + unit.toString() 
 				+ Color.ANSI_RESET + " contains string operations or assertions \n");
 				//return;
 			}
@@ -244,7 +258,8 @@ public class OptimizeResolver {
 				beforeLoopTree.getEndNodes(), innerLoopTree.getEndNodes(), mUseNextBeforeLoop, mOutputRelated, mOption, mNoLoop);
 
 		if (z3Builder.getResult()) {
-			System.out.println("RESULT: Proved to be commutative");
+			if (!mOption.z3_mode)
+				System.out.println("RESULT: Proved to be commutative");
 		} else {
 			System.out.println("RESULT: CANNOT prove to be commutative");
 		}
@@ -472,11 +487,13 @@ public class OptimizeResolver {
 	}
 
 	public void logAll(String str) {
+		if (mOption.z3_mode) return;
 		if (!mOption.silence_flag) System.out.println(str);
 		else System.out.println("[  StatR]  " + str);
 	}
 	
 	public void log(String str) {
+		if (mOption.z3_mode) return;
 		if (!mOption.silence_flag) System.out.println(str);
 	}
 
@@ -487,10 +504,10 @@ public class OptimizeResolver {
 			if (sc.resolvingLevel() >= SootClass.BODIES && sc.toString().contains(reducerClassname)) {
 				for (SootMethod sm : sc.getMethods()) {			
 					if (sm.isConcrete() && (sm.toString().contains("reduce("))) {
-						System.out.println("method:"+sm.toString());
+						logAll("method:"+sm.toString());
 						
 						JimpleBody body = (JimpleBody) sm.retrieveActiveBody();
-						System.out.println("=======================================");			
+						logAll("=======================================");			
 						//System.out.println(sm.getName());
 						bodies.add(body);
 						break;

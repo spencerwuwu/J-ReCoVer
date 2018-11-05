@@ -149,6 +149,20 @@ public class OptimizeResolver {
 
 	public void jimpleAnalysis(JimpleBody body) {
 		System.out.println(body.toString());
+		UnitGraph graph = new ExceptionalUnitGraph(body);
+		Iterator gIt = graph.iterator();
+		int lineCounter = 0;
+		int varCounter = 0;
+		while (gIt.hasNext()) {
+			Unit u = (Unit)gIt.next();
+			lineCounter += 1;
+		}
+		List<ValueBox> defBoxes = body.getDefBoxes();
+		for (ValueBox d: defBoxes) {
+			varCounter += 1;
+		}
+		System.out.println("=======================================");			
+		System.out.println("LINE/VARIABLE: " + lineCounter + "/" + varCounter);
 	}
 
 	public void completeAnalysis(JimpleBody body) throws IOException {

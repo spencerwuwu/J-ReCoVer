@@ -167,6 +167,7 @@ public class Z3FormatPipeline {
 	protected void constructFormula(int stage, int round) {
 		// Generate formula for each variable in each round
 		for (String key : mVariables.keySet()) {
+			if (key.contains("beforeLoop")) continue;
 			StringBuffer finalValue = new StringBuffer("");
 			StringBuffer beforeValue = new StringBuffer("");
 			StringBuffer innerValue = new StringBuffer("");

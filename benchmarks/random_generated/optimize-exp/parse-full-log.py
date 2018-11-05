@@ -1,6 +1,5 @@
 #!/usr/bin/python2.7
 import os
-from prettytable import PrettyTable
 
 def parse_time(time):
     minute = float(time.split("m")[0])
@@ -37,12 +36,10 @@ def get_name(storage, filename):
             index = 0
 
 def main(name, optimize, string):
-    x = PrettyTable(["name", "Optimize", "String"])
     index = 0
     while index < len(name):
         if len(name[index]) == 0:
             break
-        x.add_row([name[index], str(optimize[index]), str(string[index])])
         a = [name[index], str(optimize[index]), str(string[index])]
         output(a)
         index += 1

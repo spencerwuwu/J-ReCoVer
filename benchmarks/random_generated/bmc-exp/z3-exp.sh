@@ -12,5 +12,5 @@ do
 	echo $VAR
 	echo "$VAR:" >> $log
 	result="$resultDir/$VAR.result"
-	{ time timeout 300 z3 formulas/$VAR > $result || echo TIMEOUT > $result; } 2>&1 | grep real | awk {'print $2'} >> $log
+	{ time timeout 300 z3 formulas/$VAR > $result || echo RESULT > $result; } 2>&1 | grep real | awk {'print $2'} >> $log
 done

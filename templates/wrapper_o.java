@@ -1,4 +1,3 @@
-//https://searchcode.com/file/69347180/core/src/main/java/org/apache/mahout/classifier/bayes/common/BayesFeatureReducer.java#l-21
 
 package reduce_test;
 

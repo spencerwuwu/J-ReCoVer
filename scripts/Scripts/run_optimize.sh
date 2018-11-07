@@ -2,7 +2,8 @@
 
 output_folder="optimize_out"
 folder="Testcases/Optimize/"
-version=$1
+JAR="Testcases/Optimize-build/target/New-1.0.jar"
+timeout=$1
 
 OPT_log="$output_folder/Optimize.log"
 STR_log="$output_folder/String.log"
@@ -24,7 +25,7 @@ function clean_process {
 }
 
 function analysis { #"$folder" "$opt_log" "$str_log" "$opt_slog" "$str_slog"
-	local _list="$(ls -l $1 | awk '{print $9}')"
+	local _list="$(ls -l $1 | awk '{print $9}' | sed 's/\.java//g')"
 	local _count=0
 	for _target in $_list; do
 		echo -ne "Progress: $_count.0/$total"\\r
@@ -32,21 +33,17 @@ function analysis { #"$folder" "$opt_log" "$str_log" "$opt_slog" "$str_slog"
 		echo "$_target" >> $3
 		echo "$_target" >> $4
 		echo "$_target" >> $5
-		(time { ../J-ReCoVer/j-ReCoVer-$version $1/$_target 2>&1 | grep RESULT | wc -l >> $4 ;};) 2>&1 | grep real | awk '{print $2}' >> $2
+		(time { timeout $timeout java -jar ../J-ReCoVer/j-recover.jar $JAR $_target -s 2>&1 | grep RESULT | wc -l >> $4 ;};) 2>&1 | grep real | awk '{print $2}' >> $2
 		clean_process
 		echo -ne "Progress: $_count.5/$total"\\r
 
-		(time { ../J-ReCoVer/j-Str-ReCoVer-$version $1/$_target 2>&1 | grep RESULT | wc -l >> $5 ;};) 2>&1 | grep real | awk '{print $2}' >> $3
+		(time { timeout $timeout java -jar ../J-ReCoVer/j-recover.jar $JAR $_target -o -s 2>&1 | grep RESULT | wc -l >> $5 ;};) 2>&1 | grep real | awk '{print $2}' >> $3
 		clean_process
 		((_count+=1))
 	done
 }
 
-if [[ $version == "long" ]]; then
-	echo "Starting Optimize Exp with timeout 300"
-else
-	echo "Starting Optimize Exp with timeout 180"
-fi
+echo "Starting Optimize Exp with timeout $timeout"
 
 rm -rf $output_folder
 mkdir $output_folder

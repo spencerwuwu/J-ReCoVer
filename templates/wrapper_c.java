@@ -1,4 +1,3 @@
-//https://searchcode.com/file/100948365/Mapreduce/Programs/StockMinMaxReducer.java#l-6
 
 package reduce_test;
 

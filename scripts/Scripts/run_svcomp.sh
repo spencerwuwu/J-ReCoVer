@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 output_folder="svcomp_out"
 src_folder="Testcases/SV-COMP/"
 targets=('rangesum' 'avg' 'max' 'sep' 'sum')

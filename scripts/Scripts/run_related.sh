@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 output_folder="related_out"
 LI_folder="Testcases/Literacture/"
 CO_folder="Testcases/Collected/"
@@ -13,7 +11,7 @@ CO_n_log="$output_folder/CO_n.log"
 
 function analysis { #"$folder" "$r_log" "n_log"
 	local _list="$(ls -l $1 | awk '{print $9}')"
-	local _num="$(ls $1 | wc | awk '{print $1}')"
+	local _num="$(ls $1 | wc -l)"
 	local _count=0
 	for _target in $_list; do
 		echo -ne "Progress: $_count.0/$_num"\\r

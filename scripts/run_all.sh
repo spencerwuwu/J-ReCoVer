@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 SIMPLE="0"
 
 function print_help {
@@ -43,11 +41,21 @@ fi
 cd Scripts/
 echo ""
 ./run_svcomp.sh
+
 echo ""
 ./run_related.sh
-echo ""
-./run_optimize.sh
-echo ""
-./run_bmc.sh
+
+if [[ $SIMPLE -eq 0 ]]; then
+	echo ""
+	./run_optimize.sh long
+	echo ""
+	./run_bmc.sh 300
+else
+	echo ""
+	./run_optimize.sh short
+	echo ""
+	./run_bmc.sh 180
+fi
+
 echo ""
 cd ../

@@ -43,10 +43,10 @@ def get_average(elements):
     for element in elements:
         total += element
         count += 1
-    return total / count
+    return round(total / count, 1)
 
 def get_median(elements):
-    return median(elements)
+    return round(median(elements), 1)
 
 def get_timeout(elements):
     count = 0

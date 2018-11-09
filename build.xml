@@ -14,6 +14,18 @@
 		<javac srcdir="${dir.buildfile}/src" destdir="${dir.buildfile}/bin" classpathref="classpath"/>
 	</target>
 
+    <target name="test" depends="compile">
+        <junit printsummary="yes">
+            <classpath>
+                <path refid="classpath"/>
+            </classpath>
+
+            <batchtest fork="yes">
+				<fileset dir="${dir.buildfile}/src" includes="**/*Test.java"/>
+            </batchtest>
+        </junit>
+    </target>
+
     <target name="create_run_jar" depends="compile">
         <jar destfile="${dir.jarfile}/j-recover.jar" filesetmanifest="mergewithoutmain">
             <manifest>

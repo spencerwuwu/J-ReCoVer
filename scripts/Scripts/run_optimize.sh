@@ -43,7 +43,7 @@ function analysis { #"$folder" "$opt_log" "$str_log" "$opt_slog" "$str_slog"
 	done
 }
 
-echo "Starting Optimize Exp with timeout $timeout"
+echo "Starting Opt2 Exp with timeout $timeout"
 
 rm -rf $output_folder
 mkdir $output_folder

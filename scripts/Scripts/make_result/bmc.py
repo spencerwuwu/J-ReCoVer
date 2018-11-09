@@ -45,16 +45,18 @@ def parse_bmc(tex_f, timeout):
     data_f.close()
 
 
-    tex_f.write("% BMC exp\n")
-    tex_f.write("\\begin{table}\n")
-    tex_f.write("\\centering\n")
-    tex_f.write("\\begin{tabular}{|l|l|l|l|l|l|l|l|}\n")
+    tex_f.write("% Optimize exp\n")
+    tex_f.write("\\begin{figure}\n")
+
+    tex_f.write("\\begin{minipage}{0.7\\textwidth}\n")
+
+    tex_f.write("\\begin{tabular}{|l|l|l|l|l|l|}\n")
 
     tex_f.write("\\hline\n")
-    tex_f.write("& \multicolumn{3}{c|}{\small BMC} &	& \multicolumn{3}{c|}{\small Optimized} \\\\\n")
+    tex_f.write("& \multicolumn{2}{c|}{\small BMC}	& & \multicolumn{2}{c|}{\small Symbolic Exec.} \\\\\n")
 
     tex_f.write("\\hline\n")
-    tex_f.write("\small Lines & \small Average & \small Median & \small Timeout & Lines/Vars (jimple) & \small Average & \small Median & \small Timeout \\\\\n")
+    tex_f.write("\small Lines/Vars & \small Average & \small T/O & Lines/Vars & \small Average & \small T/O \\\\\n")
 
     tex_f.write("\\hline\n")
     tex_f.write("\\hline\n")
@@ -72,29 +74,40 @@ def parse_bmc(tex_f, timeout):
             bmc_result.append(bmc_results[i])
             i += 1
             j += 1
-        tex_f.write(str(index) + " & " + get3_column(bmc_result, timeout) + " & " + line_set[line_index] + " & " + get3_column(opt_result, timeout) + "\\\\\n")
+        tex_f.write(str(index) + " & " + get2_column(bmc_result, timeout) + " & " + line_set[line_index] + " & " + get2_column(opt_result, timeout) + "\\\\\n")
         line_index += 1
         index += 50
 
+
     tex_f.write("\\hline\n")
     tex_f.write("\end{tabular}\n")
-    tex_f.write("\\label{tab:bmc}\n")
-    tex_f.write("\\end{table}\n")
+    tex_f.write("\end{minipage}\n")
     tex_f.write("\n\n")
 
+    tex_f.write("\\begin{minipage}{0.29\\textwidth}\n")
+    tex_f.write("\scalebox{0.4}{\n")
     tex_f.write("\\begin{tikzpicture}\n")
-    tex_f.write("\\begin{loglogaxis}[%\n")
+    tex_f.write("\\begin{axis}[%\n")
     tex_f.write("xmin=-5, xmax=" + str(timeout + 20) + ",\n")
     tex_f.write("ymin=-5, ymax=" + str(timeout + 20) + ",\n")
-    tex_f.write("xlabel=J-ReCoVer,\n")
-    tex_f.write("ylabel=BMC\n")
+    tex_f.write("xlabel=Symbolic Exec.(s),\n")
+    tex_f.write("ylabel=BMC(s)\n")
     tex_f.write("]\n")
     tex_f.write("\\addplot[scatter,only marks,%\n")
     tex_f.write("scatter src=explicit symbolic, mark=x]%\n")
     tex_f.write("file {bmc.data};\n")
     tex_f.write("\draw (-100,-100) -- (400, 400);\n")
-    tex_f.write("\end{loglogaxis}\n")
+    tex_f.write("\end{axis}\n")
     tex_f.write("\end{tikzpicture}\n")
+    tex_f.write("}\n")
+    tex_f.write("\end{minipage}\n")
+
+    tex_f.write("\caption{The performance of using BMC and symbolic execution. Each table cell is the result obtained")
+    tex_f.write(" from 20 randomly generated cases. }\n")
+    tex_f.write("\\label{tab:bmc}\n")
+    tex_f.write("\\end{figure}\n")
 
     tex_f.write("\n\n\n")
+
+
 

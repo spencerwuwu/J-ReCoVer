@@ -34,6 +34,8 @@ do
 	esac
 done
 
+clear
+
 if [[ $SIMPLE -eq 0 ]]; then
 	echo "Run full experiements..."
 else
@@ -70,7 +72,7 @@ else
 	./make_result.py 180
 fi
 
-../
+cd ../latex
 echo ""
 echo "Compiling report..."
 pdflatex result 2>&1 > peflatex.log && cp result.pdf ../../

@@ -53,15 +53,17 @@ def parse_optimized(tex_f, timeout):
     
 
     tex_f.write("% Optimize exp\n")
-    tex_f.write("\\begin{table}\n")
-    tex_f.write("\\centering\n")
+    tex_f.write("\\begin{figure}\n")
+
+    tex_f.write("\\begin{minipage}{0.6\\textwidth}\n")
+
     tex_f.write("\\begin{tabular}{|l|l|l|l|l|l|l|}\n")
 
     tex_f.write("\\hline\n")
-    tex_f.write("& \multicolumn{3}{c|}{\small w/o Optimization}	& \multicolumn{3}{c|}{\small Optimized} \\\\\n")
+    tex_f.write("& \multicolumn{3}{c|}{\small W/O optimization}	& \multicolumn{3}{c|}{\small With optimization} \\\\\n")
 
     tex_f.write("\\hline\n")
-    tex_f.write("\small Lines & \small Average & \small Median & \small Timeout & \small Average & \small Median & \small Timeout \\\\\n")
+    tex_f.write("\small Lines & \small Average & \small Median & \small T/O & \small Average & \small Median & \small T/O \\\\\n")
 
     tex_f.write("\\hline\n")
     tex_f.write("\\hline\n")
@@ -82,10 +84,11 @@ def parse_optimized(tex_f, timeout):
 
     tex_f.write("\\hline\n")
     tex_f.write("\end{tabular}\n")
-    tex_f.write("\\label{tab:opt1}\n")
-    tex_f.write("\\end{table}\n")
+    tex_f.write("\end{minipage}\n")
     tex_f.write("\n\n")
 
+    tex_f.write("\\begin{minipage}{0.4\\textwidth}\n")
+    tex_f.write("\scalebox{0.6}{\n")
     tex_f.write("\\begin{tikzpicture}\n")
     tex_f.write("\\begin{axis}[%\n")
     tex_f.write("xmin=-5, xmax=" + str(timeout + 20) + ",\n")
@@ -99,6 +102,13 @@ def parse_optimized(tex_f, timeout):
     tex_f.write("\draw (-100,-100) -- (400, 400);\n")
     tex_f.write("\end{axis}\n")
     tex_f.write("\end{tikzpicture}\n")
+    tex_f.write("}\n")
+    tex_f.write("\end{minipage}\n")
+
+    tex_f.write("\caption{The improvement in scalability using the better data structure for symbolic execution. Each cell ")
+    tex_f.write("in the table is the summary of 60 randomly generated programs. In the table T/O stands for timeout and W/O is without. }\n")
+    tex_f.write("\\label{tab:opt2}\n")
+    tex_f.write("\\end{figure}\n")
 
     tex_f.write("\n\n\n")
 

@@ -21,13 +21,10 @@ echo "[install.sh]  Importing maven packages...."
 echo ""
 cp -r Dependencies/m2 ~/.m2
 
-# Set java version to 1.8
-echo 2 | $SUDO update-alternatives --config java
-
 # Move the pre-compiled z3 
 # into /usr/bin and /usr/include
 echo ""
-echo "[install.sh]  Installint z3-4.7 ...."
+echo "[install.sh]  Installing z3-4.7 ...."
 echo ""
 
 z3Path="Dependencies/z3/"
@@ -45,3 +42,11 @@ do
 	$SUDO chmod 777 /usr/include/$VAR
 done
 
+echo ""
+echo "[install.sh]  Compile a reducer for maven cache.."
+
+./J-ReCoVer/j-Compile J-ReCoVer/sample_reducer.java | grep Success
+
+echo ""
+echo "[install.sh]  Done."
+echo ""

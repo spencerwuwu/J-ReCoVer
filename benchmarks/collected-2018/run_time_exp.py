@@ -1,8 +1,9 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python2
 import sys
 import os
 from subprocess import Popen, PIPE
 from numpy import median
+from prettytable import PrettyTable
 
 
 def get_median(elements):
@@ -52,25 +53,40 @@ def main():
             groups[group] = [target]
             results[group] = [times]
         cnt += 1
-        if cnt > 3:
-            break
 
     keys = sorted(groups.keys())
 
+
+    x = PrettyTable(["Lines", 
+                     "Average (Compile)", "Average (Process)", "Average (Solver)", "Average(total)"
+                     ,"Median (Compile)", "Median (Process)", "Median (Solver)", "Median (total)"
+                    ])
 
     final_sets = dict()
     for key in keys:
         final = dict()
         array = get_array(results, key, 0)
-        final["compile"] = (get_average(array), get_median(array))
+        ca = get_average(array)
+        cm = get_median(array)
+        final["compile"] = (ca, cm)
+
         array = get_array(results, key, 1)
-        final["process"] = (get_average(array), get_median(array))
+        pa = get_average(array)
+        pm = get_median(array)
+        final["process"] = (pa, pm)
+        
         array = get_array(results, key, 2)
-        final["smt"] = (get_average(array), get_median(array))
+        sa = get_average(array)
+        sm = get_median(array)
+        final["smt"] = (sa, sm)
 
         final_sets[key] = final
+        line = "%s-%s" % (key*10+1, key*10+9)
+        x.add_row([line,
+                   ca, pa, sa, ca+pa+sa,
+                   cm, pm, sm, cm+pm+sm])
 
-    print(final_sets)
+    print(x)
 
 if __name__ == "__main__":
     main()

@@ -3,6 +3,7 @@ bin/
 .fields/
 j-recover.jar
 reducer.java
+.python-version
 
 benchmarks/collected-2018/base/
 benchmarks/collected-2018/parse

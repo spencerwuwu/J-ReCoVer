@@ -255,6 +255,24 @@ def run_checker(global_path, path, p_name):
 
     return proc.communicate()[0]
 
+def run_counter(global_path, path, p_name):
+    target = path + "target/New-1.0.jar"
+    filename = global_path + ".fields/" + p_name + "_checker"
+    cmd = "java -jar -Xms2G -Xmx2G " + global_path + "j-recover.jar " + target + " autoGenerator -j " 
+    proc = Popen(cmd, shell=True, stdout=PIPE, preexec_fn=os.setsid)
+
+    res = proc.communicate()[0].splitlines()
+    if_cnt = 0
+    for line in res:
+        if line.lstrip().startswith("if"):
+            if_cnt += 1
+    
+    lv = res[-1].split(": ")[1]
+    num_line = int(lv.split("/")[0])
+    num_var = int(lv.split("/")[1])
+
+    return num_line, num_var, if_cnt
+
 
 def parse_finder_output(filename):
     log = open(filename, "r")
@@ -318,20 +336,34 @@ def main(T1, T2, T3, T4, r_type):
     start = time.time()
     compile(T1, T2, T3, T4, r_type, global_path, path)
     end = time.time()
-    print("Compile: %s" % round(end - start, 3))
+    c_time = round(end - start, 3)
+    print("Compile: %s" % c_time)
 
 
     start = time.time()
     smt = run_checker(global_path, path, p_name)
     end = time.time()
-    print("Process: %s" % round(end - start, 3))
+    p_time = round(end - start, 3)
+    print("Process: %s" % p_time)
 
     process = Popen("z3 -in", shell=True, stdin=PIPE, stdout=PIPE)
     start = time.time()
     out = process.communicate(input=smt.encode())[0]
     end = time.time()
-    print("Z3: %s" % round(end - start, 3))
-    print(out.decode().splitlines()[0])
+    s_time = round(end - start, 3)
+    print("Z3: %s" % s_time)
+
+    total = c_time + p_time + s_time
+    print("Total: %s" % round(total, 3))
+
+
+    num_line, num_var, num_if = run_counter(global_path, path, p_name)
+    print("Line: %s" % num_line)
+    print("Var: %s" % num_var)
+    print("If-: %s" % num_if)
+
+
+    print("SMT: %s" % out.decode().splitlines()[0])
 
     os.system("rm -rf " + path)
 

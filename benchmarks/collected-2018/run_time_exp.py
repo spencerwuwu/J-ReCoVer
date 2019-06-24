@@ -26,14 +26,14 @@ def get_sorted(results, index):
     ret = list(results)
     
     for i in range(len(ret)):
-        for j in range(i, len(ret) - 1):
+        for j in range(len(ret) -i - 1):
             if ret[j][index] < ret[j+1][index]:
                 tmp = ret[j][index]
                 ret[j][index] = ret[j+1][index]
                 ret[j+1][index] = tmp
 
 
-    for i in range(3):
+    for i in range(5):
         print("%s\t%s %s %s %s %s %s" % (ret[i][0], ret[i][1], ret[i][2], ret[i][3], ret[i][4], ret[i][5], ret[i][6]))
 
 
@@ -86,9 +86,6 @@ def main():
         print("%s %s %s %s %s %s %s" % (compile_time, process_time, solver_time, total_time, num_line, num_variable, num_if))
         results.append([java, compile_time, process_time, solver_time, total_time, num_line, num_variable, num_if])
 
-        cnt += 1
-        if cnt >= 4:
-            break
         
 
     print("Longest executation time:")
